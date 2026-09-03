@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Razão — Controle Financeiro Pessoal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">§</span>
+      <div>
+        <div class="brand-name">Razão</div>
+        <div class="brand-sub">controle pessoal</div>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <button class="nav-item is-active" data-view="visao-geral">
+        <span class="nav-num">01</span> Visão geral
+      </button>
+      <button class="nav-item" data-view="transacoes">
+        <span class="nav-num">02</span> Transações
+      </button>
+      <button class="nav-item" data-view="cartoes">
+        <span class="nav-num">03</span> Cartões
+      </button>
+      <button class="nav-item" data-view="investimentos">
+        <span class="nav-num">04</span> Investimentos
+      </button>
+      <button class="nav-item" data-view="orcamento">
+        <span class="nav-num">05</span> Orçamento
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="nav-item nav-item--ghost" data-view="backup">
+        Backup dos dados
+      </button>
+      <div class="sidebar-note">Seus dados ficam só neste navegador.</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <header class="topbar">
+      <div>
+        <h1 id="view-title">Visão geral</h1>
+        <p id="view-sub" class="muted">Resumo do seu momento financeiro</p>
+      </div>
+      <div class="topbar-month">
+        <button id="month-prev" class="icon-btn" aria-label="Mês anterior">‹</button>
+        <span id="month-label">—</span>
+        <button id="month-next" class="icon-btn" aria-label="Próximo mês">›</button>
+      </div>
+    </header>
+
+    <!-- ===== VISÃO GERAL ===== -->
+    <section class="view" id="view-visao-geral">
+      <div class="ledger-strip">
+        <div class="ledger-figure">
+          <span class="ledger-label">Saldo do mês</span>
+          <span class="ledger-value" id="stat-saldo">R$ 0,00</span>
+        </div>
+        <div class="ledger-figure">
+          <span class="ledger-label">Receitas</span>
+          <span class="ledger-value ledger-value--pos" id="stat-receitas">R$ 0,00</span>
+        </div>
+        <div class="ledger-figure">
+          <span class="ledger-label">Despesas</span>
+          <span class="ledger-value ledger-value--neg" id="stat-despesas">R$ 0,00</span>
+        </div>
+        <div class="ledger-figure">
+          <span class="ledger-label">Em investimentos</span>
+          <span class="ledger-value" id="stat-invest">R$ 0,00</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h2>Gastos por categoria</h2>
+          <canvas id="chart-categorias" height="220"></canvas>
+          <p class="empty-hint" id="chart-categorias-empty" hidden>Sem despesas neste mês ainda.</p>
+        </div>
+        <div class="panel">
+          <h2>Faturas dos cartões</h2>
+          <div id="resumo-cartoes" class="stack"></div>
+          <p class="empty-hint" id="resumo-cartoes-empty" hidden>Cadastre um cartão para ver a fatura aqui.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Últimos lançamentos</h2>
+          <button class="link-btn" data-view="transacoes">ver todos →</button>
+        </div>
+        <table class="ledger-table" id="tabela-recentes">
+          <thead>
+            <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="num">Valor</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="empty-hint" id="recentes-empty" hidden>Nenhum lançamento ainda. Adicione o primeiro em "Transações".</p>
+      </div>
+    </section>
+
+    <!-- ===== TRANSAÇÕES ===== -->
+    <section class="view" id="view-transacoes" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Lançamentos do mês</h2>
+          <button class="btn btn-primary" id="btn-nova-transacao">Novo lançamento</button>
+        </div>
+
+        <div class="filters">
+          <select id="filtro-tipo">
+            <option value="">Todos os tipos</option>
+            <option value="receita">Receitas</option>
+            <option value="despesa">Despesas</option>
+          </select>
+          <select id="filtro-categoria">
+            <option value="">Todas as categorias</option>
+          </select>
+          <select id="filtro-cartao">
+            <option value="">Todos os cartões</option>
+          </select>
+        </div>
+
+        <table class="ledger-table" id="tabela-transacoes">
+          <thead>
+            <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Origem</th><th class="num">Valor</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="empty-hint" id="transacoes-empty" hidden>Nenhum lançamento com esses filtros.</p>
+      </div>
+    </section>
+
+    <!-- ===== CARTÕES ===== -->
+    <section class="view" id="view-cartoes" hidden>
+      <div class="panel-head panel-head--loose">
+        <h2>Seus cartões</h2>
+        <button class="btn btn-primary" id="btn-novo-cartao">Novo cartão</button>
+      </div>
+      <div class="card-grid" id="lista-cartoes"></div>
+      <p class="empty-hint" id="cartoes-empty" hidden>Nenhum cartão cadastrado ainda.</p>
+    </section>
+
+    <!-- ===== INVESTIMENTOS ===== -->
+    <section class="view" id="view-investimentos" hidden>
+      <div class="ledger-strip ledger-strip--tight">
+        <div class="ledger-figure">
+          <span class="ledger-label">Total investido</span>
+          <span class="ledger-value" id="stat-invest-total">R$ 0,00</span>
+        </div>
+        <div class="ledger-figure">
+          <span class="ledger-label">Posições</span>
+          <span class="ledger-value" id="stat-invest-count">0</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h2>Distribuição por tipo</h2>
+          <canvas id="chart-investimentos" height="220"></canvas>
+          <p class="empty-hint" id="chart-investimentos-empty" hidden>Cadastre um investimento para ver o gráfico.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Posições</h2>
+            <button class="btn btn-primary" id="btn-novo-investimento">Novo investimento</button>
+          </div>
+          <table class="ledger-table" id="tabela-investimentos">
+            <thead>
+              <tr><th>Nome</th><th>Tipo</th><th>Data</th><th class="num">Valor</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="empty-hint" id="investimentos-empty" hidden>Nenhum investimento cadastrado.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ORÇAMENTO ===== -->
+    <section class="view" id="view-orcamento" hidden>
+      <div class="panel-head panel-head--loose">
+        <h2>Metas por categoria</h2>
+        <button class="btn btn-primary" id="btn-nova-meta">Nova meta</button>
+      </div>
+      <div class="stack" id="lista-orcamento"></div>
+      <p class="empty-hint" id="orcamento-empty" hidden>Defina uma meta mensal para começar a acompanhar seu orçamento.</p>
+    </section>
+
+    <!-- ===== BACKUP ===== -->
+    <section class="view" id="view-backup" hidden>
+      <div class="panel">
+        <h2>Exportar backup</h2>
+        <p class="muted">Baixe um arquivo com todos os seus dados. Guarde-o em local seguro — se limpar o navegador, os dados somem.</p>
+        <button class="btn btn-primary" id="btn-exportar">Baixar backup (.json)</button>
+      </div>
+      <div class="panel">
+        <h2>Importar backup</h2>
+        <p class="muted">Restaura os dados de um arquivo exportado anteriormente. Isso substitui os dados atuais deste navegador.</p>
+        <input type="file" id="input-importar" accept="application/json">
+      </div>
+      <div class="panel">
+        <h2>Apagar tudo</h2>
+        <p class="muted">Remove todos os lançamentos, cartões, investimentos e metas deste navegador. Não pode ser desfeito.</p>
+        <button class="btn btn-danger" id="btn-apagar-tudo">Apagar todos os dados</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== MODAL (genérico, preenchido via JS) ===== -->
+<div class="modal-overlay" id="modal-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 id="modal-title">Título</h3>
+      <button class="icon-btn" id="modal-close" aria-label="Fechar">×</button>
+    </div>
+    <form id="modal-form"></form>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
