@@ -12,7 +12,38 @@
 </head>
 <body>
 
-<div class="app">
+<!-- ===== TELA DE LOGIN ===== -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+    <div class="brand brand--auth">
+      <span class="brand-mark">§</span>
+      <div>
+        <div class="brand-name">Razão</div>
+        <div class="brand-sub">controle pessoal</div>
+      </div>
+    </div>
+    <p class="muted" id="auth-sub">Entre para acessar seus dados de qualquer aparelho.</p>
+
+    <form id="auth-form">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="auth-email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="auth-password" required autocomplete="current-password" minlength="6">
+      </div>
+      <p class="auth-error" id="auth-error" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block" id="auth-submit">Entrar</button>
+    </form>
+
+    <button class="link-btn" id="auth-toggle">Ainda não tem conta? Criar conta</button>
+    <p class="auth-note">Seus dados ficam salvos na nuvem (Supabase) e protegidos por login — só você acessa, de qualquer dispositivo.</p>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="app" id="app" hidden>
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
@@ -40,13 +71,19 @@
       <button class="nav-item" data-view="orcamento">
         <span class="nav-num">05</span> Orçamento
       </button>
+      <button class="nav-item" data-view="metas">
+        <span class="nav-num">06</span> Metas
+      </button>
     </nav>
 
     <div class="sidebar-footer">
       <button class="nav-item nav-item--ghost" data-view="backup">
         Backup dos dados
       </button>
-      <div class="sidebar-note">Seus dados ficam só neste navegador.</div>
+      <div class="sidebar-user">
+        <span id="user-email" class="sidebar-email"></span>
+        <button class="link-btn" id="btn-logout">sair</button>
+      </div>
     </div>
   </aside>
 
@@ -89,6 +126,10 @@
       <div class="grid-2">
         <div class="panel">
           <h2>Gastos por categoria</h2>
+          <div class="mini-stats" id="mini-maior-menor" hidden>
+            <div><span class="ledger-label">Maior gasto</span><strong id="stat-maior-gasto">—</strong></div>
+            <div><span class="ledger-label">Menor gasto</span><strong id="stat-menor-gasto">—</strong></div>
+          </div>
           <canvas id="chart-categorias" height="220"></canvas>
           <p class="empty-hint" id="chart-categorias-empty" hidden>Sem despesas neste mês ainda.</p>
         </div>
@@ -96,6 +137,19 @@
           <h2>Faturas dos cartões</h2>
           <div id="resumo-cartoes" class="stack"></div>
           <p class="empty-hint" id="resumo-cartoes-empty" hidden>Cadastre um cartão para ver a fatura aqui.</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h2>Planejado x real</h2>
+          <canvas id="chart-planejado" height="200"></canvas>
+          <p class="empty-hint" id="chart-planejado-empty" hidden>Defina metas em "Orçamento" para comparar aqui.</p>
+        </div>
+        <div class="panel">
+          <h2>Forma de pagamento mais usada</h2>
+          <canvas id="chart-pagamento" height="200"></canvas>
+          <p class="empty-hint" id="chart-pagamento-empty" hidden>Registre a forma de pagamento nas despesas para ver aqui.</p>
         </div>
       </div>
 
@@ -134,11 +188,14 @@
           <select id="filtro-cartao">
             <option value="">Todos os cartões</option>
           </select>
+          <select id="filtro-pagamento">
+            <option value="">Toda forma de pagamento</option>
+          </select>
         </div>
 
         <table class="ledger-table" id="tabela-transacoes">
           <thead>
-            <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Origem</th><th class="num">Valor</th><th></th></tr>
+            <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Pagamento</th><th class="num">Valor</th><th></th></tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -195,27 +252,37 @@
     <section class="view" id="view-orcamento" hidden>
       <div class="panel-head panel-head--loose">
         <h2>Metas por categoria</h2>
-        <button class="btn btn-primary" id="btn-nova-meta">Nova meta</button>
+        <button class="btn btn-primary" id="btn-nova-meta-orcamento">Nova meta</button>
       </div>
       <div class="stack" id="lista-orcamento"></div>
       <p class="empty-hint" id="orcamento-empty" hidden>Defina uma meta mensal para começar a acompanhar seu orçamento.</p>
+    </section>
+
+    <!-- ===== METAS / ANOTAÇÕES ===== -->
+    <section class="view" id="view-metas" hidden>
+      <div class="panel-head panel-head--loose">
+        <h2>Metas e anotações</h2>
+      </div>
+      <div class="panel">
+        <form id="form-meta" class="goal-form">
+          <input type="text" id="input-meta" placeholder="Ex.: Juntar reserva para viagem" required>
+          <button type="submit" class="btn btn-primary">Adicionar</button>
+        </form>
+        <div class="stack" id="lista-metas" style="margin-top:16px;"></div>
+        <p class="empty-hint" id="metas-empty" hidden>Nenhuma meta ainda — anote algo que você quer alcançar.</p>
+      </div>
     </section>
 
     <!-- ===== BACKUP ===== -->
     <section class="view" id="view-backup" hidden>
       <div class="panel">
         <h2>Exportar backup</h2>
-        <p class="muted">Baixe um arquivo com todos os seus dados. Guarde-o em local seguro — se limpar o navegador, os dados somem.</p>
+        <p class="muted">Baixe um arquivo com todos os seus dados salvos na nuvem, para guardar por segurança.</p>
         <button class="btn btn-primary" id="btn-exportar">Baixar backup (.json)</button>
       </div>
       <div class="panel">
-        <h2>Importar backup</h2>
-        <p class="muted">Restaura os dados de um arquivo exportado anteriormente. Isso substitui os dados atuais deste navegador.</p>
-        <input type="file" id="input-importar" accept="application/json">
-      </div>
-      <div class="panel">
         <h2>Apagar tudo</h2>
-        <p class="muted">Remove todos os lançamentos, cartões, investimentos e metas deste navegador. Não pode ser desfeito.</p>
+        <p class="muted">Remove todos os lançamentos, cartões, investimentos, metas e orçamentos da sua conta. Não pode ser desfeito.</p>
         <button class="btn btn-danger" id="btn-apagar-tudo">Apagar todos os dados</button>
       </div>
     </section>
@@ -235,6 +302,8 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
