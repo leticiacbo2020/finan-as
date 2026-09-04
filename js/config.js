@@ -6,5 +6,5 @@
    configurada pelo arquivo supabase-schema.sql — não é a chave
    que fica em segredo.
    ========================================================= */
-const SUPABASE_URL = "COLOQUE_AQUI_A_URL_DO_SEU_PROJETO_SUPABASE";
-const SUPABASE_ANON_KEY = "COLOQUE_AQUI_A_ANON_KEY_DO_SEU_PROJETO_SUPABASE";
+const SUPABASE_URL = "https://kvllsdqhmvlfjritoeea.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
