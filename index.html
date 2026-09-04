@@ -940,7 +940,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* =========================================================
@@ -1237,10 +1237,12 @@ function renderVisaoGeral(){
   }
 
   const canvas = document.getElementById("chart-categorias");
-  document.getElementById("chart-categorias-empty").hidden = labels.length>0;
-  canvas.hidden = labels.length===0;
+  const okCategorias = typeof Chart !== "undefined";
+  document.getElementById("chart-categorias-empty").hidden = labels.length>0 && okCategorias;
+  if(!okCategorias) document.getElementById("chart-categorias-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
+  canvas.hidden = labels.length===0 || !okCategorias;
   if(chartCategorias) chartCategorias.destroy();
-  if(labels.length){
+  if(labels.length && okCategorias){
     chartCategorias = new Chart(canvas, {
       type: "pie",
       data: {
@@ -1277,10 +1279,12 @@ function renderVisaoGeral(){
 
   // planejado x real (soma dos tetos de orçamento vs gasto real nessas categorias)
   const canvasP = document.getElementById("chart-planejado");
-  document.getElementById("chart-planejado-empty").hidden = db.budgets.length>0;
-  canvasP.hidden = db.budgets.length===0;
+  const okPlanejado = typeof Chart !== "undefined";
+  document.getElementById("chart-planejado-empty").hidden = db.budgets.length>0 && okPlanejado;
+  if(!okPlanejado) document.getElementById("chart-planejado-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
+  canvasP.hidden = db.budgets.length===0 || !okPlanejado;
   if(chartPlanejado) chartPlanejado.destroy();
-  if(db.budgets.length){
+  if(db.budgets.length && okPlanejado){
     const totalTeto = db.budgets.reduce((s,b)=>s+Number(b.limit_amount),0);
     const totalReal = db.budgets.reduce((s,b)=> s + (porCategoria[b.category]||0), 0);
     chartPlanejado = new Chart(canvasP, {
@@ -1307,10 +1311,12 @@ function renderVisaoGeral(){
   });
   const labelsPg = Object.keys(porPagamento);
   const canvasPg = document.getElementById("chart-pagamento");
-  document.getElementById("chart-pagamento-empty").hidden = labelsPg.length>0;
-  canvasPg.hidden = labelsPg.length===0;
+  const okPagamento = typeof Chart !== "undefined";
+  document.getElementById("chart-pagamento-empty").hidden = labelsPg.length>0 && okPagamento;
+  if(!okPagamento) document.getElementById("chart-pagamento-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
+  canvasPg.hidden = labelsPg.length===0 || !okPagamento;
   if(chartPagamento) chartPagamento.destroy();
-  if(labelsPg.length){
+  if(labelsPg.length && okPagamento){
     chartPagamento = new Chart(canvasPg, {
       type: "pie",
       data: {
@@ -1641,10 +1647,12 @@ function renderInvestimentos(){
   db.investments.forEach(i=> porTipo[i.type] = (porTipo[i.type]||0) + Number(i.amount));
   const labels = Object.keys(porTipo);
   const canvas = document.getElementById("chart-investimentos");
-  document.getElementById("chart-investimentos-empty").hidden = labels.length>0;
-  canvas.hidden = labels.length===0;
+  const okInvest = typeof Chart !== "undefined";
+  document.getElementById("chart-investimentos-empty").hidden = labels.length>0 && okInvest;
+  if(!okInvest) document.getElementById("chart-investimentos-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
+  canvas.hidden = labels.length===0 || !okInvest;
   if(chartInvestimentos) chartInvestimentos.destroy();
-  if(labels.length){
+  if(labels.length && okInvest){
     chartInvestimentos = new Chart(canvas, {
       type: "doughnut",
       data: { labels, datasets: [{ data: labels.map(l=>porTipo[l]), backgroundColor: paleta(labels.length), borderWidth: 0 }] },
