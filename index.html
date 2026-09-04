@@ -429,6 +429,36 @@ select{ cursor:pointer; }
 .field-row .field{ flex:1; }
 .modal-actions{ display:flex; justify-content:flex-end; gap: 10px; margin-top: 8px; }
 
+/* ============ TUTORIAIS ============ */
+.tutorial-item{
+  border-bottom: 1px solid var(--line);
+  padding: 14px 2px;
+}
+.tutorial-item:last-child{ border-bottom: none; }
+.tutorial-item summary{
+  cursor: pointer;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--pink-dark);
+  list-style: none;
+}
+.tutorial-item summary::-webkit-details-marker{ display:none; }
+.tutorial-item summary::before{
+  content: "＋";
+  display: inline-block;
+  width: 18px;
+  color: var(--pink);
+  font-weight: 700;
+}
+.tutorial-item[open] summary::before{ content: "－"; }
+.tutorial-item p{
+  margin: 10px 0 2px 18px;
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width: 880px){
   .app{ flex-direction: column; }
@@ -533,6 +563,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       </button>
       <button class="nav-item" data-view="categorias">
         <span class="nav-num">07</span> Categorias
+      </button>
+      <button class="nav-item" data-view="importar">
+        <span class="nav-num">08</span> Importar
+      </button>
+      <button class="nav-item" data-view="tutoriais">
+        <span class="nav-num">09</span> Tutoriais
       </button>
     </nav>
 
@@ -754,6 +790,126 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         </div>
       </div>
       <p class="muted">As categorias padrão (Moradia, Alimentação, Salário etc.) já vêm prontas e não podem ser removidas — mas você pode adicionar quantas quiser além delas.</p>
+    </section>
+
+    <!-- ===== IMPORTAR ===== -->
+    <section class="view" id="view-importar" hidden>
+      <div class="panel">
+        <h2>Importar fatura ou extrato</h2>
+        <p class="muted">
+          Aceita arquivos <strong>.OFX</strong> (o mais confiável) ou <strong>.CSV</strong>
+          exportados do app do seu banco ou cartão — a maioria libera isso depois que a
+          fatura fecha, em "compartilhar fatura" ou "exportar extrato". Nada é salvo
+          automaticamente: você revisa e confirma cada lançamento antes.
+        </p>
+        <div class="field-row">
+          <div class="field">
+            <label>Cartão desta fatura (se for de crédito)</label>
+            <select id="import-card"><option value="">— não é cartão —</option></select>
+          </div>
+          <div class="field">
+            <label>Arquivo (.ofx ou .csv)</label>
+            <input type="file" id="import-file" accept=".ofx,.qfx,.csv,.txt">
+          </div>
+        </div>
+        <p class="auth-error" id="import-error" hidden></p>
+
+        <div id="import-mapping" hidden style="margin-top:10px;">
+          <p class="muted">Não consegui adivinhar as colunas do CSV — me diga qual é qual:</p>
+          <div class="field-row">
+            <div class="field"><label>Coluna da data</label><select id="map-date"></select></div>
+            <div class="field"><label>Coluna da descrição</label><select id="map-desc"></select></div>
+            <div class="field"><label>Coluna do valor</label><select id="map-amount"></select></div>
+          </div>
+          <button class="btn btn-primary" id="btn-aplicar-mapeamento" type="button">Gerar prévia</button>
+        </div>
+      </div>
+
+      <div class="panel" id="import-preview" hidden>
+        <div class="panel-head">
+          <h2 id="import-preview-count">Prévia</h2>
+          <button class="btn btn-primary" id="btn-confirmar-importacao">Importar selecionados</button>
+        </div>
+        <table class="ledger-table" id="tabela-import">
+          <thead><tr><th></th><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th class="num">Valor</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== TUTORIAIS ===== -->
+    <section class="view" id="view-tutoriais" hidden>
+      <div class="panel">
+        <details class="tutorial-item" open>
+          <summary>Visão geral</summary>
+          <p>É a tela inicial. Mostra o saldo, receitas e despesas do mês
+          selecionado, um gráfico de pizza com os gastos por categoria, as
+          faturas dos seus cartões, um comparativo entre o que você planejou
+          gastar e o que gastou de verdade, e a forma de pagamento mais
+          usada. Use as setinhas <strong>‹ ›</strong> no topo pra trocar de mês —
+          nada é apagado ao trocar, é só um filtro de visualização.</p>
+        </details>
+        <details class="tutorial-item">
+          <summary>Transações</summary>
+          <p>Onde você lança receitas e despesas manualmente. Clique em
+          "Novo lançamento", preencha data, descrição, categoria e valor.
+          Se for uma despesa no cartão, escolha "Crédito" na forma de
+          pagamento pra aparecerem os campos de cartão e parcelas. Marque
+          "despesa fixa" para contas recorrentes (aluguel, assinaturas).
+          Use os filtros no topo da tabela pra achar lançamentos específicos.</p>
+        </details>
+        <details class="tutorial-item">
+          <summary>Cartões</summary>
+          <p>Cadastre seus cartões aqui (nome, bandeira, limite, dia de
+          vencimento). A fatura do mês é calculada sozinha, somando as
+          despesas que você marcou como pagas nesse cartão em "Transações"
+          ou trouxe pela aba "Importar".</p>
+        </details>
+        <details class="tutorial-item">
+          <summary>Investimentos</summary>
+          <p>Registre suas posições (renda fixa, ações, reserva de
+          emergência etc.) com nome, tipo e valor atual. O gráfico mostra a
+          distribuição por tipo. Diferente das outras telas, aqui mostra o
+          total acumulado — não filtra por mês, porque investimento é uma
+          posição atual, não um gasto do mês.</p>
+        </details>
+        <details class="tutorial-item">
+          <summary>Orçamento</summary>
+          <p>Defina um teto de gasto mensal por categoria (ex.: R$500 em
+          Lazer). A barra mostra quanto já foi gasto naquela categoria no
+          mês selecionado, e muda de cor quando passa do limite.</p>
+        </details>
+        <details class="tutorial-item">
+          <summary>Metas</summary>
+          <p>Uma lista simples de metas ou anotações, com uma caixinha pra
+          marcar como concluída. Não tem valor nem data — é só um lembrete
+          do que você quer alcançar.</p>
+        </details>
+        <details class="tutorial-item">
+          <summary>Categorias</summary>
+          <p>As categorias padrão (Moradia, Alimentação, Salário etc.) já
+          vêm prontas. Se faltar alguma, adicione aqui — ela passa a
+          aparecer em todos os lugares que pedem categoria (lançamentos,
+          orçamento, filtros, importação).</p>
+        </details>
+        <details class="tutorial-item">
+          <summary>Importar</summary>
+          <p>Em vez de digitar lançamento por lançamento, suba o arquivo da
+          fatura ou extrato que seu banco/cartão exporta (formato .OFX é o
+          mais confiável; .CSV também funciona). Escolha o cartão
+          correspondente (se for fatura de crédito), suba o arquivo, e uma
+          prévia aparece pra você revisar — pode corrigir categoria, tipo,
+          valor ou desmarcar alguma linha antes de confirmar. Nada é salvo
+          sem você clicar em "Importar selecionados".</p>
+        </details>
+        <details class="tutorial-item">
+          <summary>Backup</summary>
+          <p>Baixa um arquivo .json com tudo o que está salvo na nuvem —
+          bom pra guardar uma cópia de segurança de vez em quando. Também
+          é onde fica o botão pra apagar todos os dados da conta, caso
+          precise recomeçar do zero.</p>
+        </details>
+      </div>
     </section>
 
     <!-- ===== BACKUP ===== -->
@@ -998,6 +1154,8 @@ const VIEW_META = {
   "orcamento": ["Orçamento", "Metas de gasto por categoria"],
   "metas": ["Metas", "O que você quer alcançar"],
   "categorias": ["Categorias", "Adicione suas próprias categorias de receita e despesa"],
+  "importar": ["Importar", "Suba uma fatura ou extrato (.ofx ou .csv) e revise antes de lançar"],
+  "tutoriais": ["Tutoriais", "Um passo a passo rápido de cada parte do site"],
   "backup": ["Backup", "Exportar ou apagar seus dados"],
 };
 
@@ -1039,6 +1197,7 @@ function renderAll(){
   if(currentView === "orcamento") renderOrcamento();
   if(currentView === "metas") renderMetas();
   if(currentView === "categorias") renderCategorias();
+  if(currentView === "importar") renderImportar();
 }
 
 function transacoesDoMes(mes = currentMonth){
@@ -1701,6 +1860,242 @@ document.getElementById("form-categoria-despesa").addEventListener("submit", (e)
 document.getElementById("form-categoria-receita").addEventListener("submit", (e)=>{
   e.preventDefault();
   adicionarCategoria("receita", "input-categoria-receita", "form-categoria-receita");
+});
+
+/* =========================================================
+   IMPORTAR FATURA / EXTRATO (.ofx ou .csv)
+   ========================================================= */
+let importRows = []; // {date, description, amount, type, category, include}
+let importRawCSV = null; // {header, rows} enquanto espera o mapeamento
+
+function renderImportar(){
+  const sel = document.getElementById("import-card");
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— não é cartão —</option>';
+  db.cards.forEach(c=>{
+    const o = document.createElement("option"); o.value=c.id; o.textContent=c.name;
+    sel.appendChild(o);
+  });
+  sel.value = prev;
+}
+
+function normalizeValor(raw){
+  if(typeof raw === "number") return raw;
+  let s = String(raw||"").replace(/R\$\s?/gi,"").trim();
+  if(!s) return NaN;
+  const neg = /^-|\(.*\)$/.test(s);
+  s = s.replace(/[()-]/g,"");
+  if(/,\d{1,2}$/.test(s)){
+    s = s.replace(/\./g,"").replace(",",".");
+  } else {
+    s = s.replace(/,/g,"");
+  }
+  const n = parseFloat(s);
+  return neg ? -Math.abs(n) : n;
+}
+
+function parseOFX(text){
+  const blocks = text.split(/<STMTTRN>/i).slice(1);
+  return blocks.map(b=>{
+    const seg = b.split(/<\/STMTTRN>/i)[0];
+    const get = (tag)=>{
+      const m = seg.match(new RegExp("<"+tag+">([^<\r\n]*)","i"));
+      return m ? m[1].trim() : "";
+    };
+    const dt = get("DTPOSTED");
+    const amt = normalizeValor(get("TRNAMT"));
+    const memo = get("MEMO") || get("NAME") || "Lançamento importado";
+    const date = dt && dt.length>=8 ? `${dt.slice(0,4)}-${dt.slice(4,6)}-${dt.slice(6,8)}` : "";
+    return { date, description: memo, amount: amt };
+  }).filter(r=> r.date && !isNaN(r.amount) && r.amount !== 0);
+}
+
+function splitCSVLine(line, delim){
+  // parser simples que respeita aspas
+  const out = []; let cur = ""; let inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){ inQuotes = !inQuotes; continue; }
+    if(ch === delim && !inQuotes){ out.push(cur); cur=""; continue; }
+    cur += ch;
+  }
+  out.push(cur);
+  return out.map(s=>s.trim());
+}
+
+function parseCSVText(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim().length);
+  if(!lines.length) return { header:[], rows:[] };
+  const delim = (lines[0].split(";").length > lines[0].split(",").length) ? ";" : ",";
+  const header = splitCSVLine(lines[0], delim);
+  const rows = lines.slice(1).map(l=> splitCSVLine(l, delim));
+  return { header, rows };
+}
+
+function tentarDataISO(str){
+  str = String(str||"").trim();
+  let m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(m){
+    let [_, d, mo, y] = m;
+    if(y.length===2) y = "20"+y;
+    return `${y}-${mo.padStart(2,"0")}-${d.padStart(2,"0")}`;
+  }
+  return "";
+}
+
+document.getElementById("import-file").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const errEl = document.getElementById("import-error");
+  errEl.hidden = true;
+  document.getElementById("import-mapping").hidden = true;
+  document.getElementById("import-preview").hidden = true;
+
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const text = reader.result;
+    const isOFX = /<OFX>|<STMTTRN>/i.test(text) || /\.ofx$|\.qfx$/i.test(file.name);
+    if(isOFX){
+      const rows = parseOFX(text);
+      if(!rows.length){
+        errEl.textContent = "Não encontrei lançamentos nesse arquivo OFX. Confira se é mesmo o arquivo de extrato/fatura.";
+        errEl.hidden = false;
+        return;
+      }
+      montarPreviaImportacao(rows);
+    } else {
+      importRawCSV = parseCSVText(text);
+      if(!importRawCSV.header.length){
+        errEl.textContent = "Não consegui ler esse CSV.";
+        errEl.hidden = false;
+        return;
+      }
+      const idxData = importRawCSV.header.findIndex(h=> /data|date/i.test(h));
+      const idxDesc = importRawCSV.header.findIndex(h=> /descri|hist|estabelec|title|nome/i.test(h));
+      const idxValor = importRawCSV.header.findIndex(h=> /valor|amount|value/i.test(h));
+      if(idxData>=0 && idxDesc>=0 && idxValor>=0){
+        aplicarMapeamentoCSV(idxData, idxDesc, idxValor);
+      } else {
+        mostrarMapeamentoCSV();
+      }
+    }
+  };
+  reader.readAsText(file, "utf-8");
+});
+
+function mostrarMapeamentoCSV(){
+  const mapDiv = document.getElementById("import-mapping");
+  ["map-date","map-desc","map-amount"].forEach(id=>{
+    const sel = document.getElementById(id);
+    sel.innerHTML = importRawCSV.header.map((h,i)=>`<option value="${i}">${escapeHtml(h || "coluna "+(i+1))}</option>`).join("");
+  });
+  mapDiv.hidden = false;
+}
+
+document.getElementById("btn-aplicar-mapeamento").addEventListener("click", ()=>{
+  aplicarMapeamentoCSV(
+    parseInt(document.getElementById("map-date").value),
+    parseInt(document.getElementById("map-desc").value),
+    parseInt(document.getElementById("map-amount").value)
+  );
+});
+
+function aplicarMapeamentoCSV(idxData, idxDesc, idxValor){
+  const rows = importRawCSV.rows.map(r=>({
+    date: tentarDataISO(r[idxData]),
+    description: (r[idxDesc]||"Lançamento importado").trim(),
+    amount: normalizeValor(r[idxValor]),
+  })).filter(r=> r.date && !isNaN(r.amount) && r.amount !== 0);
+  document.getElementById("import-mapping").hidden = true;
+  if(!rows.length){
+    const errEl = document.getElementById("import-error");
+    errEl.textContent = "Não encontrei lançamentos válidos com essas colunas. Tente escolher outras colunas.";
+    errEl.hidden = false;
+    return;
+  }
+  montarPreviaImportacao(rows);
+}
+
+function montarPreviaImportacao(rows){
+  importRows = rows.map(r=>({
+    date: r.date,
+    description: r.description,
+    amount: Math.abs(r.amount),
+    type: r.amount < 0 ? "despesa" : "receita",
+    category: r.amount < 0 ? "Outros" : "Outros",
+    include: true,
+  }));
+  renderPreviaImportacao();
+}
+
+function renderPreviaImportacao(){
+  const wrap = document.getElementById("import-preview");
+  wrap.hidden = false;
+  document.getElementById("import-preview-count").textContent = `Prévia — ${importRows.filter(r=>r.include).length} de ${importRows.length} selecionados`;
+  const tbody = document.querySelector("#tabela-import tbody");
+  tbody.innerHTML = "";
+  importRows.forEach((r, i)=>{
+    const tr = document.createElement("tr");
+    const cats = getCategorias(r.type);
+    tr.innerHTML = `
+      <td><input type="checkbox" ${r.include?"checked":""} data-i="${i}" data-f="include"></td>
+      <td><input type="date" value="${r.date}" data-i="${i}" data-f="date" style="width:130px;"></td>
+      <td><input type="text" value="${escapeHtml(r.description)}" data-i="${i}" data-f="description" style="width:100%;"></td>
+      <td>
+        <select data-i="${i}" data-f="category">
+          ${cats.map(c=>`<option value="${c}" ${c===r.category?"selected":""}>${c}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <select data-i="${i}" data-f="type">
+          <option value="despesa" ${r.type==="despesa"?"selected":""}>Despesa</option>
+          <option value="receita" ${r.type==="receita"?"selected":""}>Receita</option>
+        </select>
+      </td>
+      <td class="num"><input type="number" step="0.01" value="${r.amount}" data-i="${i}" data-f="amount" style="width:100px;text-align:right;"></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll("[data-i]").forEach(el=>{
+    el.addEventListener(el.type==="checkbox" ? "change" : "change", (e)=>{
+      const i = parseInt(e.target.dataset.i);
+      const f = e.target.dataset.f;
+      let v = e.target.type==="checkbox" ? e.target.checked : e.target.value;
+      if(f==="amount") v = parseFloat(v)||0;
+      importRows[i][f] = v;
+      if(f==="type") renderPreviaImportacao(); // categorias mudam conforme o tipo
+      else document.getElementById("import-preview-count").textContent = `Prévia — ${importRows.filter(r=>r.include).length} de ${importRows.length} selecionados`;
+    });
+  });
+}
+
+document.getElementById("btn-confirmar-importacao").addEventListener("click", async ()=>{
+  const cardId = document.getElementById("import-card").value || null;
+  const selecionados = importRows.filter(r=>r.include);
+  if(!selecionados.length) return alert("Nenhum lançamento selecionado.");
+  const payload = selecionados.map(r=>({
+    type: r.type,
+    date: r.date,
+    description: r.description || "Lançamento importado",
+    category: r.category,
+    amount: r.amount,
+    payment_method: cardId ? "Crédito" : null,
+    card_id: cardId,
+    fixed: false,
+  }));
+  const btn = document.getElementById("btn-confirmar-importacao");
+  btn.disabled = true; btn.textContent = "Importando…";
+  const { data: created, error } = await sbClient.from("transactions").insert(payload).select();
+  btn.disabled = false; btn.textContent = "Importar selecionados";
+  if(error) return alert("Não foi possível importar: " + error.message);
+  db.transactions.push(...created);
+  importRows = [];
+  document.getElementById("import-preview").hidden = true;
+  document.getElementById("import-file").value = "";
+  alert(`${created.length} lançamento(s) importado(s) com sucesso.`);
+  goTo("transacoes");
 });
 
 /* =========================================================
