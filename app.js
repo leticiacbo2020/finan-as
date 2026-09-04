@@ -3,7 +3,29 @@
    Dados e login no Supabase (nuvem). Veja js/config.js.
    ========================================================= */
 
+if(!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes("COLOQUE_AQUI") || SUPABASE_ANON_KEY.includes("COLOQUE_AQUI")){
+  document.body.innerHTML = `
+    <div style="max-width:520px;margin:60px auto;padding:28px 30px;font-family:sans-serif;
+      background:#FBE3EA;border:1px solid #E8B8CC;border-radius:16px;color:#4A3540;">
+      <h1 style="margin:0 0 10px;font-size:1.2rem;">Falta configurar o Supabase</h1>
+      <p style="margin:0;line-height:1.5;">
+        O arquivo <code>js/config.js</code> ainda está com os valores de exemplo.
+        Abra esse arquivo, coloque a URL e a chave "anon public" do seu projeto
+        Supabase (em Project Settings → API) e publique de novo.
+        Veja o passo a passo no README.
+      </p>
+    </div>`;
+  throw new Error("Supabase não configurado — preencha js/config.js");
+}
+
 const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+window.addEventListener("error", (e)=>{
+  const box = document.createElement("div");
+  box.style.cssText = "position:fixed;bottom:16px;left:16px;right:16px;max-width:420px;margin:0 auto;background:#FBE3EA;border:1px solid #E8B8CC;color:#4A3540;padding:12px 16px;border-radius:12px;font-family:sans-serif;font-size:0.85rem;z-index:999;";
+  box.textContent = "Algo deu errado no site: " + e.message + " — abra o console (F12) para mais detalhes.";
+  document.body.appendChild(box);
+});
 
 const CATEGORIAS_DESPESA = [
   "Moradia", "Alimentação", "Transporte", "Saúde", "Lazer",
@@ -16,7 +38,7 @@ const CATEGORIAS_RECEITA = [
 const TIPOS_INVESTIMENTO = [
   "Renda fixa", "Tesouro Direto", "Fundos", "Ações", "FIIs", "Cripto", "Reserva de emergência", "Outros"
 ];
-const CORES_CARTAO = ["#33543A", "#8A3B2E", "#1C2430", "#A9822F", "#5B6472"];
+const CORES_CARTAO = ["#D6708F", "#B79FCB", "#C79A55", "#7EA88A", "#E0798A"];
 const FORMAS_PAGAMENTO = ["Pix", "Débito", "Crédito", "Dinheiro", "Boleto"];
 
 /* ---------- estado ---------- */
@@ -264,7 +286,7 @@ function renderVisaoGeral(){
         }]
       },
       options: {
-        plugins: { legend: { position:"right", labels:{ boxWidth:10, font:{ family:"Inter", size:11 } } } },
+        plugins: { legend: { position:"right", labels:{ boxWidth:10, font:{ family:"Quicksand", size:11 } } } },
         cutout: "62%",
       }
     });
@@ -300,12 +322,12 @@ function renderVisaoGeral(){
       data: {
         labels: ["Este mês"],
         datasets: [
-          { label: "Teto de gasto", data: [totalTeto], backgroundColor: "#A9C7B0" },
-          { label: "Real", data: [totalReal], backgroundColor: "#E7A9C3" },
+          { label: "Teto de gasto", data: [totalTeto], backgroundColor: "#EAC0D4" },
+          { label: "Real", data: [totalReal], backgroundColor: "#D6708F" },
         ]
       },
       options: {
-        plugins: { legend: { position:"bottom", labels:{ font:{ family:"Inter", size:11 } } } },
+        plugins: { legend: { position:"bottom", labels:{ font:{ family:"Quicksand", size:11 } } } },
         scales: { y: { ticks: { callback: (v)=> brl(v) } } }
       }
     });
@@ -329,7 +351,7 @@ function renderVisaoGeral(){
         labels: labelsPg,
         datasets: [{ data: labelsPg.map(l=>porPagamento[l]), backgroundColor: paleta(labelsPg.length), borderWidth: 0 }]
       },
-      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"Inter", size:11 } } } } }
+      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"Quicksand", size:11 } } } } }
     });
   }
 
@@ -342,7 +364,7 @@ function renderVisaoGeral(){
 }
 
 function paleta(n){
-  const base = ["#33543A","#8A3B2E","#A9822F","#1C2430","#5B6472","#7A9482","#B98C77","#C7B27A","#95A0AC","#4E6B54","#734A3E"];
+  const base = ["#D6708F","#B79FCB","#C79A55","#7EA88A","#E0798A","#9C7F91","#EAC0D4","#D9C08A","#A8C4B0","#C79AAE","#8FA6C4"];
   const out = [];
   for(let i=0;i<n;i++) out.push(base[i%base.length]);
   return out;
@@ -658,7 +680,7 @@ function renderInvestimentos(){
     chartInvestimentos = new Chart(canvas, {
       type: "doughnut",
       data: { labels, datasets: [{ data: labels.map(l=>porTipo[l]), backgroundColor: paleta(labels.length), borderWidth: 0 }] },
-      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"Inter", size:11 } } } }, cutout:"62%" }
+      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"Quicksand", size:11 } } } }, cutout:"62%" }
     });
   }
 
