@@ -4,6 +4,20 @@ Site para uso pessoal: receitas, despesas, faturas de cartão,
 investimentos, orçamento por categoria e metas — com login e dados
 salvos na nuvem (Supabase), acessível de qualquer aparelho.
 
+## Estrutura simples, de propósito
+
+Tudo — HTML, estilo e a lógica do app — está num **único arquivo**,
+`index.html`. Não tem pastas `css/` nem `js/`. Isso é proposital:
+evita o erro mais comum ao publicar (subir os arquivos sem preservar
+as subpastas, quebrando o visual e as funções do site). Só existem
+mais dois arquivos de apoio:
+
+```
+index.html            todo o site (HTML + estilo + lógica)
+supabase-schema.sql    script para criar as tabelas no Supabase
+README.md              este arquivo
+```
+
 ## Como funciona a segurança
 
 - O login é feito pelo Supabase Auth (e-mail + senha).
@@ -11,51 +25,54 @@ salvos na nuvem (Supabase), acessível de qualquer aparelho.
   Security**: cada linha só pode ser lida ou alterada por quem a
   criou. Mesmo que alguém veja o endereço do site ou o código-fonte,
   não consegue ver os seus dados sem a sua senha.
-- A "anon key" que aparece em `js/config.js` **não é segredo** — ela
-  só permite falar com o banco, mas é a política de segurança (RLS)
-  que decide o que cada pessoa logada pode ver. É assim que todo
-  app feito com Supabase funciona.
+- As chaves `SUPABASE_URL` e `SUPABASE_ANON_KEY` que ficam visíveis
+  no `index.html` **não são segredo** — elas só permitem falar com
+  o banco; quem decide o que cada pessoa logada pode ver é a
+  política de segurança (RLS), configurada pelo `supabase-schema.sql`.
 
 ## Passo 1 — Criar o projeto no Supabase
 
 1. Crie uma conta grátis em [supabase.com](https://supabase.com) e
    clique em **New project**.
-2. Escolha um nome e uma senha de banco (guarde essa senha, mas ela
-   não é a mesma senha do seu login no site).
+2. Escolha um nome e uma senha de banco (essa senha não é a mesma
+   do seu login no site — é só do projeto).
 3. Espere o projeto terminar de criar (cerca de 1 minuto).
 4. No menu lateral, abra **SQL Editor → New query**, cole todo o
-   conteúdo do arquivo `supabase-schema.sql` (está na pasta do
-   projeto) e clique em **Run**. Isso cria as tabelas e já deixa a
-   segurança configurada.
-5. Vá em **Project Settings → API**. Copie:
-   - **Project URL**
-   - **anon public key**
+   conteúdo do arquivo `supabase-schema.sql` e clique em **Run**.
+   Isso cria as tabelas e já deixa a segurança configurada.
+5. Vá em **Project Settings → API**. Copie a **Project URL** e a
+   **anon public key**.
 
 ## Passo 2 — Configurar o site
 
-Abra `js/config.js` e cole os dois valores:
+Abra `index.html` (pode ser direto pelo editor do GitHub, sem
+precisar baixar nada) e procure, logo depois de `<body>`, por este
+trecho — são as duas únicas linhas que você precisa mudar:
 
 ```js
-const SUPABASE_URL = "https://xxxxxxxx.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOi...";
+const SUPABASE_URL = "COLOQUE_AQUI_A_URL_DO_SEU_PROJETO_SUPABASE";
+const SUPABASE_ANON_KEY = "COLOQUE_AQUI_A_ANON_KEY_DO_SEU_PROJETO_SUPABASE";
 ```
 
-Pronto — agora o site já fala com o seu banco.
+Cole ali a URL e a chave que você copiou no passo anterior, salve
+(commit) e pronto.
 
-Se quiser, em **Authentication → Settings**, no Supabase, você pode
-desligar a exigência de confirmar o e-mail ao criar conta, para
-conseguir entrar na hora (útil já que é só você que vai usar).
+Se quiser entrar na hora ao criar a conta, sem esperar confirmação
+por e-mail, vá em **Authentication → Settings**, no Supabase, e
+desligue a exigência de confirmar o e-mail (opcional, mas prático
+já que é só você que vai usar).
 
-## Passo 3 — Rodar localmente (opcional)
+## Passo 3 — Publicar no GitHub
 
-```bash
-cd site-financeiro
-python3 -m http.server 8080
-```
+Pelo próprio site do GitHub (sem precisar de terminal):
 
-e acessar `http://localhost:8080`.
+1. Crie um repositório novo, vazio.
+2. Em **Add file → Upload files**, arraste os três arquivos
+   (`index.html`, `supabase-schema.sql`, `README.md`) soltos —
+   como agora não há pastas, não tem como bagunçar a estrutura.
+3. Clique em **Commit changes**.
 
-## Passo 4 — Publicar no GitHub
+Ou, se preferir linha de comando:
 
 ```bash
 cd site-financeiro
@@ -67,25 +84,18 @@ git remote add origin https://github.com/SEU-USUARIO/razao-financeiro.git
 git push -u origin main
 ```
 
-(Crie antes o repositório vazio em github.com.)
-
-Se o repositório for **público**, qualquer pessoa consegue ver o
-`js/config.js` com a URL e a anon key — e, como explicado acima,
-isso é normal e não expõe seus dados. Se preferir mais discrição,
-crie o repositório como **privado** (o Netlify continua funcionando
-normalmente com repositórios privados).
-
-## Passo 5 — Publicar no Netlify
+## Passo 4 — Publicar no Netlify
 
 1. Entre em [app.netlify.com](https://app.netlify.com).
 2. **Add new site → Import an existing project → GitHub**.
-3. Escolha o repositório `razao-financeiro`.
+3. Escolha o repositório.
 4. Deixe a configuração de build em branco (não há build).
 5. Clique em **Deploy**. Em menos de um minuto o site está no ar.
-6. Em **Site settings → Domain management** dá pra trocar o
-   endereço `.netlify.app` por um nome mais fácil de lembrar.
 
-Qualquer novo `git push` para `main` publica a atualização automaticamente.
+Qualquer novo commit no `main` publica a atualização automaticamente.
+
+Se quiser testar antes de publicar, é só abrir o `index.html`
+direto no navegador (duplo clique) — funciona sem servidor.
 
 ## Uso no dia a dia
 
@@ -100,12 +110,12 @@ Qualquer novo `git push` para `main` publica a atualização automaticamente.
 - **Orçamento**: defina um teto mensal por categoria e acompanhe o
   quanto já gastou.
 - **Metas**: uma lista simples de metas/anotações, com caixinha de
-  concluído — como o quadro "Metas/anotações" da planilha.
+  concluído.
 - **Backup**: baixa um `.json` com tudo o que está salvo na nuvem,
   para guardar por segurança.
 
 ## Do que o site é feito
 
-HTML, CSS e JavaScript puros — sem framework, sem etapa de build.
-Bibliotecas externas, carregadas via CDN: **Chart.js** (gráficos) e
-**Supabase JS** (login e banco de dados).
+HTML, CSS e JavaScript num arquivo só — sem framework, sem etapa de
+build. Duas bibliotecas externas, carregadas via CDN: **Chart.js**
+(gráficos) e **Supabase JS** (login e banco de dados).
