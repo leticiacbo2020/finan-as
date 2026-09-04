@@ -14,9 +14,16 @@ mais dois arquivos de apoio:
 
 ```
 index.html            todo o site (HTML + estilo + lógica)
-supabase-schema.sql    script para criar as tabelas no Supabase
+supabase-schema.sql    script para criar as tabelas no Supabase (projeto novo)
+add-categories.sql     script extra, só para quem já tinha o site rodando
+                       antes das categorias personalizadas existirem
 README.md              este arquivo
 ```
+
+Se seu site já estava no ar e você só quer adicionar a função de
+categorias personalizadas, não precisa rodar o `supabase-schema.sql`
+de novo — abra o **SQL Editor** do Supabase e rode só o
+`add-categories.sql`.
 
 ## Como funciona a segurança
 
@@ -111,6 +118,13 @@ direto no navegador (duplo clique) — funciona sem servidor.
   quanto já gastou.
 - **Metas**: uma lista simples de metas/anotações, com caixinha de
   concluído.
+- **Categorias**: adicione suas próprias categorias de receita e
+  despesa, além das que já vêm prontas — elas aparecem em todos os
+  lugares que usam categoria (lançamentos, orçamento, filtros).
+- **Importar**: suba a fatura ou extrato exportado do app do seu
+  banco/cartão (.ofx ou .csv) e revise numa prévia antes de confirmar
+  — sem precisar digitar lançamento por lançamento.
+- **Tutoriais**: um resumo rápido de como usar cada parte do site.
 - **Backup**: baixa um `.json` com tudo o que está salvo na nuvem,
   para guardar por segurança.
 
