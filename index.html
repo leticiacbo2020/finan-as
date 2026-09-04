@@ -47,6 +47,8 @@
 }
 
 *{ box-sizing: border-box; }
+[hidden]{ display:none !important; }
+.app{ transition: opacity 0.25s ease; }
 html{ -webkit-font-smoothing: antialiased; }
 body{
   margin:0;
@@ -529,6 +531,9 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <button class="nav-item" data-view="metas">
         <span class="nav-num">06</span> Metas
       </button>
+      <button class="nav-item" data-view="categorias">
+        <span class="nav-num">07</span> Categorias
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -728,6 +733,29 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       </div>
     </section>
 
+    <!-- ===== CATEGORIAS ===== -->
+    <section class="view" id="view-categorias" hidden>
+      <div class="grid-2">
+        <div class="panel">
+          <h2>Categorias de despesa</h2>
+          <form id="form-categoria-despesa" class="goal-form">
+            <input type="text" id="input-categoria-despesa" placeholder="Ex.: Pet" required>
+            <button type="submit" class="btn btn-primary">Adicionar</button>
+          </form>
+          <div class="stack" id="lista-categorias-despesa" style="margin-top:14px;"></div>
+        </div>
+        <div class="panel">
+          <h2>Categorias de receita</h2>
+          <form id="form-categoria-receita" class="goal-form">
+            <input type="text" id="input-categoria-receita" placeholder="Ex.: Dividendos" required>
+            <button type="submit" class="btn btn-primary">Adicionar</button>
+          </form>
+          <div class="stack" id="lista-categorias-receita" style="margin-top:14px;"></div>
+        </div>
+      </div>
+      <p class="muted">As categorias padrão (Moradia, Alimentação, Salário etc.) já vêm prontas e não podem ser removidas — mas você pode adicionar quantas quiser além delas.</p>
+    </section>
+
     <!-- ===== BACKUP ===== -->
     <section class="view" id="view-backup" hidden>
       <div class="panel">
@@ -802,8 +830,18 @@ const TIPOS_INVESTIMENTO = [
 const CORES_CARTAO = ["#D6708F", "#B79FCB", "#C79A55", "#7EA88A", "#E0798A"];
 const FORMAS_PAGAMENTO = ["Pix", "Débito", "Crédito", "Dinheiro", "Boleto"];
 
+// categorias-base + as que o usuário cadastrou manualmente (db.categories)
+function getCategorias(tipo){
+  const base = tipo === "receita" ? CATEGORIAS_RECEITA : CATEGORIAS_DESPESA;
+  const custom = db.categories.filter(c=>c.type===tipo).map(c=>c.name);
+  return [...base, ...custom.filter(c=>!base.includes(c))];
+}
+function getTodasCategorias(){
+  return [...new Set([...getCategorias("despesa"), ...getCategorias("receita")])];
+}
+
 /* ---------- estado ---------- */
-let db = { transactions: [], cards: [], investments: [], budgets: [], goals: [] };
+let db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [] };
 let currentUser = null;
 let currentView = "visao-geral";
 let currentMonth = todayMonth(); // "YYYY-MM"
@@ -907,11 +945,15 @@ sbClient.auth.onAuthStateChange((event, session)=>{
     document.getElementById("user-email").textContent = currentUser.email;
     authScreen.hidden = true;
     appEl.hidden = false;
+    appEl.style.opacity = "0";
+    window.scrollTo(0,0);
+    requestAnimationFrame(()=>{ appEl.style.opacity = "1"; });
     boot();
   } else {
     currentUser = null;
     appEl.hidden = true;
     authScreen.hidden = false;
+    window.scrollTo(0,0);
   }
 });
 
@@ -924,22 +966,24 @@ async function boot(){
 }
 
 async function loadAllData(){
-  const [tx, cards, invest, budgets, goals] = await Promise.all([
+  const [tx, cards, invest, budgets, goals, categories] = await Promise.all([
     sbClient.from("transactions").select("*").order("date", { ascending:false }),
     sbClient.from("cards").select("*").order("created_at"),
     sbClient.from("investments").select("*").order("date", { ascending:false }),
     sbClient.from("budgets").select("*").order("created_at"),
     sbClient.from("goals").select("*").order("created_at"),
+    sbClient.from("categories").select("*").order("created_at"),
   ]);
   db.transactions = tx.data || [];
   db.cards = cards.data || [];
   db.investments = invest.data || [];
   db.budgets = budgets.data || [];
   db.goals = goals.data || [];
-  const firstErr = [tx, cards, invest, budgets, goals].find(r=>r.error);
+  db.categories = categories.data || [];
+  const firstErr = [tx, cards, invest, budgets, goals, categories].find(r=>r.error);
   if(firstErr){
     console.error(firstErr.error);
-    alert("Não consegui carregar seus dados. Confira se SUPABASE_URL e SUPABASE_ANON_KEY (no início do index.html) estão corretos, e se rodou o supabase-schema.sql.");
+    alert("Não consegui carregar seus dados. Confira se SUPABASE_URL e SUPABASE_ANON_KEY (no início do index.html) estão corretos, e se rodou o supabase-schema.sql (ou o add-categories.sql, se o site já era antigo).");
   }
 }
 
@@ -953,6 +997,7 @@ const VIEW_META = {
   "investimentos": ["Investimentos", "Onde seu dinheiro está alocado"],
   "orcamento": ["Orçamento", "Metas de gasto por categoria"],
   "metas": ["Metas", "O que você quer alcançar"],
+  "categorias": ["Categorias", "Adicione suas próprias categorias de receita e despesa"],
   "backup": ["Backup", "Exportar ou apagar seus dados"],
 };
 
@@ -993,6 +1038,7 @@ function renderAll(){
   if(currentView === "investimentos") renderInvestimentos();
   if(currentView === "orcamento") renderOrcamento();
   if(currentView === "metas") renderMetas();
+  if(currentView === "categorias") renderCategorias();
 }
 
 function transacoesDoMes(mes = currentMonth){
@@ -1037,18 +1083,18 @@ function renderVisaoGeral(){
   if(chartCategorias) chartCategorias.destroy();
   if(labels.length){
     chartCategorias = new Chart(canvas, {
-      type: "doughnut",
+      type: "pie",
       data: {
         labels,
         datasets: [{
           data: labels.map(l=>porCategoria[l]),
           backgroundColor: paleta(labels.length),
-          borderWidth: 0,
+          borderWidth: 2,
+          borderColor: "#FFFFFF",
         }]
       },
       options: {
         plugins: { legend: { position:"right", labels:{ boxWidth:10, font:{ family:"Quicksand", size:11 } } } },
-        cutout: "62%",
       }
     });
   }
@@ -1136,13 +1182,15 @@ function paleta(n){
    ========================================================= */
 function populateFilters(){
   const catSel = document.getElementById("filtro-categoria");
-  const allCats = [...new Set([...CATEGORIAS_DESPESA, ...CATEGORIAS_RECEITA])];
-  if(catSel.options.length <= 1){
-    allCats.forEach(c=>{
-      const o = document.createElement("option"); o.value=c; o.textContent=c;
-      catSel.appendChild(o);
-    });
-  }
+  const prevCat = catSel.value;
+  const allCats = getTodasCategorias();
+  catSel.innerHTML = '<option value="">Todas as categorias</option>';
+  allCats.forEach(c=>{
+    const o = document.createElement("option"); o.value=c; o.textContent=c;
+    catSel.appendChild(o);
+  });
+  catSel.value = prevCat;
+
   const cardSel = document.getElementById("filtro-cartao");
   const prevCard = cardSel.value;
   cardSel.innerHTML = '<option value="">Todos os cartões</option>';
@@ -1308,7 +1356,7 @@ function openTransacaoModal(t){
   const fieldFixa = document.getElementById("field-fixa");
 
   function refreshCats(){
-    const list = typeSel.value==="receita" ? CATEGORIAS_RECEITA : CATEGORIAS_DESPESA;
+    const list = getCategorias(typeSel.value==="receita" ? "receita" : "despesa");
     catSel.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
     if(t) catSel.value = t.category;
     fieldFixa.hidden = typeSel.value !== "despesa";
@@ -1536,7 +1584,7 @@ function renderOrcamento(){
 
 document.getElementById("btn-nova-meta-orcamento").addEventListener("click", ()=>{
   const existentes = db.budgets.map(b=>b.category);
-  const disponiveis = CATEGORIAS_DESPESA.filter(c=> !existentes.includes(c));
+  const disponiveis = getCategorias("despesa").filter(c=> !existentes.includes(c));
   if(!disponiveis.length) return alert("Todas as categorias já têm meta definida.");
   openModal("Nova meta de orçamento", `
     <div class="field">
@@ -1599,6 +1647,60 @@ document.getElementById("form-meta").addEventListener("submit", async (e)=>{
   db.goals.push(created);
   input.value = "";
   renderMetas();
+});
+
+/* =========================================================
+   CATEGORIAS PERSONALIZADAS
+   ========================================================= */
+function renderCategorias(){
+  const wrapDespesa = document.getElementById("lista-categorias-despesa");
+  const wrapReceita = document.getElementById("lista-categorias-receita");
+  wrapDespesa.innerHTML = "";
+  wrapReceita.innerHTML = "";
+
+  db.categories.filter(c=>c.type==="despesa").forEach(c=> wrapDespesa.appendChild(categoriaRow(c)));
+  db.categories.filter(c=>c.type==="receita").forEach(c=> wrapReceita.appendChild(categoriaRow(c)));
+
+  if(!db.categories.some(c=>c.type==="despesa")){
+    wrapDespesa.innerHTML = '<p class="empty-hint" style="border:none;padding:4px 0;">Nenhuma categoria extra ainda.</p>';
+  }
+  if(!db.categories.some(c=>c.type==="receita")){
+    wrapReceita.innerHTML = '<p class="empty-hint" style="border:none;padding:4px 0;">Nenhuma categoria extra ainda.</p>';
+  }
+}
+
+function categoriaRow(c){
+  const row = document.createElement("div");
+  row.className = "goal-row";
+  row.innerHTML = `<span>${escapeHtml(c.name)}</span><button>remover</button>`;
+  row.querySelector("button").addEventListener("click", async ()=>{
+    const { error } = await sbClient.from("categories").delete().eq("id", c.id);
+    if(error) return alert("Não foi possível remover: " + error.message);
+    db.categories = db.categories.filter(x=>x.id!==c.id);
+    renderCategorias();
+  });
+  return row;
+}
+
+async function adicionarCategoria(type, inputId, formId){
+  const input = document.getElementById(inputId);
+  const name = input.value.trim();
+  if(!name) return;
+  const jaExiste = getCategorias(type).some(c=> c.toLowerCase() === name.toLowerCase());
+  if(jaExiste) return alert("Essa categoria já existe.");
+  const { data: created, error } = await sbClient.from("categories").insert({ type, name }).select().single();
+  if(error) return alert("Não foi possível salvar: " + error.message);
+  db.categories.push(created);
+  input.value = "";
+  renderCategorias();
+}
+document.getElementById("form-categoria-despesa").addEventListener("submit", (e)=>{
+  e.preventDefault();
+  adicionarCategoria("despesa", "input-categoria-despesa", "form-categoria-despesa");
+});
+document.getElementById("form-categoria-receita").addEventListener("submit", (e)=>{
+  e.preventDefault();
+  adicionarCategoria("receita", "input-categoria-receita", "form-categoria-receita");
 });
 
 /* =========================================================
