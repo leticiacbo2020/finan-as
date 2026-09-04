@@ -349,13 +349,16 @@ select{ cursor:pointer; }
 .credit-card .cc-fatura-label{ font-size: 0.7rem; opacity: 0.9; }
 .credit-card .cc-fatura-valor{ font-family: var(--serif); font-size: 1.35rem; font-weight: 600; }
 .credit-card .cc-limite{ font-size: 0.72rem; opacity: 0.9; }
-.credit-card .cc-remove{
+.credit-card .cc-actions{
   position:absolute; top: 12px; right: 14px;
-  background: rgba(255,255,255,0.25); border:none; color:#fff;
-  width: 22px; height: 22px; border-radius: 50%;
-  cursor:pointer; font-size: 0.9rem; line-height: 1;
+  display:flex; gap: 6px;
 }
-.credit-card .cc-remove:hover{ background: rgba(255,255,255,0.4); }
+.credit-card .cc-actions button{
+  background: rgba(255,255,255,0.25); border:none; color:#fff;
+  width: 24px; height: 24px; border-radius: 50%;
+  cursor:pointer; font-size: 0.85rem; line-height: 1;
+}
+.credit-card .cc-actions button:hover{ background: rgba(255,255,255,0.4); }
 
 /* ============ ORÇAMENTO ============ */
 .budget-row{
@@ -1567,7 +1570,10 @@ function renderCartoes(){
     el.className = "credit-card";
     el.style.background = c.color;
     el.innerHTML = `
-      <button class="cc-remove" title="Remover cartão">×</button>
+      <div class="cc-actions">
+        <button class="cc-edit" title="Editar cartão">✎</button>
+        <button class="cc-remove" title="Remover cartão">×</button>
+      </div>
       <div class="cc-top">
         <div>
           <div class="cc-name">${escapeHtml(c.name)}</div>
@@ -1580,6 +1586,7 @@ function renderCartoes(){
         <div class="cc-limite">${c.card_limit ? 'limite '+brl(c.card_limit) : 'sem limite definido'} · vence dia ${c.due_day||'—'}</div>
       </div>
     `;
+    el.querySelector(".cc-edit").addEventListener("click", ()=> openCartaoModal(c));
     el.querySelector(".cc-remove").addEventListener("click", async ()=>{
       if(confirm(`Remover o cartão "${c.name}"? Lançamentos vinculados a ele não serão apagados.`)){
         const { error } = await sbClient.from("cards").delete().eq("id", c.id);
@@ -1592,8 +1599,11 @@ function renderCartoes(){
   });
 }
 
-document.getElementById("btn-novo-cartao").addEventListener("click", ()=>{
-  openModal("Novo cartão", `
+document.getElementById("btn-novo-cartao").addEventListener("click", ()=> openCartaoModal());
+
+function openCartaoModal(c){
+  const isEdit = !!c;
+  openModal(isEdit ? "Editar cartão" : "Novo cartão", `
     <div class="field">
       <label>Nome do cartão</label>
       <input type="text" name="name" placeholder="Ex.: Nubank" required>
@@ -1615,7 +1625,7 @@ document.getElementById("btn-novo-cartao").addEventListener("click", ()=>{
     <div class="field">
       <label>Cor</label>
       <select name="color">
-        ${CORES_CARTAO.map(c=>`<option value="${c}" style="background:${c};color:#fff">${c}</option>`).join("")}
+        ${CORES_CARTAO.map(cor=>`<option value="${cor}" style="background:${cor};color:#fff">${cor}</option>`).join("")}
       </select>
     </div>
   `, async (form)=>{
@@ -1628,12 +1638,27 @@ document.getElementById("btn-novo-cartao").addEventListener("click", ()=>{
       due_day: data.due_day ? parseInt(data.due_day) : null,
       color: data.color,
     };
-    const { data: created, error } = await sbClient.from("cards").insert(payload).select().single();
-    if(error) return alert("Não foi possível salvar: " + error.message);
-    db.cards.push(created);
+    if(isEdit){
+      const { data: updated, error } = await sbClient.from("cards").update(payload).eq("id", c.id).select().single();
+      if(error) return alert("Não foi possível salvar: " + error.message);
+      db.cards = db.cards.map(x=> x.id===c.id ? updated : x);
+    } else {
+      const { data: created, error } = await sbClient.from("cards").insert(payload).select().single();
+      if(error) return alert("Não foi possível salvar: " + error.message);
+      db.cards.push(created);
+    }
     closeModal(); renderAll();
   });
-});
+
+  if(isEdit){
+    const form = document.getElementById("modal-form");
+    form.name.value = c.name;
+    form.brand.value = c.brand || "";
+    if(c.card_limit) form.card_limit.value = c.card_limit;
+    if(c.due_day) form.due_day.value = c.due_day;
+    form.color.value = c.color;
+  }
+}
 
 /* =========================================================
    INVESTIMENTOS
