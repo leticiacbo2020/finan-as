@@ -2536,19 +2536,24 @@ function renderPagamentoKeywords(){
     `;
     const input = row.querySelector(".keyword-input");
     async function salvar(novasKeywords, novasPalavras){
-      if(registro){
-        const { data: updated, error } = await sbClient.from("payment_keywords").update({ keywords: novasKeywords }).eq("id", registro.id).select().single();
-        if(error) return alert("Não foi possível salvar: " + error.message);
-        db.paymentKeywords = db.paymentKeywords.map(x=> x.id===registro.id ? updated : x);
-      } else {
-        const { data: created, error } = await sbClient.from("payment_keywords").insert({ method: metodo, keywords: novasKeywords }).select().single();
-        if(error) return alert("Não foi possível salvar: " + error.message + " — talvez falte rodar o script add-payment-keywords.sql no SQL Editor do Supabase.");
-        db.paymentKeywords.push(created);
+      // Só grava no banco se a lista realmente mudou.
+      const atuaisReg = registro && Array.isArray(registro.keywords) ? registro.keywords : [];
+      if(!registro || novasKeywords.length !== atuaisReg.length){
+        if(registro){
+          const { data: updated, error } = await sbClient.from("payment_keywords").update({ keywords: novasKeywords }).eq("id", registro.id).select().single();
+          if(error) return alert("Não foi possível salvar: " + error.message);
+          db.paymentKeywords = db.paymentKeywords.map(x=> x.id===registro.id ? updated : x);
+        } else {
+          const { data: created, error } = await sbClient.from("payment_keywords").insert({ method: metodo, keywords: novasKeywords }).select().single();
+          if(error) return alert("Não foi possível salvar: " + error.message + " — talvez falte rodar o script add-payment-keywords.sql no SQL Editor do Supabase.");
+          db.paymentKeywords.push(created);
+        }
+        renderPagamentoKeywords();
       }
-      renderPagamentoKeywords();
-      // Aplica a palavra-chave nova também em lançamentos já existentes — mesmo
+      // Aplica a(s) palavra(s) também em lançamentos já existentes — mesmo
       // que já tenham outra forma de pagamento (ex.: "Crédito" por padrão em
-      // importações antigas) ou estejam vinculados a um cartão.
+      // importações antigas) ou estejam vinculados a um cartão. Roda mesmo
+      // que a palavra já estivesse cadastrada antes dessa função existir.
       if(novasPalavras && novasPalavras.length){
         await aplicarPalavraChaveRetroativa({
           novasPalavras,
@@ -2566,7 +2571,7 @@ function renderPagamentoKeywords(){
       if(!novasPalavras.length) return;
       const novas = [...kws];
       novasPalavras.forEach(kw=>{ if(!novas.some(x=>x.toLocaleLowerCase("pt-BR")===kw.toLocaleLowerCase("pt-BR"))) novas.push(kw); });
-      if(novas.length===kws.length){ input.value=""; return; }
+      input.value = "";
       salvar(novas, novasPalavras);
     });
     row.querySelectorAll("[data-del-pk]").forEach(btn=>{
@@ -2660,15 +2665,21 @@ function openCartaoDetalhesModal(c){
     novasPalavras.forEach(kw=>{
       if(!novas.some(x=>x.toLocaleLowerCase("pt-BR")===kw.toLocaleLowerCase("pt-BR"))) novas.push(kw);
     });
-    if(novas.length === atuais.length){ input.value=""; return; }
-    const { data: updated, error } = await sbClient.from("cards").update({ keywords: novas }).eq("id", c.id).select().single();
-    if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-payment-keywords.sql no SQL Editor do Supabase.");
-    db.cards = db.cards.map(x=> x.id===c.id ? updated : x);
+    // Só grava no banco se a lista realmente mudou — mas a aplicação
+    // retroativa roda de qualquer forma, mesmo pra uma palavra que já
+    // estava cadastrada antes dessa função existir.
+    let cartaoAtualizado = c;
+    if(novas.length > atuais.length){
+      const { data: updated, error } = await sbClient.from("cards").update({ keywords: novas }).eq("id", c.id).select().single();
+      if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-payment-keywords.sql no SQL Editor do Supabase.");
+      db.cards = db.cards.map(x=> x.id===c.id ? updated : x);
+      cartaoAtualizado = updated;
+    }
     closeModal();
     renderAll();
-    openCartaoDetalhesModal(updated);
-    // Aplica a palavra-chave nova também em lançamentos já existentes — mesmo
-    // que já tenham outra forma de pagamento ou outro cartão marcado.
+    openCartaoDetalhesModal(cartaoAtualizado);
+    // Aplica a(s) palavra(s) também em lançamentos já existentes — mesmo que
+    // já tenham outra forma de pagamento ou outro cartão marcado.
     await aplicarPalavraChaveRetroativa({
       novasPalavras,
       filtro: t=> t.type==="despesa" && t.card_id!==c.id,
@@ -3205,13 +3216,20 @@ function categoriaRow(c){
     novasPalavras.forEach(kw=>{
       if(!novas.some(x=>x.toLocaleLowerCase("pt-BR")===kw.toLocaleLowerCase("pt-BR"))) novas.push(kw);
     });
-    if(novas.length === atuais.length){ input.value=""; return; }
-    const { data: updated, error } = await sbClient.from("categories").update({ keywords: novas }).eq("id", c.id).select().single();
-    if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-keywords.sql no SQL Editor do Supabase.");
-    db.categories = db.categories.map(x=> x.id===c.id ? updated : x);
-    renderCategorias();
-    // Aplica a palavra-chave nova também em lançamentos já existentes — mesmo
-    // que já tenham outra categoria, já que a pessoa acabou de dizer que essa
+    // Só grava no banco se a lista de palavras-chave realmente mudou — mas a
+    // aplicação retroativa roda de qualquer forma, mesmo que a palavra já
+    // existisse (a pessoa pode estar pedindo pra aplicar agora uma palavra
+    // que já tinha cadastrado antes, antes dessa função existir).
+    if(novas.length > atuais.length){
+      const { data: updated, error } = await sbClient.from("categories").update({ keywords: novas }).eq("id", c.id).select().single();
+      if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-keywords.sql no SQL Editor do Supabase.");
+      db.categories = db.categories.map(x=> x.id===c.id ? updated : x);
+      renderCategorias();
+    } else {
+      input.value = "";
+    }
+    // Aplica a(s) palavra(s) também em lançamentos já existentes — mesmo que
+    // já tenham outra categoria, já que a pessoa acabou de dizer que essa
     // palavra pertence a esta categoria.
     await aplicarPalavraChaveRetroativa({
       novasPalavras,
