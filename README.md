@@ -9,21 +9,25 @@ salvos na nuvem (Supabase), acessível de qualquer aparelho.
 Tudo — HTML, estilo e a lógica do app — está num **único arquivo**,
 `index.html`. Não tem pastas `css/` nem `js/`. Isso é proposital:
 evita o erro mais comum ao publicar (subir os arquivos sem preservar
-as subpastas, quebrando o visual e as funções do site). Só existem
-mais dois arquivos de apoio:
+as subpastas, quebrando o visual e as funções do site). Os arquivos
+de apoio são:
 
 ```
 index.html            todo o site (HTML + estilo + lógica)
 supabase-schema.sql    script para criar as tabelas no Supabase (projeto novo)
 add-categories.sql     script extra, só para quem já tinha o site rodando
                        antes das categorias personalizadas existirem
+add-closing-day.sql    script extra, só para quem já tinha o site rodando
+                       antes do dia de fechamento do cartão existir
 README.md              este arquivo
 ```
 
-Se seu site já estava no ar e você só quer adicionar a função de
-categorias personalizadas, não precisa rodar o `supabase-schema.sql`
-de novo — abra o **SQL Editor** do Supabase e rode só o
-`add-categories.sql`.
+Se seu site já estava no ar, você não precisa rodar o
+`supabase-schema.sql` de novo — abra o **SQL Editor** do Supabase e
+rode só os scripts que ainda não rodou (`add-categories.sql` e/ou
+`add-closing-day.sql`, dependendo de há quanto tempo seu site existe).
+Rodar um script "extra" mais de uma vez não tem problema, ele é
+seguro de repetir.
 
 ## Como funciona a segurança
 
@@ -74,8 +78,8 @@ já que é só você que vai usar).
 Pelo próprio site do GitHub (sem precisar de terminal):
 
 1. Crie um repositório novo, vazio.
-2. Em **Add file → Upload files**, arraste os três arquivos
-   (`index.html`, `supabase-schema.sql`, `README.md`) soltos —
+2. Em **Add file → Upload files**, arraste os arquivos
+   (`index.html`, `supabase-schema.sql`, `README.md`, etc.) soltos —
    como agora não há pastas, não tem como bagunçar a estrutura.
 3. Clique em **Commit changes**.
 
@@ -111,22 +115,55 @@ direto no navegador (duplo clique) — funciona sem servidor.
 - **Transações**: lançar receitas e despesas, com categoria, forma
   de pagamento, cartão (se for crédito), parcelas e marcação de
   "despesa fixa" para contas recorrentes.
-- **Cartões**: cadastro de cartões, com fatura do mês calculada
-  automaticamente a partir das transações.
+- **Cartões**: cadastro de cartões, com limite, cor, **dia de
+  fechamento** e dia de vencimento. A fatura do mês é calculada
+  automaticamente a partir das transações — veja detalhes abaixo.
 - **Investimentos**: posições por tipo (renda fixa, ações, etc.).
 - **Orçamento**: defina um teto mensal por categoria e acompanhe o
   quanto já gastou.
 - **Metas**: uma lista simples de metas/anotações, com caixinha de
   concluído.
-- **Categorias**: adicione suas próprias categorias de receita e
-  despesa, além das que já vêm prontas — elas aparecem em todos os
-  lugares que usam categoria (lançamentos, orçamento, filtros).
+- **Categorias**: todas as categorias de receita e despesa —
+  inclusive as que já vêm prontas — podem ser adicionadas,
+  renomeadas ou removidas. Veja detalhes abaixo.
 - **Importar**: suba a fatura ou extrato exportado do app do seu
   banco/cartão (.ofx ou .csv) e revise numa prévia antes de confirmar
   — sem precisar digitar lançamento por lançamento.
 - **Tutoriais**: um resumo rápido de como usar cada parte do site.
 - **Backup**: baixa um `.json` com tudo o que está salvo na nuvem,
   para guardar por segurança.
+
+### Dia de fechamento do cartão
+
+Ao cadastrar ou editar um cartão, agora dá pra informar o **dia de
+fechamento** da fatura, além do dia de vencimento. Quando esse campo
+está preenchido, a fatura mostrada (na tela de Cartões e no resumo
+da Visão geral) passa a somar as despesas do **ciclo real da
+fatura** — do dia seguinte ao fechamento anterior até o fechamento
+deste mês — do mesmo jeito que aparece na fatura de verdade do seu
+cartão, em vez de simplesmente somar pelo mês do calendário.
+
+Se você deixar o dia de fechamento em branco, nada muda: a fatura
+continua sendo calculada pelo mês do calendário, como sempre foi.
+
+Se o seu site já estava no ar antes dessa função existir, rode o
+`add-closing-day.sql` no SQL Editor do Supabase antes de usar o
+campo (veja "Estrutura simples, de propósito" acima).
+
+### Categorias totalmente editáveis
+
+Agora **todas** as categorias — inclusive as que já vêm prontas,
+como "Moradia" ou "Salário" — podem ser renomeadas ou removidas na
+tela de Categorias. Na primeira vez que você entrar depois dessa
+atualização, o site cria essas categorias padrão automaticamente
+na sua conta (só as que ainda não existirem — se você já tinha
+alguma categoria personalizada, ela continua do jeito que estava).
+
+Ao renomear uma categoria, os lançamentos e metas de orçamento que
+já usavam o nome antigo são atualizados sozinhos para o nome novo —
+não precisa editar um por um. Remover uma categoria não apaga os
+lançamentos que já usam aquele nome; eles só deixam de aparecer nas
+listas de sugestão.
 
 ## Do que o site é feito
 
