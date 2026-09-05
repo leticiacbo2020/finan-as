@@ -547,7 +547,7 @@ select{ cursor:pointer; }
   background:none; border:none; color: var(--pink-dark);
   cursor:pointer; font-size: 0.85rem; line-height:1; padding: 0 2px;
 }
-.keyword-add-form{ display:flex; }
+.keyword-add-form{ display:flex; align-items:center; gap:6px; }
 .keyword-input{
   border: 1px dashed var(--line-strong);
   border-radius: 999px;
@@ -2283,12 +2283,12 @@ function openTransacaoModal(t){
     const list = getCategorias(typeSel.value==="receita" ? "receita" : "despesa");
     catSel.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
     if(t) catSel.value = t.category;
-    fieldFixa.hidden = typeSel.value !== "despesa";
-    document.getElementById("field-despesa-extra").hidden = typeSel.value !== "despesa";
-    if(typeSel.value !== "despesa"){ fieldCartao.hidden = true; fieldParcelas.hidden = true; }
-    else refreshPagamento();
+    fieldFixa.hidden = typeSel.value !== "despesa"; // "despesa fixa" só faz sentido pra despesa
+    refreshPagamento();
   }
   function refreshPagamento(){
+    // A forma de pagamento vale tanto pra despesa quanto pra receita (ex.: um
+    // Pix recebido). Só o cartão/parcelas dependem de "Crédito" estar selecionado.
     const show = paySel.value === "Crédito";
     fieldCartao.hidden = !show;
     fieldParcelas.hidden = !show;
@@ -2530,7 +2530,8 @@ function renderPagamentoKeywords(){
       <div class="keyword-chips">
         ${kws.map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-pk="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
         <span class="keyword-add-form">
-          <input type="text" class="keyword-input" placeholder="+ palavra-chave" title="Separe várias palavras por vírgula, tecle Enter">
+          <input type="text" class="keyword-input" placeholder="+ palavra-chave" title="Separe várias palavras por vírgula, tecle Enter ou clique em Adicionar">
+          <button type="button" class="btn pk-add-btn" style="padding:6px 12px;font-size:0.78rem;">Adicionar</button>
         </span>
       </div>
     `;
@@ -2564,16 +2565,20 @@ function renderPagamentoKeywords(){
         });
       }
     }
-    input.addEventListener("keydown", (e)=>{
-      if(e.key!=="Enter") return;
-      e.preventDefault();
+    function comitarPalavra(){
       const novasPalavras = input.value.split(/[,\n]/).map(kw=>kw.trim()).filter(Boolean);
       if(!novasPalavras.length) return;
       const novas = [...kws];
       novasPalavras.forEach(kw=>{ if(!novas.some(x=>x.toLocaleLowerCase("pt-BR")===kw.toLocaleLowerCase("pt-BR"))) novas.push(kw); });
       input.value = "";
       salvar(novas, novasPalavras);
+    }
+    input.addEventListener("keydown", (e)=>{
+      if(e.key!=="Enter") return;
+      e.preventDefault();
+      comitarPalavra();
     });
+    row.querySelector(".pk-add-btn").addEventListener("click", comitarPalavra);
     row.querySelectorAll("[data-del-pk]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         const kw = btn.dataset.delPk;
@@ -2650,7 +2655,8 @@ function openCartaoDetalhesModal(c){
       <div class="keyword-chips" id="card-keyword-chips">
         ${(Array.isArray(c.keywords)?c.keywords:[]).map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-card-kw="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
         <span class="keyword-add-form">
-          <input type="text" class="keyword-input" id="card-keyword-input" placeholder="+ palavra-chave" title="Separe várias palavras por vírgula, tecle Enter">
+          <input type="text" class="keyword-input" id="card-keyword-input" placeholder="+ palavra-chave" title="Separe várias palavras por vírgula, tecle Enter ou clique em Adicionar">
+          <button type="button" class="btn" id="card-keyword-add-btn" style="padding:6px 12px;font-size:0.78rem;">Adicionar</button>
         </span>
       </div>
     </div>
@@ -2691,6 +2697,7 @@ function openCartaoDetalhesModal(c){
   document.getElementById("card-keyword-input").addEventListener("keydown", (e)=>{
     if(e.key==="Enter"){ e.preventDefault(); salvarPalavraChaveCartao(); }
   });
+  document.getElementById("card-keyword-add-btn").addEventListener("click", salvarPalavraChaveCartao);
   document.querySelectorAll("[data-del-card-kw]").forEach(btn=>{
     btn.addEventListener("click", async ()=>{
       const kw = btn.dataset.delCardKw;
@@ -3195,6 +3202,7 @@ function categoriaRow(c){
       ${kws.map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-kw="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
       <form class="keyword-add-form">
         <input type="text" class="keyword-input" placeholder="+ palavra-chave" aria-label="Adicionar palavras-chave" title="Separe várias palavras por vírgula">
+        <button type="submit" class="btn" style="padding:6px 12px;font-size:0.78rem;">Adicionar</button>
       </form>
     </div>
   `;
