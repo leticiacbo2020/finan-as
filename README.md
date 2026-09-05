@@ -1,4 +1,4 @@
-# Razão — controle financeiro pessoal
+# Cora — controle financeiro pessoal
 
 Site para uso pessoal: receitas, despesas, faturas de cartão,
 investimentos, orçamento por categoria e metas — com login e dados
@@ -94,7 +94,7 @@ Ou, se preferir linha de comando:
 cd site-financeiro
 git init
 git add .
-git commit -m "primeira versão do Razão"
+git commit -m "primeira versão do Cora"
 git branch -M main
 git remote add origin https://github.com/SEU-USUARIO/razao-financeiro.git
 git push -u origin main
@@ -144,7 +144,9 @@ direto no navegador (duplo clique) — funciona sem servidor.
 ### Sugestão automática de categoria ao importar
 
 Cada categoria pode ter uma ou mais **palavras-chave** (ex.: "ifood",
-"uber", "netflix"), cadastradas na tela de Categorias. Ao importar
+"uber", "netflix"), cadastradas na tela de Categorias. O campo aceita
+várias de uma vez, separadas por vírgula; cada termo aparece como uma
+etiqueta e pode ser removido individualmente. Ao importar
 uma fatura ou extrato (.ofx ou .csv), o site compara a descrição de
 cada lançamento com essas palavras-chave e já preenche a categoria
 sugerida na prévia — sinalizada com "🔎 sugerida por palavra-chave".
@@ -160,6 +162,15 @@ manualmente na tela de Categorias.
 Se o seu site já estava no ar antes dessa função existir, rode o
 `add-keywords.sql` no SQL Editor do Supabase antes de usar o campo
 (veja "Estrutura simples, de propósito" acima).
+
+### Carregamento da sessão
+
+Ao abrir, atualizar a página, voltar ao site depois de um tempo ou entrar,
+a Cora espera a sessão do Supabase estar pronta antes de carregar os dados.
+Se houver uma oscilação temporária de rede, as consultas são tentadas de
+novo automaticamente. Caso o problema continue, aparece uma mensagem de
+conexão — não uma mensagem de credenciais — e o console registra somente a
+etapa e o tipo de falha, sem expor chaves, tokens ou dados pessoais.
 
 ### Dia de fechamento do cartão
 

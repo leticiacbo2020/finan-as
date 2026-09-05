@@ -3,47 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle Financeiro Pessoal</title>
+<title>Cora — controle financeiro pessoal</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Dancing+Script:wght@600&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet">
 <style>
 /* ============ TOKENS ============ */
 :root{
-  --bg: #FDF3F6;
-  --bg-2: #F6EEFB;
-  --surface: #FFFFFF;
-  --ink: #4A3540;
-  --ink-soft: #9C7F91;
-  --line: #F3DCE6;
-  --line-strong: #EAC0D4;
+  --bg: #F7F0E8;
+  --bg-2: #F0DED2;
+  --surface: #FFFDF9;
+  --ink: #37252B;
+  --ink-soft: #826B68;
+  --line: #E9D8CC;
+  --line-strong: #D9B8AD;
 
-  --pink: #D6708F;
-  --pink-dark: #B85476;
-  --pink-bg: #FBE3EA;
+  --pink: #B66D73;
+  --pink-dark: #713D46;
+  --pink-bg: #F1DFD7;
 
   --green: #7EA88A;
   --green-bg: #E7F1E9;
 
-  --red: #E0798A;
-  --red-bg: #FBE5E9;
+  --red: #B75E5D;
+  --red-bg: #F7E2DE;
 
-  --gold: #C79A55;
-  --gold-bg: #F7EDD9;
+  --gold: #B88256;
+  --gold-bg: #F4E8D9;
 
-  --lav: #B79FCB;
-  --lav-bg: #EFE7F6;
+  --lav: #92717A;
+  --lav-bg: #EEE2DF;
 
   --serif: "Playfair Display", Georgia, serif;
-  --script: "Dancing Script", cursive;
-  --sans: "Quicksand", -apple-system, BlinkMacSystemFont, sans-serif;
+  --script: "Playfair Display", Georgia, serif;
+  --sans: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
 
   --radius: 16px;
   --radius-sm: 10px;
   --sidebar-w: 244px;
-  --shadow: 0 10px 30px -14px rgba(182, 90, 130, 0.28);
-  --shadow-sm: 0 4px 14px -8px rgba(182, 90, 130, 0.3);
+  --shadow: 0 18px 42px -26px rgba(79, 43, 40, 0.34);
+  --shadow-sm: 0 8px 18px -14px rgba(79, 43, 40, 0.28);
 }
 
 *{ box-sizing: border-box; }
@@ -115,7 +115,7 @@ button, input, select{ font-family: var(--sans); }
 .sidebar{
   width: var(--sidebar-w);
   flex-shrink: 0;
-  background: linear-gradient(180deg, #FFFFFF, #FEF7FA);
+  background: linear-gradient(180deg, #FFFDF9, #F8EEE6);
   border-right: 1px solid var(--line);
   padding: 30px 20px;
   display: flex;
@@ -134,8 +134,8 @@ button, input, select{ font-family: var(--sans); }
   display:flex; align-items:center; justify-content:center;
   border-radius: 50%;
 }
-.brand-name{ font-family: var(--script); font-size: 1.7rem; line-height: 1; color: var(--pink-dark); }
-.brand-sub{ font-size: 0.7rem; color: var(--ink-soft); letter-spacing: 0.03em; margin-top: 2px; }
+.brand-name{ font-family: var(--script); font-size: 1.55rem; line-height: 1; letter-spacing: 0.01em; color: var(--pink-dark); }
+.brand-sub{ font-size: 0.64rem; color: var(--ink-soft); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 4px; }
 
 .nav{ display:flex; flex-direction:column; gap: 4px; flex: 1; }
 .nav-item{
@@ -533,6 +533,14 @@ select{ cursor:pointer; }
   font-size: 0.76rem;
   width: 140px;
 }
+.keyword-chip button:hover{ color: var(--red); transform: scale(1.12); }
+.app-notice{
+  position:fixed; right:20px; bottom:20px; max-width:390px; z-index:100;
+  padding:13px 15px; border:1px solid var(--line-strong); border-radius:12px;
+  color:var(--ink); background:var(--surface); box-shadow:var(--shadow); font-size:.84rem; line-height:1.45;
+}
+.app-notice--error{ border-left:4px solid var(--red); }
+.app-notice--loading{ border-left:4px solid var(--pink); }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 880px){
@@ -552,6 +560,21 @@ select{ cursor:pointer; }
   .ledger-figure:nth-child(2n){ border-right:none; }
   .ledger-figure{ border-bottom: 1px solid var(--line); }
   .topbar{ flex-direction: column; }
+  .app-notice{ left:16px; right:16px; bottom:16px; max-width:none; }
+}
+
+@media (max-width: 600px){
+  .sidebar{ padding:14px 16px; }
+  .nav-item{ padding:9px 11px; font-size:.82rem; }
+  .nav-num{ display:none; }
+  .main{ padding:20px 14px 48px; }
+  .panel{ padding:19px 18px; overflow-x:auto; }
+  .ledger-table{ min-width:540px; font-size:.84rem; }
+  .ledger-figure{ padding:16px; }
+  .ledger-value{ font-size:1.28rem; }
+  .topbar-month{ width:100%; justify-content:space-between; }
+  .goal-form, .field-row{ flex-direction:column; }
+  .goal-form .btn{ width:100%; }
 }
 
 </style>
@@ -580,7 +603,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
     <div class="brand brand--auth">
       <span class="brand-mark">✿</span>
       <div>
-        <div class="brand-name">Razão</div>
+        <div class="brand-name">Cora</div>
         <div class="brand-sub">controle pessoal</div>
       </div>
     </div>
@@ -612,7 +635,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
     <div class="brand">
       <span class="brand-mark">✿</span>
       <div>
-        <div class="brand-name">Razão</div>
+        <div class="brand-name">Cora</div>
         <div class="brand-sub">controle pessoal</div>
       </div>
     </div>
@@ -867,7 +890,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <div class="stack" id="lista-categorias-receita" style="margin-top:14px;"></div>
         </div>
       </div>
-      <p class="muted">Todas as categorias podem ser renomeadas ou removidas — inclusive as que já vêm prontas. Ao renomear, os lançamentos, orçamentos e filtros que usam essa categoria são atualizados automaticamente. Adicione palavras-chave (ex.: "ifood") para o site sugerir a categoria certa ao importar uma fatura. <span class="tutorial-badge-new">novo</span></p>
+      <p class="muted">Todas as categorias podem ser renomeadas ou removidas — inclusive as que já vêm prontas. Ao renomear, os lançamentos, orçamentos e filtros que usam essa categoria são atualizados automaticamente. Adicione uma ou várias palavras-chave, separadas por vírgula (ex.: "ifood, mercado"), para o site sugerir a categoria certa ao importar uma fatura. <span class="tutorial-badge-new">novo</span></p>
     </section>
 
     <!-- ===== IMPORTAR ===== -->
@@ -971,7 +994,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <ol class="tutorial-steps">
             <li>Adicione, renomeie ou remova qualquer categoria — inclusive as que já vêm prontas.</li>
             <li>Ao renomear, os lançamentos e metas de orçamento com o nome antigo são atualizados sozinhos.</li>
-            <li>Adicione <strong>palavras-chave</strong> a uma categoria (ex.: "ifood" em Alimentação) — o site usa isso para sugerir a categoria certa ao importar uma fatura.</li>
+            <li>Adicione uma ou várias <strong>palavras-chave</strong> (separe por vírgula) a uma categoria — cada uma vira uma etiqueta removível e é usada para sugerir a categoria certa ao importar.</li>
           </ol>
         </details>
         <details class="tutorial-item">
@@ -1025,7 +1048,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* =========================================================
-   RAZÃO — controle financeiro pessoal
+   CORA — controle financeiro pessoal
    Dados e login no Supabase (nuvem). Configure SUPABASE_URL e SUPABASE_ANON_KEY logo abaixo.
    ========================================================= */
 
@@ -1044,12 +1067,27 @@ if(!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_URL.includes("COLOQUE_AQUI") 
   throw new Error("Supabase não configurado — preencha SUPABASE_URL e SUPABASE_ANON_KEY no início do index.html");
 }
 
-const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if(!window.supabase){
+  document.body.innerHTML = `<div class="auth-screen"><div class="auth-card"><h1>Não foi possível iniciar o app</h1><p class="muted">A biblioteca de conexão não carregou. Verifique sua internet e recarregue a página.</p></div></div>`;
+  throw new Error("Supabase JS não carregou");
+}
+
+let sbClient;
+try {
+  sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+} catch(error) {
+  console.error("[Cora] Falha segura ao inicializar Supabase", { message: error?.message, name: error?.name });
+  document.body.innerHTML = `<div class="auth-screen"><div class="auth-card"><h1>Não foi possível iniciar o app</h1><p class="muted">Confira sua conexão e recarregue a página. Se persistir, abra o console para o diagnóstico técnico.</p></div></div>`;
+  throw error;
+}
 
 window.addEventListener("error", (e)=>{
+  console.error("[Cora] Erro de interface", { message:e.message, source:e.filename, line:e.lineno });
   const box = document.createElement("div");
   box.style.cssText = "position:fixed;bottom:16px;left:16px;right:16px;max-width:420px;margin:0 auto;background:#FBE3EA;border:1px solid #E8B8CC;color:#4A3540;padding:12px 16px;border-radius:12px;font-family:sans-serif;font-size:0.85rem;z-index:999;";
-  box.textContent = "Algo deu errado no site: " + e.message + " — abra o console (F12) para mais detalhes.";
+  box.textContent = "Algo deu errado no site. Abra o console (F12) para mais detalhes técnicos.";
   document.body.appendChild(box);
 });
 
@@ -1064,7 +1102,7 @@ const CATEGORIAS_RECEITA_PADRAO = [
 const TIPOS_INVESTIMENTO = [
   "Renda fixa", "Tesouro Direto", "Fundos", "Ações", "FIIs", "Cripto", "Reserva de emergência", "Outros"
 ];
-const CORES_CARTAO = ["#D6708F", "#B79FCB", "#C79A55", "#7EA88A", "#E0798A"];
+const CORES_CARTAO = ["#A65E64", "#8D625F", "#B77B56", "#6F8878", "#703D46"];
 const FORMAS_PAGAMENTO = ["Pix", "Débito", "Crédito", "Dinheiro", "Boleto"];
 
 // Palavras-chave que já vêm prontas nas categorias padrão, usadas para
@@ -1097,7 +1135,8 @@ function sugerirCategoriaPorPalavraChave(descricao, tipo){
   if(!desc) return null;
   const candidatas = db.categories.filter(c=> c.type===tipo && Array.isArray(c.keywords) && c.keywords.length);
   for(const c of candidatas){
-    for(const kw of c.keywords){
+    // Os termos mais específicos têm prioridade, mas todos continuam participando.
+    for(const kw of [...c.keywords].sort((a,b)=>String(b).length-String(a).length)){
       const kwNorm = normalizeTexto(kw);
       if(kwNorm && desc.includes(kwNorm)) return c.name;
     }
@@ -1140,6 +1179,8 @@ async function seedCategoriasPadrao(){
 /* ---------- estado ---------- */
 let db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [] };
 let currentUser = null;
+let bootUserId = null;
+let bootGeneration = 0;
 let currentView = "visao-geral";
 let currentMonth = todayMonth(); // "YYYY-MM"
 let authMode = "signin"; // ou "signup"
@@ -1221,9 +1262,15 @@ authForm.addEventListener("submit", async (e)=>{
   authSubmit.disabled = true;
   authSubmit.textContent = authMode === "signup" ? "Criando conta…" : "Entrando…";
 
-  const { data, error } = authMode === "signup"
-    ? await sbClient.auth.signUp({ email, password })
-    : await sbClient.auth.signInWithPassword({ email, password });
+  let data, error;
+  try {
+    ({ data, error } = authMode === "signup"
+      ? await sbClient.auth.signUp({ email, password })
+      : await sbClient.auth.signInWithPassword({ email, password }));
+  } catch(cause) {
+    console.error("[Cora] Falha segura na autenticação", { message:cause?.message, name:cause?.name });
+    error = { message:"Não foi possível falar com o serviço agora. Verifique sua conexão e tente novamente." };
+  }
 
   authSubmit.disabled = false;
   authSubmit.textContent = authMode === "signup" ? "Criar conta" : "Entrar";
@@ -1251,10 +1298,28 @@ function traduzErro(msg){
 }
 
 document.getElementById("btn-logout").addEventListener("click", async ()=>{
-  await sbClient.auth.signOut();
+  try {
+    await sbClient.auth.signOut();
+  } catch(error) {
+    console.error("[Cora] Falha segura ao encerrar sessão", { message:error?.message, name:error?.name });
+    alert("Não foi possível encerrar a sessão agora. Tente novamente.");
+  }
 });
 
-sbClient.auth.onAuthStateChange((event, session)=>{
+function showAppNotice(message, kind="loading"){
+  document.getElementById("app-notice")?.remove();
+  const notice = document.createElement("div");
+  notice.id = "app-notice";
+  notice.className = `app-notice app-notice--${kind}`;
+  notice.setAttribute("role", kind === "error" ? "alert" : "status");
+  notice.textContent = message;
+  document.body.appendChild(notice);
+  return notice;
+}
+
+function clearAppNotice(){ document.getElementById("app-notice")?.remove(); }
+
+async function activateSession(session){
   if(session && session.user){
     currentUser = session.user;
     document.getElementById("user-email").textContent = currentUser.email;
@@ -1263,44 +1328,99 @@ sbClient.auth.onAuthStateChange((event, session)=>{
     appEl.style.opacity = "0";
     window.scrollTo(0,0);
     requestAnimationFrame(()=>{ appEl.style.opacity = "1"; });
-    boot();
+    // INITIAL_SESSION, login e renovação de token podem chegar próximos. Só um
+    // carregamento por usuário fica ativo, evitando consultas antes da sessão estabilizar.
+    if(bootUserId === currentUser.id) return;
+    const generation = ++bootGeneration;
+    bootUserId = currentUser.id;
+    showAppNotice("Carregando seus dados…");
+    try {
+      await boot(generation);
+      if(generation === bootGeneration) clearAppNotice();
+    } catch(error) {
+      if(generation !== bootGeneration) return;
+      bootUserId = null; // permite nova tentativa depois de uma recuperação de sessão
+      showAppNotice("Não foi possível carregar seus dados agora. Verifique a conexão e tente recarregar a página.", "error");
+    }
   } else {
+    bootGeneration++;
+    bootUserId = null;
     currentUser = null;
+    db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [] };
+    clearAppNotice();
     appEl.hidden = true;
     authScreen.hidden = false;
     window.scrollTo(0,0);
   }
-});
+}
+
+sbClient.auth.onAuthStateChange((_event, session)=>{ void activateSession(session); });
+
+// getSession é a fonte inicial explícita; o listener acima mantém login, logout e
+// retorno à aba sincronizados sem depender da ordem de eventos do SDK.
+sbClient.auth.getSession()
+  .then(({ data, error })=>{
+    if(error){
+      console.error("[Cora] Falha segura ao restaurar sessão", { message:error.message, name:error.name });
+      showAppNotice("Não foi possível restaurar a sessão. Recarregue a página para tentar novamente.", "error");
+      return;
+    }
+    return activateSession(data.session);
+  })
+  .catch(error=>{
+    console.error("[Cora] Erro inesperado ao restaurar sessão", { message:error?.message, name:error?.name });
+    showAppNotice("Não foi possível iniciar a sessão. Recarregue a página para tentar novamente.", "error");
+  });
 
 /* =========================================================
    CARREGAR DADOS
    ========================================================= */
-async function boot(){
-  await loadAllData();
+async function boot(generation){
+  await loadAllData(generation);
+  if(generation !== bootGeneration) return;
   await seedCategoriasPadrao();
+  if(generation !== bootGeneration) return;
   goTo("visao-geral");
 }
 
-async function loadAllData(){
-  const [tx, cards, invest, budgets, goals, categories] = await Promise.all([
-    sbClient.from("transactions").select("*").order("date", { ascending:false }),
-    sbClient.from("cards").select("*").order("created_at"),
-    sbClient.from("investments").select("*").order("date", { ascending:false }),
-    sbClient.from("budgets").select("*").order("created_at"),
-    sbClient.from("goals").select("*").order("created_at"),
-    sbClient.from("categories").select("*").order("created_at"),
-  ]);
-  db.transactions = tx.data || [];
-  db.cards = cards.data || [];
-  db.investments = invest.data || [];
-  db.budgets = budgets.data || [];
-  db.goals = goals.data || [];
-  db.categories = categories.data || [];
-  const firstErr = [tx, cards, invest, budgets, goals, categories].find(r=>r.error);
-  if(firstErr){
-    console.error(firstErr.error);
-    alert("Não consegui carregar seus dados. Confira se SUPABASE_URL e SUPABASE_ANON_KEY (no início do index.html) estão corretos, e se rodou o supabase-schema.sql (ou os scripts add-categories.sql / add-closing-day.sql, se o site já era antigo).");
+function isTransientSupabaseError(error){
+  const status = Number(error?.status || error?.code);
+  return [408, 429, 500, 502, 503, 504].includes(status) || /network|fetch|timeout|temporar|connection|gateway|service unavailable/i.test(`${error?.message||""} ${error?.code||""}`);
+}
+
+function sleep(ms){ return new Promise(resolve=>setTimeout(resolve, ms)); }
+
+async function queryWithRetry(label, query){
+  let result;
+  for(let attempt=1; attempt<=3; attempt++){
+    try {
+      result = await query();
+    } catch(error) {
+      result = { error };
+    }
+    if(!result.error) return result;
+    const safeError = { stage:"data-load", query:label, attempt, code:result.error?.code, message:result.error?.message, name:result.error?.name };
+    console.error("[Cora] Consulta falhou", safeError);
+    if(attempt === 3 || !isTransientSupabaseError(result.error)) return result;
+    await sleep(350 * attempt);
   }
+  return result;
+}
+
+async function loadAllData(generation){
+  const [tx, cards, invest, budgets, goals, categories] = await Promise.all([
+    queryWithRetry("transactions", ()=>sbClient.from("transactions").select("*").order("date", { ascending:false })),
+    queryWithRetry("cards", ()=>sbClient.from("cards").select("*").order("created_at")),
+    queryWithRetry("investments", ()=>sbClient.from("investments").select("*").order("date", { ascending:false })),
+    queryWithRetry("budgets", ()=>sbClient.from("budgets").select("*").order("created_at")),
+    queryWithRetry("goals", ()=>sbClient.from("goals").select("*").order("created_at")),
+    queryWithRetry("categories", ()=>sbClient.from("categories").select("*").order("created_at")),
+  ]);
+  const failed = [tx, cards, invest, budgets, goals, categories].find(result=>result.error);
+  if(failed) throw failed.error;
+  if(generation !== bootGeneration) return;
+  // Só troca o estado depois de todas as consultas terem concluído com sucesso.
+  db = { transactions:tx.data||[], cards:cards.data||[], investments:invest.data||[], budgets:budgets.data||[], goals:goals.data||[], categories:categories.data||[] };
 }
 
 /* =========================================================
@@ -2149,7 +2269,7 @@ function categoriaRow(c){
     <div class="keyword-chips">
       ${kws.map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-kw="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
       <form class="keyword-add-form">
-        <input type="text" class="keyword-input" placeholder="+ palavra-chave">
+        <input type="text" class="keyword-input" placeholder="+ palavra-chave" aria-label="Adicionar palavras-chave" title="Separe várias palavras por vírgula">
       </form>
     </div>
   `;
@@ -2164,11 +2284,14 @@ function categoriaRow(c){
   row.querySelector(".keyword-add-form").addEventListener("submit", async (e)=>{
     e.preventDefault();
     const input = row.querySelector(".keyword-input");
-    const kw = input.value.trim();
-    if(!kw) return;
+    const novasPalavras = input.value.split(/[,\n]/).map(kw=>kw.trim()).filter(Boolean);
+    if(!novasPalavras.length) return;
     const atuais = Array.isArray(c.keywords) ? c.keywords : [];
-    if(atuais.some(x=>x.toLowerCase()===kw.toLowerCase())){ input.value=""; return; }
-    const novas = [...atuais, kw];
+    const novas = [...atuais];
+    novasPalavras.forEach(kw=>{
+      if(!novas.some(x=>x.toLocaleLowerCase("pt-BR")===kw.toLocaleLowerCase("pt-BR"))) novas.push(kw);
+    });
+    if(novas.length === atuais.length){ input.value=""; return; }
     const { data: updated, error } = await sbClient.from("categories").update({ keywords: novas }).eq("id", c.id).select().single();
     if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-keywords.sql no SQL Editor do Supabase.");
     db.categories = db.categories.map(x=> x.id===c.id ? updated : x);
