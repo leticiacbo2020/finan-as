@@ -19,15 +19,17 @@ add-categories.sql     script extra, só para quem já tinha o site rodando
                        antes das categorias personalizadas existirem
 add-closing-day.sql    script extra, só para quem já tinha o site rodando
                        antes do dia de fechamento do cartão existir
+add-keywords.sql       script extra, só para quem já tinha o site rodando
+                       antes das palavras-chave de categoria existirem
 README.md              este arquivo
 ```
 
 Se seu site já estava no ar, você não precisa rodar o
 `supabase-schema.sql` de novo — abra o **SQL Editor** do Supabase e
-rode só os scripts que ainda não rodou (`add-categories.sql` e/ou
-`add-closing-day.sql`, dependendo de há quanto tempo seu site existe).
-Rodar um script "extra" mais de uma vez não tem problema, ele é
-seguro de repetir.
+rode só os scripts que ainda não rodou (`add-categories.sql`,
+`add-closing-day.sql` e/ou `add-keywords.sql`, dependendo de há
+quanto tempo seu site existe). Rodar um script "extra" mais de uma
+vez não tem problema, ele é seguro de repetir.
 
 ## Como funciona a segurança
 
@@ -51,7 +53,10 @@ seguro de repetir.
 4. No menu lateral, abra **SQL Editor → New query**, cole todo o
    conteúdo do arquivo `supabase-schema.sql` e clique em **Run**.
    Isso cria as tabelas e já deixa a segurança configurada.
-5. Vá em **Project Settings → API**. Copie a **Project URL** e a
+5. Ainda no SQL Editor, rode também o `add-keywords.sql` (script
+   curto, adiciona a coluna de palavras-chave nas categorias — sem
+   ele, a sugestão automática de categoria ao importar não funciona).
+6. Vá em **Project Settings → API**. Copie a **Project URL** e a
    **anon public key**.
 
 ## Passo 2 — Configurar o site
@@ -125,13 +130,36 @@ direto no navegador (duplo clique) — funciona sem servidor.
   concluído.
 - **Categorias**: todas as categorias de receita e despesa —
   inclusive as que já vêm prontas — podem ser adicionadas,
-  renomeadas ou removidas. Veja detalhes abaixo.
+  renomeadas ou removidas, e cada uma pode ganhar **palavras-chave**
+  para a sugestão automática ao importar. Veja detalhes abaixo.
 - **Importar**: suba a fatura ou extrato exportado do app do seu
   banco/cartão (.ofx ou .csv) e revise numa prévia antes de confirmar
-  — sem precisar digitar lançamento por lançamento.
-- **Tutoriais**: um resumo rápido de como usar cada parte do site.
+  — o site já sugere uma categoria pra cada lançamento com base nas
+  palavras-chave cadastradas, sem precisar digitar nada.
+- **Tutoriais**: um passo a passo rápido de cada parte do site, com
+  uma etiqueta "novo" nos pontos que mudaram na última atualização.
 - **Backup**: baixa um `.json` com tudo o que está salvo na nuvem,
   para guardar por segurança.
+
+### Sugestão automática de categoria ao importar
+
+Cada categoria pode ter uma ou mais **palavras-chave** (ex.: "ifood",
+"uber", "netflix"), cadastradas na tela de Categorias. Ao importar
+uma fatura ou extrato (.ofx ou .csv), o site compara a descrição de
+cada lançamento com essas palavras-chave e já preenche a categoria
+sugerida na prévia — sinalizada com "🔎 sugerida por palavra-chave".
+Você pode trocar a categoria manualmente antes de confirmar; nada é
+salvo sem sua revisão.
+
+As categorias padrão (Moradia, Alimentação, Transporte, etc.) já
+vêm com algumas palavras-chave comuns na primeira vez que são
+criadas na sua conta. Se o seu site já existia antes dessa função,
+essas categorias não ganham as palavras-chave sozinhas — adicione
+manualmente na tela de Categorias.
+
+Se o seu site já estava no ar antes dessa função existir, rode o
+`add-keywords.sql` no SQL Editor do Supabase antes de usar o campo
+(veja "Estrutura simples, de propósito" acima).
 
 ### Dia de fechamento do cartão
 
