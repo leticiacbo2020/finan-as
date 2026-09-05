@@ -224,6 +224,11 @@ lançamento ao importar um extrato:
   indo para "Crédito" + esse cartão, como sempre foi.
 - Você pode revisar e trocar a forma de pagamento sugerida de cada
   lançamento na prévia da importação, antes de confirmar.
+- Assim como as palavras-chave de categoria, ao cadastrar uma
+  palavra-chave nova aqui (num cartão ou numa forma de pagamento) o
+  site também confere se algum lançamento já existente, ainda sem
+  forma de pagamento definida, bate com ela — e pergunta se você
+  quer atualizar esses lançamentos também.
 
 Se o seu site já estava no ar antes dessa função existir, rode o
 `add-payment-keywords.sql` no SQL Editor do Supabase antes de usar
@@ -265,6 +270,14 @@ vêm com algumas palavras-chave comuns na primeira vez que são
 criadas na sua conta. Se o seu site já existia antes dessa função,
 essas categorias não ganham as palavras-chave sozinhas — adicione
 manualmente na tela de Categorias.
+
+Ao cadastrar uma palavra-chave nova (em Categorias, ou nas
+palavras-chave de Cartões/formas de pagamento — veja abaixo), o
+site também verifica os **lançamentos que já existem** e ainda
+estão sem categoria (ou sem forma de pagamento) definida. Se algum
+bater com a palavra-chave nova, você recebe uma confirmação
+perguntando se quer atualizar esses lançamentos também — sem nunca
+sobrescrever algo que você já revisou manualmente.
 
 Se o seu site já estava no ar antes dessa função existir, rode o
 `add-keywords.sql` no SQL Editor do Supabase antes de usar o campo
