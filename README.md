@@ -226,8 +226,8 @@ lançamento ao importar um extrato:
   lançamento na prévia da importação, antes de confirmar.
 - Assim como as palavras-chave de categoria, ao cadastrar uma
   palavra-chave nova aqui (num cartão ou numa forma de pagamento) o
-  site também confere se algum lançamento já existente, ainda sem
-  forma de pagamento definida, bate com ela — e pergunta se você
+  site também confere se algum lançamento já existente bate com ela
+  — mesmo que já tenha outra forma de pagamento — e pergunta se você
   quer atualizar esses lançamentos também.
 
 Se o seu site já estava no ar antes dessa função existir, rode o
@@ -249,9 +249,30 @@ lista de resultados.
 A importação agora mostra visualmente em qual etapa você está —
 **arquivo → revisão → confirmação**. Antes de confirmar, um resumo
 mostra o total de lançamentos encontrados, quantos já têm categoria,
-quantos ainda estão pendentes e quantos parecem duplicados. Editar a
-data, a descrição ou o valor de uma linha na prévia atualiza também
-a checagem de duplicidade dessa linha.
+quantos ainda estão pendentes, quantos parecem duplicados e quantas
+parcelas foram detectadas. Editar a data, a descrição ou o valor de
+uma linha na prévia atualiza também a checagem de duplicidade dessa
+linha.
+
+### Parcelas detectadas automaticamente — novo
+
+Se a descrição de um lançamento (ao importar) tiver um padrão como
+"3/12" ou "01/06", o site já entende como parcela — preenche
+sozinho o número da parcela atual e o total, sem precisar digitar.
+Isso alimenta direto a projeção de faturas dos cartões. Como esse
+padrão às vezes aparece em datas (ex.: "05/12" pode ser 5 de
+dezembro), cada detecção mostra um aviso na prévia com a opção
+**"não é parcela"** — clique nela para desfazer, se o site tiver
+interpretado errado.
+
+### Palavras-chave aplicadas em lançamentos antigos — novo
+
+Ao cadastrar uma palavra-chave nova (em Categorias, Cartões ou nas
+formas de pagamento), o site também confere os lançamentos que já
+existem. Se algum bater com a palavra-chave — mesmo que já tenha uma
+categoria ou forma de pagamento diferente —, ele pergunta se você
+quer atualizar esse(s) lançamento(s) também, mostrando quantos
+seriam alterados e para qual valor. Nada muda sem você confirmar.
 
 ### Sugestão automática de categoria ao importar
 
@@ -273,11 +294,11 @@ manualmente na tela de Categorias.
 
 Ao cadastrar uma palavra-chave nova (em Categorias, ou nas
 palavras-chave de Cartões/formas de pagamento — veja abaixo), o
-site também verifica os **lançamentos que já existem** e ainda
-estão sem categoria (ou sem forma de pagamento) definida. Se algum
-bater com a palavra-chave nova, você recebe uma confirmação
-perguntando se quer atualizar esses lançamentos também — sem nunca
-sobrescrever algo que você já revisou manualmente.
+site também verifica os **lançamentos que já existem**. Se algum
+bater com a palavra-chave — mesmo que já tenha uma categoria
+diferente —, você recebe uma confirmação perguntando se quer
+atualizar esse(s) lançamento(s) também, mostrando para qual
+categoria ficariam. Nada muda sem você confirmar.
 
 Se o seu site já estava no ar antes dessa função existir, rode o
 `add-keywords.sql` no SQL Editor do Supabase antes de usar o campo
