@@ -178,7 +178,10 @@ Clicando em **"Ver detalhes"** você vê:
 - **Parcelas futuras**: a lista de compras parceladas que ainda têm
   parcelas pela frente.
 - **Projeção de faturas**: uma estimativa dos próximos até 6 ciclos.
-- **Transações do ciclo atual**: tudo que entra na fatura deste mês.
+- **Transações da fatura**: use as setas para navegar entre faturas
+  anteriores e futuras, e clique em qualquer lançamento da lista
+  para abrir e editar — inclusive pra corrigir a forma de pagamento
+  (Crédito, Débito, etc.) de algo que já foi importado.
 
 Essas projeções são estimativas — elas somam parcelas já
 cadastradas e recorrências vinculadas ao cartão, mas não adivinham
