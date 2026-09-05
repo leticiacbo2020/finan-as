@@ -1,4 +1,4 @@
-# Cora — controle financeiro pessoal
+# LeFinance — painel de controle financeiro
 
 Site para uso pessoal: receitas, despesas, faturas de cartão,
 investimentos, orçamento por categoria e metas — com login e dados
@@ -21,15 +21,22 @@ add-closing-day.sql    script extra, só para quem já tinha o site rodando
                        antes do dia de fechamento do cartão existir
 add-keywords.sql       script extra, só para quem já tinha o site rodando
                        antes das palavras-chave de categoria existirem
+add-recurrences.sql    script extra, só para quem já tinha o site rodando
+                       antes das recorrências (receitas/despesas fixas) existirem
+add-payment-keywords.sql  script extra, só para quem já tinha o site rodando
+                       antes das palavras-chave de forma de pagamento existirem
 README.md              este arquivo
 ```
 
 Se seu site já estava no ar, você não precisa rodar o
 `supabase-schema.sql` de novo — abra o **SQL Editor** do Supabase e
 rode só os scripts que ainda não rodou (`add-categories.sql`,
-`add-closing-day.sql` e/ou `add-keywords.sql`, dependendo de há
-quanto tempo seu site existe). Rodar um script "extra" mais de uma
-vez não tem problema, ele é seguro de repetir.
+`add-closing-day.sql`, `add-keywords.sql`, `add-recurrences.sql`
+e/ou `add-payment-keywords.sql`, dependendo de há quanto tempo seu
+site existe). Rodar um script "extra" mais de uma vez não tem
+problema, ele é seguro de repetir. Enquanto um script não for
+executado, a tela correspondente mostra um aviso explicando isso —
+o resto do site continua funcionando normalmente.
 
 ## Como funciona a segurança
 
@@ -94,7 +101,7 @@ Ou, se preferir linha de comando:
 cd site-financeiro
 git init
 git add .
-git commit -m "primeira versão do Cora"
+git commit -m "primeira versão do LeFinance"
 git branch -M main
 git remote add origin https://github.com/SEU-USUARIO/razao-financeiro.git
 git push -u origin main
@@ -116,13 +123,23 @@ direto no navegador (duplo clique) — funciona sem servidor.
 ## Uso no dia a dia
 
 - **Visão geral**: saldo, receitas, despesas, gastos por categoria,
-  faturas dos cartões, planejado x real e forma de pagamento mais usada.
+  faturas dos cartões, planejado x real, forma de pagamento mais
+  usada e um resumo compacto das suas recorrências.
+- **Busca**: um campo discreto no topo da tela busca por descrição,
+  categoria, forma de pagamento, cartão, valor ou data — em
+  qualquer tela. Veja detalhes abaixo.
 - **Transações**: lançar receitas e despesas, com categoria, forma
   de pagamento, cartão (se for crédito), parcelas e marcação de
   "despesa fixa" para contas recorrentes.
 - **Cartões**: cadastro de cartões, com limite, cor, **dia de
-  fechamento** e dia de vencimento. A fatura do mês é calculada
-  automaticamente a partir das transações — veja detalhes abaixo.
+  fechamento** e dia de vencimento. O resumo mostra nome, fatura
+  atual, limite disponível e vencimento; clique em **"Ver
+  detalhes"** para a próxima fatura, o limite comprometido, as
+  parcelas em aberto, uma projeção de até 6 faturas e as
+  transações do ciclo atual. Veja detalhes abaixo.
+- **Recorrências**: cadastre receitas e despesas que se repetem
+  (assinaturas, salário, aluguel), com valor, categoria, conta ou
+  cartão, frequência e período. Veja detalhes abaixo.
 - **Investimentos**: posições por tipo (renda fixa, ações, etc.).
 - **Orçamento**: defina um teto mensal por categoria e acompanhe o
   quanto já gastou.
@@ -133,13 +150,103 @@ direto no navegador (duplo clique) — funciona sem servidor.
   renomeadas ou removidas, e cada uma pode ganhar **palavras-chave**
   para a sugestão automática ao importar. Veja detalhes abaixo.
 - **Importar**: suba a fatura ou extrato exportado do app do seu
-  banco/cartão (.ofx ou .csv) e revise numa prévia antes de confirmar
-  — o site já sugere uma categoria pra cada lançamento com base nas
-  palavras-chave cadastradas, sem precisar digitar nada.
+  banco/cartão (.ofx ou .csv) em 3 etapas — arquivo, revisão e
+  confirmação. Antes de confirmar, veja quantos lançamentos foram
+  encontrados, quantos já têm categoria, quantos ainda precisam de
+  revisão e quantos parecem duplicados. O site já sugere uma
+  categoria pra cada lançamento com base nas palavras-chave
+  cadastradas, sem precisar digitar nada.
 - **Tutoriais**: um passo a passo rápido de cada parte do site, com
   uma etiqueta "novo" nos pontos que mudaram na última atualização.
 - **Backup**: baixa um `.json` com tudo o que está salvo na nuvem,
   para guardar por segurança.
+
+### Cartões — próxima fatura e projeção — novo
+
+No card de cada cartão, o resumo agora mostra o **limite
+disponível** (limite menos a fatura atual) em vez do limite total,
+para facilitar de bater o olho quanto ainda dá pra gastar.
+
+Clicando em **"Ver detalhes"** você vê:
+
+- **Próxima fatura**: uma estimativa do valor da fatura seguinte,
+  somando parcelas em aberto que caem nela e recorrências
+  vinculadas a esse cartão.
+- **Limite comprometido**: a fatura atual mais o total de todas as
+  parcelas ainda não pagas — quanto do seu limite já está
+  reservado para compromissos futuros.
+- **Parcelas futuras**: a lista de compras parceladas que ainda têm
+  parcelas pela frente.
+- **Projeção de faturas**: uma estimativa dos próximos até 6 ciclos.
+- **Transações do ciclo atual**: tudo que entra na fatura deste mês.
+
+Essas projeções são estimativas — elas somam parcelas já
+cadastradas e recorrências vinculadas ao cartão, mas não adivinham
+lançamentos novos que você ainda não fez.
+
+### Recorrências — novo
+
+Uma tela própria para receitas e despesas que se repetem (Netflix,
+salário, aluguel, etc.), separada das transações do dia a dia:
+
+- Cadastre descrição, valor, categoria, conta ou cartão, frequência
+  (semanal, mensal ou anual) e o período (início e, se quiser, fim).
+- Pause ou reative uma recorrência sem precisar excluí-la.
+- Na Visão geral, aparece só um resumo compacto: quantas
+  recorrências estão ativas e o impacto mensal estimado — clique
+  nele para ver a lista completa.
+- Recorrências vinculadas a um cartão entram automaticamente na
+  projeção de faturas futuras desse cartão (veja "Cartões" acima).
+- Diferente da marcação "despesa fixa" em Transações (que é só uma
+  etiqueta num lançamento já feito), a recorrência é um cadastro à
+  parte, usado para as projeções — ela **não lança transações
+  automaticamente**, então não há duplicidade entre as duas coisas.
+
+Se o seu site já estava no ar antes dessa função existir, rode o
+`add-recurrences.sql` no SQL Editor do Supabase antes de usar essa
+tela (veja "Estrutura simples, de propósito" acima).
+
+### Palavras-chave por forma de pagamento — novo
+
+Além de sugerir a categoria, o site agora também pode sugerir a
+**forma de pagamento** (e o cartão, quando for o caso) de cada
+lançamento ao importar um extrato:
+
+- Em **Cartões → Ver detalhes**, cada cartão tem suas próprias
+  palavras-chave (ex.: "nubank", "roxinho") — quando uma delas
+  aparece na descrição, o site sugere "Crédito" + esse cartão.
+- Em **Cartões**, no painel "Palavras-chave por forma de pagamento",
+  dá pra cadastrar termos para Pix, Débito, Dinheiro e Boleto (ex.:
+  "pix" → Pix, "saque" → Dinheiro).
+- Essas sugestões só aparecem ao importar um extrato **sem** escolher
+  um cartão fixo para o arquivo inteiro — se você escolher um cartão
+  na tela de Importar, todos os lançamentos daquele arquivo continuam
+  indo para "Crédito" + esse cartão, como sempre foi.
+- Você pode revisar e trocar a forma de pagamento sugerida de cada
+  lançamento na prévia da importação, antes de confirmar.
+
+Se o seu site já estava no ar antes dessa função existir, rode o
+`add-payment-keywords.sql` no SQL Editor do Supabase antes de usar
+esses campos (veja "Estrutura simples, de propósito" acima).
+
+### Busca — novo
+
+Um campo de busca discreto, no topo de qualquer tela, procura
+lançamentos por descrição, categoria, forma de pagamento, cartão,
+valor ou data. Os resultados aparecem num painel pequeno — clique
+em qualquer um para abrir e editar direto. Para filtros mais
+específicos (período, valor mínimo/máximo, categoria, forma de
+pagamento ou cartão), clique em **"Busca avançada"** ao final da
+lista de resultados.
+
+### Importar em 3 etapas — novo
+
+A importação agora mostra visualmente em qual etapa você está —
+**arquivo → revisão → confirmação**. Antes de confirmar, um resumo
+mostra o total de lançamentos encontrados, quantos já têm categoria,
+quantos ainda estão pendentes e quantos parecem duplicados. Editar a
+data, a descrição ou o valor de uma linha na prévia atualiza também
+a checagem de duplicidade dessa linha.
 
 ### Sugestão automática de categoria ao importar
 
@@ -166,11 +273,22 @@ Se o seu site já estava no ar antes dessa função existir, rode o
 ### Carregamento da sessão
 
 Ao abrir, atualizar a página, voltar ao site depois de um tempo ou entrar,
-a Cora espera a sessão do Supabase estar pronta antes de carregar os dados.
+a LeFinance espera a sessão do Supabase estar pronta antes de carregar os dados.
 Se houver uma oscilação temporária de rede, as consultas são tentadas de
 novo automaticamente. Caso o problema continue, aparece uma mensagem de
 conexão — não uma mensagem de credenciais — e o console registra somente a
 etapa e o tipo de falha, sem expor chaves, tokens ou dados pessoais.
+
+### Painel de gráficos — novo
+
+Na Visão geral e em Investimentos, cada gráfico tem o botão **recolher**.
+Use-o para fechar temporariamente os painéis maiores e deixe a tela mais
+compacta; clique em **expandir** para ver o gráfico de novo.
+
+### Conferir senha — novo
+
+Na tela de login, use o botão com o ícone de olho ao lado do campo de senha
+para mostrar ou ocultar o que foi digitado antes de entrar ou criar a conta.
 
 ### Dia de fechamento do cartão
 
