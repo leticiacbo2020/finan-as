@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cora — controle financeiro pessoal</title>
+<title>LeFinance — painel de controle financeiro</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,39 +11,39 @@
 <style>
 /* ============ TOKENS ============ */
 :root{
-  --bg: #F7F0E8;
-  --bg-2: #F0DED2;
-  --surface: #FFFDF9;
-  --ink: #37252B;
-  --ink-soft: #826B68;
-  --line: #E9D8CC;
-  --line-strong: #D9B8AD;
+  --bg: #FCF6F8;
+  --bg-2: #EEE3F7;
+  --surface: #FFFDFE;
+  --ink: #3A2438;
+  --ink-soft: #806579;
+  --line: #EBD9E5;
+  --line-strong: #D8B8CC;
 
-  --pink: #B66D73;
-  --pink-dark: #713D46;
-  --pink-bg: #F1DFD7;
+  --pink: #D34D7D;
+  --pink-dark: #671D43;
+  --pink-bg: #F9E1EB;
 
   --green: #7EA88A;
   --green-bg: #E7F1E9;
 
-  --red: #B75E5D;
-  --red-bg: #F7E2DE;
+  --red: #B84062;
+  --red-bg: #F9E0E8;
 
-  --gold: #B88256;
-  --gold-bg: #F4E8D9;
+  --gold: #C96F61;
+  --gold-bg: #F9E5DE;
 
-  --lav: #92717A;
-  --lav-bg: #EEE2DF;
+  --lav: #8758A7;
+  --lav-bg: #EEE2F5;
 
   --serif: "Playfair Display", Georgia, serif;
   --script: "Playfair Display", Georgia, serif;
   --sans: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
 
-  --radius: 16px;
-  --radius-sm: 10px;
-  --sidebar-w: 244px;
-  --shadow: 0 18px 42px -26px rgba(79, 43, 40, 0.34);
-  --shadow-sm: 0 8px 18px -14px rgba(79, 43, 40, 0.28);
+  --radius: 8px;
+  --radius-sm: 4px;
+  --sidebar-w: 252px;
+  --shadow: 0 20px 46px -30px rgba(101, 29, 67, 0.28);
+  --shadow-sm: 0 8px 20px -16px rgba(101, 29, 67, 0.26);
 }
 
 *{ box-sizing: border-box; }
@@ -79,7 +79,7 @@ button, input, select{ font-family: var(--sans); }
 .auth-card{
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 8px;
   box-shadow: var(--shadow);
   padding: 36px 32px 28px;
   width: 100%;
@@ -105,6 +105,15 @@ button, input, select{ font-family: var(--sans); }
   line-height: 1.6; margin-top: 20px;
   border-top: 1px dashed var(--line); padding-top: 16px;
 }
+.password-field{ position:relative; }
+.password-field input{ width:100%; padding-right:88px; }
+.password-toggle{
+  position:absolute; top:50%; right:7px; transform:translateY(-50%);
+  display:inline-flex; align-items:center; gap:5px; border:0; background:transparent;
+  color:var(--pink-dark); cursor:pointer; font-size:.72rem; font-weight:700; padding:6px;
+}
+.password-toggle:hover{ color:var(--pink); }
+.password-toggle svg{ width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.8; }
 
 /* ============ LAYOUT ============ */
 .app{
@@ -115,7 +124,7 @@ button, input, select{ font-family: var(--sans); }
 .sidebar{
   width: var(--sidebar-w);
   flex-shrink: 0;
-  background: linear-gradient(180deg, #FFFDF9, #F8EEE6);
+  background: linear-gradient(180deg, #671D43, #3C122A);
   border-right: 1px solid var(--line);
   padding: 30px 20px;
   display: flex;
@@ -127,15 +136,20 @@ button, input, select{ font-family: var(--sans); }
 
 .brand{ display:flex; align-items:center; gap:12px; margin-bottom: 40px; }
 .brand-mark{
-  font-size: 1.3rem;
-  color: var(--pink);
-  background: var(--pink-bg);
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  font-weight:700;
+  color: #fff;
+  background: var(--pink);
   width: 40px; height: 40px;
   display:flex; align-items:center; justify-content:center;
-  border-radius: 50%;
+  border-radius: 3px;
+  letter-spacing:-.08em;
 }
-.brand-name{ font-family: var(--script); font-size: 1.55rem; line-height: 1; letter-spacing: 0.01em; color: var(--pink-dark); }
-.brand-sub{ font-size: 0.64rem; color: var(--ink-soft); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 4px; }
+.brand-name{ font-family: var(--serif); font-size: 1.35rem; line-height: 1; letter-spacing: .06em; text-transform:uppercase; color: #fff; }
+.brand-sub{ font-size: 0.61rem; color: #EABFD4; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 5px; }
+.brand--auth .brand-name{ color:var(--pink-dark); }
+.brand--auth .brand-sub{ color:var(--ink-soft); }
 
 .nav{ display:flex; flex-direction:column; gap: 4px; flex: 1; }
 .nav-item{
@@ -145,22 +159,22 @@ button, input, select{ font-family: var(--sans); }
   padding: 11px 14px;
   font-size: 0.92rem;
   font-weight: 600;
-  color: var(--ink-soft);
-  border-radius: 999px;
+  color: #EABFD4;
+  border-radius: 3px;
   cursor:pointer;
   display:flex;
   align-items:center;
   gap: 10px;
   transition: background 0.15s, color 0.15s;
 }
-.nav-num{ font-size: 0.66rem; color: var(--line-strong); font-variant-numeric: tabular-nums; width: 16px; font-weight: 700; }
-.nav-item:hover{ background: var(--pink-bg); color: var(--pink-dark); }
-.nav-item.is-active{ background: var(--pink); color: #fff; box-shadow: var(--shadow-sm); }
+.nav-num{ font-size: 0.66rem; color: #A67491; font-variant-numeric: tabular-nums; width: 16px; font-weight: 700; }
+.nav-item:hover{ background: rgba(255,255,255,.09); color: #fff; }
+.nav-item.is-active{ background: var(--pink); color: #fff; box-shadow:none; }
 .nav-item.is-active .nav-num{ color: rgba(255,255,255,0.75); }
 
-.sidebar-footer{ padding-top: 16px; border-top: 1px solid var(--line); }
+.sidebar-footer{ padding-top: 16px; border-top: 1px solid rgba(255,255,255,.15); }
 .nav-item--ghost{ font-size: 0.85rem; }
-.sidebar-note{ font-size: 0.72rem; color: var(--ink-soft); padding: 8px 10px 0; line-height: 1.4; }
+.sidebar-note{ font-size: 0.72rem; color: #D9AFC6; padding: 8px 10px 0; line-height: 1.4; }
 
 .main{
   flex: 1;
@@ -175,11 +189,11 @@ button, input, select{ font-family: var(--sans); }
   margin-bottom: 28px;
   gap: 20px;
 }
-.topbar h1{ font-size: 1.9rem; color: var(--pink-dark); }
+.topbar h1{ font-size: 2rem; color: var(--ink); letter-spacing:-.025em; }
 
 .topbar-month{
   display:flex; align-items:center; gap: 12px;
-  border: 1px solid var(--line); border-radius: 999px;
+  border: 1px solid var(--line-strong); border-radius: 4px;
   padding: 8px 14px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -242,6 +256,15 @@ button, input, select{ font-family: var(--sans); }
 }
 .panel-head h2{ margin-bottom: 0; }
 .panel-head--loose{ margin-bottom: 18px; }
+.chart-panel .panel-head{ margin-bottom:0; }
+.chart-panel:not(.is-collapsed) .panel-head{ margin-bottom:14px; }
+.collapse-panel{
+  border:0; border-bottom:1px solid var(--line-strong); background:transparent; color:var(--pink-dark);
+  cursor:pointer; padding:3px 0; font-size:.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+}
+.collapse-panel:hover{ color:var(--pink); }
+.chart-panel.is-collapsed{ padding-bottom:16px; }
+.chart-panel.is-collapsed .panel-chart-content{ display:none; }
 
 .link-btn{
   background:none; border:none; cursor:pointer;
@@ -309,7 +332,7 @@ select:focus, input:focus{ outline: 2px solid var(--pink-bg); border-color: var(
 select{ cursor:pointer; }
 
 .btn{
-  border-radius: 999px;
+  border-radius: 4px;
   border: 1px solid var(--line-strong);
   background: var(--surface);
   padding: 10px 18px;
@@ -333,7 +356,7 @@ select{ cursor:pointer; }
   margin-bottom: 10px;
 }
 .credit-card{
-  border-radius: 20px;
+  border-radius: 8px;
   padding: 20px 22px;
   color: #fff;
   min-height: 130px;
@@ -401,7 +424,7 @@ select{ cursor:pointer; }
   padding: 10px 10px 0; gap: 8px;
 }
 .sidebar-email{
-  font-size: 0.72rem; color: var(--ink-soft); font-weight: 600;
+  font-size: 0.72rem; color: #EABFD4; font-weight: 600;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
@@ -416,7 +439,7 @@ select{ cursor:pointer; }
 .modal-overlay[hidden]{ display:none; }
 .modal{
   background: var(--surface);
-  border-radius: 20px;
+  border-radius: 8px;
   box-shadow: var(--shadow);
   width: 100%;
   max-width: 420px;
@@ -534,6 +557,94 @@ select{ cursor:pointer; }
   width: 140px;
 }
 .keyword-chip button:hover{ color: var(--red); transform: scale(1.12); }
+/* ============ BUSCA GLOBAL ============ */
+.search-wrap{ position:relative; flex: 0 1 260px; }
+.search-input{
+  width: 100%; padding: 9px 14px; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface);
+  font-size: 0.85rem;
+}
+.search-results{
+  position:absolute; top: calc(100% + 6px); right:0; width: 360px; max-width: 90vw;
+  background: var(--surface); border:1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 8px; z-index: 60; max-height: 380px; overflow-y:auto;
+}
+.search-results[hidden]{ display:none; }
+.search-result{
+  display:flex; justify-content:space-between; gap:10px; align-items:center;
+  padding: 9px 10px; border-radius: var(--radius-sm); cursor:pointer; text-align:left;
+  width:100%; background:none; border:none; font-family:var(--sans);
+}
+.search-result:hover{ background: var(--pink-bg); }
+.search-result-main{ display:flex; flex-direction:column; gap:2px; align-items:flex-start; }
+.search-result-desc{ font-weight:600; font-size:0.86rem; color:var(--ink); }
+.search-result-meta{ font-size:0.72rem; color:var(--ink-soft); }
+.search-empty{ padding: 14px 10px; text-align:center; color:var(--ink-soft); font-size:0.85rem; margin:0; }
+.search-advanced-toggle{
+  display:block; width:100%; text-align:center; padding: 8px 0 2px; margin-top:4px;
+  border-top:1px dashed var(--line); background:none; border-left:none; border-right:none; border-bottom:none;
+  color: var(--pink); font-weight:700; font-size:0.78rem; cursor:pointer;
+}
+
+/* ============ MODAL VARIANTES / DETALHES ============ */
+.modal--wide{ max-width: 720px; }
+.detail-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-bottom:14px; }
+.detail-stat{ background: var(--bg); border:1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; }
+.detail-stat strong{ display:block; font-family:var(--serif); font-size:1.15rem; margin-top:4px; }
+.detail-section{ margin-top: 20px; }
+.detail-section h4{ font-size:0.8rem; color:var(--pink-dark); margin:0 0 10px; text-transform:uppercase; letter-spacing:.03em; }
+.installment-row{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-size:0.86rem; }
+.installment-row:last-child{ border-bottom:none; }
+.installment-tag{ font-size:0.68rem; font-weight:700; color:var(--pink-dark); background:var(--pink-bg); border-radius:999px; padding:2px 8px; margin-left:8px; }
+.projection-strip{ display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+.projection-item{ flex: 0 0 auto; min-width: 92px; text-align:center; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 8px; }
+.projection-item .ledger-label{ font-size:0.62rem; }
+.projection-item strong{ display:block; margin-top:4px; font-family:var(--serif); font-size:0.92rem; }
+.cc-more-btn{
+  background: rgba(255,255,255,0.25); border:none; color:#fff; width:100%;
+  margin-top:10px; padding:7px 0; border-radius:999px; font-size:0.72rem; font-weight:700;
+  cursor:pointer; letter-spacing:.02em;
+}
+.cc-more-btn:hover{ background: rgba(255,255,255,0.4); }
+
+/* ============ RECORRÊNCIAS ============ */
+.recurrence-row{
+  background: var(--surface); border:1px solid var(--line); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm); padding: 14px 18px;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+}
+.recurrence-row.is-inactive{ opacity:0.55; }
+.recurrence-main{ flex:1; min-width:180px; }
+.recurrence-main strong{ display:block; font-size:0.92rem; }
+.recurrence-meta{ font-size:0.74rem; color:var(--ink-soft); margin-top:2px; }
+.recurrence-amount{ font-weight:700; font-family:var(--serif); font-size:1rem; }
+.recurrence-actions{ display:flex; gap:10px; }
+.recurrence-actions button{ background:none; border:none; color:var(--ink-soft); font-size:0.8rem; font-weight:600; cursor:pointer; }
+.recurrence-actions button:hover{ color:var(--pink-dark); }
+.dash-recurrence-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  background: var(--surface); border:1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); padding:14px 20px; margin-bottom:20px;
+  cursor:pointer; text-align:left; width:100%; font-family:var(--sans);
+}
+.dash-recurrence-bar:hover{ border-color: var(--line-strong); }
+.dash-recurrence-bar strong{ font-family:var(--serif); font-size:1.05rem; color:var(--pink-dark); }
+
+/* ============ IMPORTAR — STEPPER / RESUMO ============ */
+.import-stepper{ display:flex; gap:0; margin-bottom:20px; }
+.import-step{
+  flex:1; text-align:center; padding-bottom:10px; border-bottom:3px solid var(--line);
+  font-size:0.78rem; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em;
+}
+.import-step.is-active{ border-color: var(--pink); color: var(--pink-dark); }
+.import-step.is-done{ border-color: var(--green); color: var(--green); }
+.import-summary{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+.import-summary-item{
+  flex:1; min-width:120px; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm);
+  padding:12px 14px; text-align:center;
+}
+.import-summary-item strong{ display:block; font-family:var(--serif); font-size:1.2rem; margin-top:2px; }
+
 .app-notice{
   position:fixed; right:20px; bottom:20px; max-width:390px; z-index:100;
   padding:13px 15px; border:1px solid var(--line-strong); border-radius:12px;
@@ -561,6 +672,9 @@ select{ cursor:pointer; }
   .ledger-figure{ border-bottom: 1px solid var(--line); }
   .topbar{ flex-direction: column; }
   .app-notice{ left:16px; right:16px; bottom:16px; max-width:none; }
+  .search-wrap{ width:100%; }
+  .search-results{ width:100%; }
+  .detail-grid{ grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 600px){
@@ -575,6 +689,9 @@ select{ cursor:pointer; }
   .topbar-month{ width:100%; justify-content:space-between; }
   .goal-form, .field-row{ flex-direction:column; }
   .goal-form .btn{ width:100%; }
+  .detail-grid{ grid-template-columns: 1fr; }
+  .import-step{ font-size:0.68rem; }
+  .recurrence-row{ flex-direction:column; align-items:stretch; }
 }
 
 </style>
@@ -601,10 +718,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
 <div class="auth-screen" id="auth-screen">
   <div class="auth-card">
     <div class="brand brand--auth">
-      <span class="brand-mark">✿</span>
+      <span class="brand-mark" aria-hidden="true">L.</span>
       <div>
-        <div class="brand-name">Cora</div>
-        <div class="brand-sub">controle pessoal</div>
+        <div class="brand-name">LeFinance</div>
+        <div class="brand-sub">painel de controle financeiro</div>
       </div>
     </div>
     <p class="muted" id="auth-sub">Entre para acessar seus dados de qualquer aparelho.</p>
@@ -616,7 +733,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       </div>
       <div class="field">
         <label>Senha</label>
-        <input type="password" id="auth-password" required autocomplete="current-password" minlength="6">
+        <div class="password-field">
+          <input type="password" id="auth-password" required autocomplete="current-password" minlength="6">
+          <button type="button" class="password-toggle" id="auth-password-toggle" aria-label="Mostrar senha" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.3-5.5 9.5-5.5 9.5 5.5 9.5 5.5-3.3 5.5-9.5 5.5S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+            <span>Mostrar</span>
+          </button>
+        </div>
       </div>
       <p class="auth-error" id="auth-error" hidden></p>
       <button type="submit" class="btn btn-primary btn-block" id="auth-submit">Entrar</button>
@@ -633,10 +756,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
-      <span class="brand-mark">✿</span>
+      <span class="brand-mark" aria-hidden="true">L.</span>
       <div>
-        <div class="brand-name">Cora</div>
-        <div class="brand-sub">controle pessoal</div>
+        <div class="brand-name">LeFinance</div>
+        <div class="brand-sub">painel de controle financeiro</div>
       </div>
     </div>
 
@@ -656,17 +779,20 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <button class="nav-item" data-view="orcamento">
         <span class="nav-num">05</span> Orçamento
       </button>
+      <button class="nav-item" data-view="recorrencias">
+        <span class="nav-num">06</span> Recorrências
+      </button>
       <button class="nav-item" data-view="metas">
-        <span class="nav-num">06</span> Metas
+        <span class="nav-num">07</span> Metas
       </button>
       <button class="nav-item" data-view="categorias">
-        <span class="nav-num">07</span> Categorias
+        <span class="nav-num">08</span> Categorias
       </button>
       <button class="nav-item" data-view="importar">
-        <span class="nav-num">08</span> Importar
+        <span class="nav-num">09</span> Importar
       </button>
       <button class="nav-item" data-view="tutoriais">
-        <span class="nav-num">09</span> Tutoriais
+        <span class="nav-num">10</span> Tutoriais
       </button>
     </nav>
 
@@ -688,6 +814,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <div>
         <h1 id="view-title">Visão geral</h1>
         <p id="view-sub" class="muted">Resumo do seu momento financeiro</p>
+      </div>
+      <div class="search-wrap">
+        <input type="text" id="global-search" class="search-input" placeholder="Buscar lançamentos…" autocomplete="off" aria-label="Buscar lançamentos">
+        <div class="search-results" id="search-results" hidden></div>
       </div>
       <div class="topbar-month">
         <button id="month-prev" class="icon-btn" aria-label="Mês anterior">‹</button>
@@ -717,15 +847,25 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         </div>
       </div>
 
+      <button type="button" class="dash-recurrence-bar" id="dash-recorrencias" data-view="recorrencias">
+        <span id="dash-recorrencias-texto" class="muted" style="margin:0;">0 recorrências · R$ 0,00/mês</span>
+        <strong>ver recorrências →</strong>
+      </button>
+
       <div class="grid-2">
-        <div class="panel">
-          <h2>Gastos por categoria</h2>
+        <div class="panel chart-panel" data-chart-panel>
+          <div class="panel-head">
+            <h2>Gastos por categoria</h2>
+            <button type="button" class="collapse-panel" aria-expanded="true">recolher</button>
+          </div>
+          <div class="panel-chart-content">
           <div class="mini-stats" id="mini-maior-menor" hidden>
             <div><span class="ledger-label">Maior gasto</span><strong id="stat-maior-gasto">—</strong></div>
             <div><span class="ledger-label">Menor gasto</span><strong id="stat-menor-gasto">—</strong></div>
           </div>
           <canvas id="chart-categorias" height="220"></canvas>
           <p class="empty-hint" id="chart-categorias-empty" hidden>Sem despesas neste mês ainda.</p>
+          </div>
         </div>
         <div class="panel">
           <h2>Faturas dos cartões</h2>
@@ -735,15 +875,25 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       </div>
 
       <div class="grid-2">
-        <div class="panel">
-          <h2>Planejado x real</h2>
+        <div class="panel chart-panel" data-chart-panel>
+          <div class="panel-head">
+            <h2>Planejado x real</h2>
+            <button type="button" class="collapse-panel" aria-expanded="true">recolher</button>
+          </div>
+          <div class="panel-chart-content">
           <canvas id="chart-planejado" height="200"></canvas>
           <p class="empty-hint" id="chart-planejado-empty" hidden>Defina metas em "Orçamento" para comparar aqui.</p>
+          </div>
         </div>
-        <div class="panel">
-          <h2>Forma de pagamento mais usada</h2>
+        <div class="panel chart-panel" data-chart-panel>
+          <div class="panel-head">
+            <h2>Forma de pagamento mais usada</h2>
+            <button type="button" class="collapse-panel" aria-expanded="true">recolher</button>
+          </div>
+          <div class="panel-chart-content">
           <canvas id="chart-pagamento" height="200"></canvas>
           <p class="empty-hint" id="chart-pagamento-empty" hidden>Registre a forma de pagamento nas despesas para ver aqui.</p>
+          </div>
         </div>
       </div>
 
@@ -808,6 +958,20 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       </div>
       <div class="card-grid" id="lista-cartoes"></div>
       <p class="empty-hint" id="cartoes-empty" hidden>Nenhum cartão cadastrado ainda.</p>
+
+      <details class="tutorial-item" style="margin-top:24px;">
+        <summary>Palavras-chave por forma de pagamento</summary>
+        <p class="muted" style="margin:10px 0 14px;">
+          Para o Pix, Débito, Dinheiro e Boleto — sem cartão vinculado. Cada
+          cartão tem suas próprias palavras-chave em "Ver detalhes". Ao
+          importar um extrato (sem escolher um cartão fixo), essas palavras
+          sugerem a forma de pagamento de cada lançamento automaticamente.
+        </p>
+        <p class="muted" id="pagamento-keywords-indisponivel" hidden>
+          Essa função ainda não está disponível na sua conta — rode o script <code>add-payment-keywords.sql</code> no SQL Editor do Supabase (veja o README) e recarregue a página.
+        </p>
+        <div class="stack" id="lista-pagamento-keywords"></div>
+      </details>
     </section>
 
     <!-- ===== INVESTIMENTOS ===== -->
@@ -824,10 +988,15 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       </div>
 
       <div class="grid-2">
-        <div class="panel">
-          <h2>Distribuição por tipo</h2>
+        <div class="panel chart-panel" data-chart-panel>
+          <div class="panel-head">
+            <h2>Distribuição por tipo</h2>
+            <button type="button" class="collapse-panel" aria-expanded="true">recolher</button>
+          </div>
+          <div class="panel-chart-content">
           <canvas id="chart-investimentos" height="220"></canvas>
           <p class="empty-hint" id="chart-investimentos-empty" hidden>Cadastre um investimento para ver o gráfico.</p>
+          </div>
         </div>
         <div class="panel">
           <div class="panel-head">
@@ -853,6 +1022,19 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       </div>
       <div class="stack" id="lista-orcamento"></div>
       <p class="empty-hint" id="orcamento-empty" hidden>Defina uma meta mensal para começar a acompanhar seu orçamento.</p>
+    </section>
+
+    <!-- ===== RECORRÊNCIAS ===== -->
+    <section class="view" id="view-recorrencias" hidden>
+      <div class="panel-head panel-head--loose">
+        <h2>Receitas e despesas recorrentes</h2>
+        <button class="btn btn-primary" id="btn-nova-recorrencia">Nova recorrência</button>
+      </div>
+      <p class="muted" id="recorrencias-indisponivel" hidden>
+        Essa função ainda não está disponível na sua conta — rode o script <code>add-recurrences.sql</code> no SQL Editor do Supabase (veja o README) e recarregue a página.
+      </p>
+      <div class="stack" id="lista-recorrencias"></div>
+      <p class="empty-hint" id="recorrencias-empty" hidden>Nenhuma recorrência cadastrada — adicione uma assinatura, salário ou conta fixa para acompanhar o impacto mensal.</p>
     </section>
 
     <!-- ===== METAS / ANOTAÇÕES ===== -->
@@ -895,6 +1077,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
 
     <!-- ===== IMPORTAR ===== -->
     <section class="view" id="view-importar" hidden>
+      <div class="import-stepper" id="import-stepper">
+        <div class="import-step is-active" data-step="arquivo">1. Arquivo</div>
+        <div class="import-step" data-step="revisao">2. Revisão</div>
+        <div class="import-step" data-step="confirmacao">3. Confirmação</div>
+      </div>
       <div class="panel">
         <h2>Importar fatura ou extrato</h2>
         <p class="muted">
@@ -928,11 +1115,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
 
       <div class="panel" id="import-preview" hidden>
         <div class="panel-head">
-          <h2 id="import-preview-count">Prévia</h2>
+          <h2>Revisão</h2>
           <button class="btn btn-primary" id="btn-confirmar-importacao">Importar selecionados</button>
         </div>
+        <div class="import-summary" id="import-summary"></div>
+        <p class="muted" id="import-preview-count" style="margin:0 0 12px;"></p>
         <table class="ledger-table" id="tabela-import">
-          <thead><tr><th></th><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th class="num">Valor</th></tr></thead>
+          <thead><tr><th></th><th>Data</th><th>Descrição</th><th>Categoria</th><th>Pagamento</th><th>Tipo</th><th class="num">Valor</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -960,11 +1149,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           </ol>
         </details>
         <details class="tutorial-item">
-          <summary>Cartões</summary>
+          <summary>Cartões <span class="tutorial-badge-new">novo</span></summary>
           <ol class="tutorial-steps">
             <li>Clique em <strong>"Novo cartão"</strong> e informe nome, bandeira, limite e cor.</li>
             <li>Preencha o <strong>dia de fechamento</strong> para a fatura seguir o ciclo real do cartão, em vez do mês do calendário.</li>
             <li>Sem o dia de fechamento, a fatura continua somando pelo mês do calendário, como sempre foi.</li>
+            <li>O resumo do cartão mostra o <strong>limite disponível</strong> e o vencimento; clique em <strong>"Ver detalhes"</strong> para a próxima fatura, o limite comprometido, as parcelas em aberto, uma projeção de até 6 faturas, as transações do ciclo atual e as palavras-chave desse cartão.</li>
+            <li>Palavras-chave do cartão (em "Ver detalhes") e das formas de pagamento sem cartão (Pix, Débito, Dinheiro, Boleto — logo abaixo da lista de cartões) ajudam a sugerir automaticamente a forma de pagamento de cada lançamento ao importar um extrato.</li>
           </ol>
         </details>
         <details class="tutorial-item">
@@ -983,6 +1174,15 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           </ol>
         </details>
         <details class="tutorial-item">
+          <summary>Recorrências <span class="tutorial-badge-new">novo</span></summary>
+          <ol class="tutorial-steps">
+            <li>Clique em <strong>"Nova recorrência"</strong> e informe descrição, valor, categoria, conta ou cartão, frequência e o período.</li>
+            <li>Use <strong>"pausar"</strong> para suspender uma recorrência sem excluí-la — ela some do resumo mensal até ser reativada.</li>
+            <li>Na Visão geral, um resumo compacto mostra quantas recorrências estão ativas e o impacto mensal estimado.</li>
+            <li>Recorrências vinculadas a um cartão entram na projeção de faturas futuras desse cartão, em "Ver detalhes".</li>
+          </ol>
+        </details>
+        <details class="tutorial-item">
           <summary>Metas</summary>
           <ol class="tutorial-steps">
             <li>Escreva algo que você quer alcançar e clique em <strong>"Adicionar"</strong>.</li>
@@ -998,10 +1198,20 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           </ol>
         </details>
         <details class="tutorial-item">
+          <summary>Busca <span class="tutorial-badge-new">novo</span></summary>
+          <ol class="tutorial-steps">
+            <li>Digite no campo de busca, no topo da tela, para encontrar lançamentos por descrição, categoria, forma de pagamento, cartão, valor ou data.</li>
+            <li>Clique em qualquer resultado para abrir e editar aquele lançamento direto.</li>
+            <li>Clique em <strong>"Busca avançada"</strong>, ao final da lista, para filtrar por período, valor mínimo/máximo, categoria, forma de pagamento ou cartão.</li>
+          </ol>
+        </details>
+        <details class="tutorial-item">
           <summary>Importar <span class="tutorial-badge-new">novo</span></summary>
           <ol class="tutorial-steps">
-            <li>Escolha o <strong>cartão</strong> desta fatura (se for de crédito) e suba o arquivo <strong>.ofx ou .csv</strong>.</li>
+            <li>Escolha o <strong>cartão</strong> desta fatura (se for de crédito) e suba o arquivo <strong>.ofx ou .csv</strong> — primeira etapa do indicador no topo da tela.</li>
             <li>O site já <strong>sugere uma categoria</strong> para cada lançamento, comparando a descrição com as palavras-chave cadastradas em Categorias.</li>
+            <li>Se você não escolher um cartão fixo (por exemplo, ao importar um extrato com Pix, débito e dinheiro misturados), o site também sugere a <strong>forma de pagamento</strong> de cada linha, usando as palavras-chave cadastradas em Cartões.</li>
+            <li>Na revisão, veja o resumo com total, categorizadas, pendentes e possíveis duplicadas antes de continuar.</li>
             <li>Linhas parecidas com algo que já existe aparecem destacadas e desmarcadas — revise antes de continuar.</li>
             <li>Ajuste o que for preciso e clique em <strong>"Importar selecionados"</strong> — nada é salvo antes disso.</li>
           </ol>
@@ -1048,7 +1258,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* =========================================================
-   CORA — controle financeiro pessoal
+   LEFINANCE — painel de controle financeiro
    Dados e login no Supabase (nuvem). Configure SUPABASE_URL e SUPABASE_ANON_KEY logo abaixo.
    ========================================================= */
 
@@ -1078,13 +1288,13 @@ try {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
   });
 } catch(error) {
-  console.error("[Cora] Falha segura ao inicializar Supabase", { message: error?.message, name: error?.name });
+  console.error("[LeFinance] Falha segura ao inicializar Supabase", { message: error?.message, name: error?.name });
   document.body.innerHTML = `<div class="auth-screen"><div class="auth-card"><h1>Não foi possível iniciar o app</h1><p class="muted">Confira sua conexão e recarregue a página. Se persistir, abra o console para o diagnóstico técnico.</p></div></div>`;
   throw error;
 }
 
 window.addEventListener("error", (e)=>{
-  console.error("[Cora] Erro de interface", { message:e.message, source:e.filename, line:e.lineno });
+  console.error("[LeFinance] Erro de interface", { message:e.message, source:e.filename, line:e.lineno });
   const box = document.createElement("div");
   box.style.cssText = "position:fixed;bottom:16px;left:16px;right:16px;max-width:420px;margin:0 auto;background:#FBE3EA;border:1px solid #E8B8CC;color:#4A3540;padding:12px 16px;border-radius:12px;font-family:sans-serif;font-size:0.85rem;z-index:999;";
   box.textContent = "Algo deu errado no site. Abra o console (F12) para mais detalhes técnicos.";
@@ -1104,6 +1314,7 @@ const TIPOS_INVESTIMENTO = [
 ];
 const CORES_CARTAO = ["#A65E64", "#8D625F", "#B77B56", "#6F8878", "#703D46"];
 const FORMAS_PAGAMENTO = ["Pix", "Débito", "Crédito", "Dinheiro", "Boleto"];
+const METODOS_SEM_CARTAO = ["Pix", "Débito", "Dinheiro", "Boleto"]; // formas de pagamento que podem ganhar palavra-chave própria (sem ser um cartão)
 
 // Palavras-chave que já vêm prontas nas categorias padrão, usadas para
 // sugerir a categoria de um lançamento importado (ver sugerirCategoriaPorPalavraChave).
@@ -1144,6 +1355,33 @@ function sugerirCategoriaPorPalavraChave(descricao, tipo){
   return null;
 }
 
+// Mesma lógica, mas para sugerir a FORMA DE PAGAMENTO (e, quando fizer
+// sentido, o cartão) a partir das palavras-chave cadastradas em Cartões.
+// Cartões têm prioridade por serem mais específicos ("nubank" já diz
+// exatamente qual cartão, enquanto "Débito" é genérico). Só sugere cartão
+// para despesas — retorna { payment_method, card_id } ou null.
+function sugerirPagamentoPorPalavraChave(descricao, tipo="despesa"){
+  const desc = normalizeTexto(descricao);
+  if(!desc) return null;
+  if(tipo==="despesa"){
+    const cardsComKw = db.cards.filter(c=> Array.isArray(c.keywords) && c.keywords.length);
+    for(const c of cardsComKw){
+      for(const kw of [...c.keywords].sort((a,b)=>String(b).length-String(a).length)){
+        const kwNorm = normalizeTexto(kw);
+        if(kwNorm && desc.includes(kwNorm)) return { payment_method:"Crédito", card_id:c.id };
+      }
+    }
+  }
+  const pkComKw = (db.paymentKeywords||[]).filter(p=> Array.isArray(p.keywords) && p.keywords.length);
+  for(const p of pkComKw){
+    for(const kw of [...p.keywords].sort((a,b)=>String(b).length-String(a).length)){
+      const kwNorm = normalizeTexto(kw);
+      if(kwNorm && desc.includes(kwNorm)) return { payment_method:p.method, card_id:null };
+    }
+  }
+  return null;
+}
+
 // Todas as categorias (padrão + as que o usuário criou) moram na tabela
 // db.categories — as "padrão" são só a semente inicial (ver seedCategoriasPadrao),
 // depois disso são linhas normais, editáveis e removíveis como qualquer outra.
@@ -1177,7 +1415,9 @@ async function seedCategoriasPadrao(){
 }
 
 /* ---------- estado ---------- */
-let db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [] };
+let db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [], recurrences: [], paymentKeywords: [] };
+let recorrenciasIndisponiveis = false; // true se a tabela "recurrences" ainda não existir no banco
+let palavrasChavePagamentoIndisponivel = false; // true se a tabela "payment_keywords" ainda não existir no banco
 let currentUser = null;
 let bootUserId = null;
 let bootGeneration = 0;
@@ -1239,6 +1479,16 @@ const authError = document.getElementById("auth-error");
 const authSubmit = document.getElementById("auth-submit");
 const authToggle = document.getElementById("auth-toggle");
 const authSub = document.getElementById("auth-sub");
+const authPassword = document.getElementById("auth-password");
+const authPasswordToggle = document.getElementById("auth-password-toggle");
+
+authPasswordToggle.addEventListener("click", ()=>{
+  const show = authPassword.type === "password";
+  authPassword.type = show ? "text" : "password";
+  authPasswordToggle.setAttribute("aria-pressed", String(show));
+  authPasswordToggle.setAttribute("aria-label", show ? "Ocultar senha" : "Mostrar senha");
+  authPasswordToggle.querySelector("span").textContent = show ? "Ocultar" : "Mostrar";
+});
 
 authToggle.addEventListener("click", ()=>{
   authMode = authMode === "signin" ? "signup" : "signin";
@@ -1268,7 +1518,7 @@ authForm.addEventListener("submit", async (e)=>{
       ? await sbClient.auth.signUp({ email, password })
       : await sbClient.auth.signInWithPassword({ email, password }));
   } catch(cause) {
-    console.error("[Cora] Falha segura na autenticação", { message:cause?.message, name:cause?.name });
+    console.error("[LeFinance] Falha segura na autenticação", { message:cause?.message, name:cause?.name });
     error = { message:"Não foi possível falar com o serviço agora. Verifique sua conexão e tente novamente." };
   }
 
@@ -1301,7 +1551,7 @@ document.getElementById("btn-logout").addEventListener("click", async ()=>{
   try {
     await sbClient.auth.signOut();
   } catch(error) {
-    console.error("[Cora] Falha segura ao encerrar sessão", { message:error?.message, name:error?.name });
+    console.error("[LeFinance] Falha segura ao encerrar sessão", { message:error?.message, name:error?.name });
     alert("Não foi possível encerrar a sessão agora. Tente novamente.");
   }
 });
@@ -1346,7 +1596,7 @@ async function activateSession(session){
     bootGeneration++;
     bootUserId = null;
     currentUser = null;
-    db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [] };
+    db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [], recurrences: [], paymentKeywords: [] };
     clearAppNotice();
     appEl.hidden = true;
     authScreen.hidden = false;
@@ -1361,14 +1611,14 @@ sbClient.auth.onAuthStateChange((_event, session)=>{ void activateSession(sessio
 sbClient.auth.getSession()
   .then(({ data, error })=>{
     if(error){
-      console.error("[Cora] Falha segura ao restaurar sessão", { message:error.message, name:error.name });
+      console.error("[LeFinance] Falha segura ao restaurar sessão", { message:error.message, name:error.name });
       showAppNotice("Não foi possível restaurar a sessão. Recarregue a página para tentar novamente.", "error");
       return;
     }
     return activateSession(data.session);
   })
   .catch(error=>{
-    console.error("[Cora] Erro inesperado ao restaurar sessão", { message:error?.message, name:error?.name });
+    console.error("[LeFinance] Erro inesperado ao restaurar sessão", { message:error?.message, name:error?.name });
     showAppNotice("Não foi possível iniciar a sessão. Recarregue a página para tentar novamente.", "error");
   });
 
@@ -1400,7 +1650,7 @@ async function queryWithRetry(label, query){
     }
     if(!result.error) return result;
     const safeError = { stage:"data-load", query:label, attempt, code:result.error?.code, message:result.error?.message, name:result.error?.name };
-    console.error("[Cora] Consulta falhou", safeError);
+    console.error("[LeFinance] Consulta falhou", safeError);
     if(attempt === 3 || !isTransientSupabaseError(result.error)) return result;
     await sleep(350 * attempt);
   }
@@ -1408,19 +1658,37 @@ async function queryWithRetry(label, query){
 }
 
 async function loadAllData(generation){
-  const [tx, cards, invest, budgets, goals, categories] = await Promise.all([
+  const [tx, cards, invest, budgets, goals, categories, recurrences, paymentKeywords] = await Promise.all([
     queryWithRetry("transactions", ()=>sbClient.from("transactions").select("*").order("date", { ascending:false })),
     queryWithRetry("cards", ()=>sbClient.from("cards").select("*").order("created_at")),
     queryWithRetry("investments", ()=>sbClient.from("investments").select("*").order("date", { ascending:false })),
     queryWithRetry("budgets", ()=>sbClient.from("budgets").select("*").order("created_at")),
     queryWithRetry("goals", ()=>sbClient.from("goals").select("*").order("created_at")),
     queryWithRetry("categories", ()=>sbClient.from("categories").select("*").order("created_at")),
+    queryWithRetry("recurrences", ()=>sbClient.from("recurrences").select("*").order("created_at")),
+    queryWithRetry("payment_keywords", ()=>sbClient.from("payment_keywords").select("*")),
   ]);
+  // As recorrências e as palavras-chave de forma de pagamento são funções novas,
+  // que dependem de rodar os scripts add-recurrences.sql / add-payment-keywords.sql.
+  // Se as tabelas ainda não existem no banco desse usuário, não trava o resto do
+  // app — só marca a função como indisponível e mostra um aviso na tela certa.
+  recorrenciasIndisponiveis = !!(recurrences.error && /relation .* does not exist|schema cache/i.test(recurrences.error?.message||""));
+  if(recurrences.error && !recorrenciasIndisponiveis){
+    console.error("[LeFinance] Falha ao carregar recorrências", { message:recurrences.error.message, code:recurrences.error.code });
+  }
+  palavrasChavePagamentoIndisponivel = !!(paymentKeywords.error && /relation .* does not exist|schema cache/i.test(paymentKeywords.error?.message||""));
+  if(paymentKeywords.error && !palavrasChavePagamentoIndisponivel){
+    console.error("[LeFinance] Falha ao carregar palavras-chave de pagamento", { message:paymentKeywords.error.message, code:paymentKeywords.error.code });
+  }
   const failed = [tx, cards, invest, budgets, goals, categories].find(result=>result.error);
   if(failed) throw failed.error;
   if(generation !== bootGeneration) return;
   // Só troca o estado depois de todas as consultas terem concluído com sucesso.
-  db = { transactions:tx.data||[], cards:cards.data||[], investments:invest.data||[], budgets:budgets.data||[], goals:goals.data||[], categories:categories.data||[] };
+  db = {
+    transactions:tx.data||[], cards:cards.data||[], investments:invest.data||[], budgets:budgets.data||[],
+    goals:goals.data||[], categories:categories.data||[], recurrences: recurrences.error ? [] : (recurrences.data||[]),
+    paymentKeywords: paymentKeywords.error ? [] : (paymentKeywords.data||[]),
+  };
 }
 
 /* =========================================================
@@ -1432,6 +1700,7 @@ const VIEW_META = {
   "cartoes": ["Cartões", "Limites e faturas por cartão"],
   "investimentos": ["Investimentos", "Onde seu dinheiro está alocado"],
   "orcamento": ["Orçamento", "Metas de gasto por categoria"],
+  "recorrencias": ["Recorrências", "Receitas e despesas que se repetem todo período"],
   "metas": ["Metas", "O que você quer alcançar"],
   "categorias": ["Categorias", "Adicione, renomeie ou remova categorias de receita e despesa"],
   "importar": ["Importar", "Suba uma fatura ou extrato (.ofx ou .csv) e revise antes de lançar"],
@@ -1441,6 +1710,18 @@ const VIEW_META = {
 
 document.querySelectorAll("[data-view]").forEach(el=>{
   el.addEventListener("click", ()=> goTo(el.dataset.view));
+});
+
+document.querySelectorAll("[data-chart-panel]").forEach(panel=>{
+  const button = panel.querySelector(".collapse-panel");
+  button.addEventListener("click", ()=>{
+    const collapsed = panel.classList.toggle("is-collapsed");
+    button.textContent = collapsed ? "expandir" : "recolher";
+    button.setAttribute("aria-expanded", String(!collapsed));
+    if(!collapsed){
+      requestAnimationFrame(()=>[chartCategorias, chartPlanejado, chartPagamento, chartInvestimentos].forEach(chart=>chart?.resize()));
+    }
+  });
 });
 
 function goTo(view){
@@ -1475,6 +1756,7 @@ function renderAll(){
   if(currentView === "cartoes") renderCartoes();
   if(currentView === "investimentos") renderInvestimentos();
   if(currentView === "orcamento") renderOrcamento();
+  if(currentView === "recorrencias") renderRecorrencias();
   if(currentView === "metas") renderMetas();
   if(currentView === "categorias") renderCategorias();
   if(currentView === "importar") renderImportar();
@@ -1515,10 +1797,71 @@ function despesasFaturaCartao(card, ym = currentMonth){
   return todas.filter(t=> t.date > start && t.date <= end || t.date === start);
 }
 
+/* ---- projeção de faturas futuras (cartões), a partir de parcelas em aberto e recorrências ---- */
+function ymAdd(ym, delta){
+  const [y,m] = ym.split("-").map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+function monthDiff(ymA, ymB){
+  const [ya,ma] = ymA.split("-").map(Number);
+  const [yb,mb] = ymB.split("-").map(Number);
+  return (yb-ya)*12 + (mb-ma);
+}
+
+// Quanto uma parcela em aberto (de uma compra parcelada já lançada) contribui
+// para a fatura do ciclo "ym". Só conta parcelas futuras (a própria compra já
+// está contada nos lançamentos reais do seu próprio mês) e nunca soma duas vezes
+// se já existe um lançamento real com a mesma descrição naquele ciclo.
+function parcelaContribuiEm(card, t, ym){
+  if(!(Number(t.installment_total) > 1)) return 0;
+  const restantes = Number(t.installment_total) - Number(t.installment_current||1);
+  if(restantes <= 0) return 0;
+  const diff = monthDiff(t.date.slice(0,7), ym);
+  if(diff < 1 || diff > restantes) return 0;
+  const jaLancadoManualmente = despesasFaturaCartao(card, ym).some(x=> x.id!==t.id && normalizeDesc(x.description)===normalizeDesc(t.description));
+  if(jaLancadoManualmente) return 0;
+  return Number(t.amount);
+}
+
+// Todas as parcelas em aberto de um cartão (para listar em "parcelas futuras").
+function parcelasFuturasCartao(card){
+  return db.transactions
+    .filter(t=> t.card_id===card.id && Number(t.installment_total)>1 && Number(t.installment_current||1) < Number(t.installment_total))
+    .map(t=> ({ t, restantes: Number(t.installment_total)-Number(t.installment_current||1), valor: Number(t.amount) }));
+}
+
+// Soma do valor total ainda comprometido em parcelas (todas as parcelas futuras, não só a próxima).
+function totalParcelasPendentes(card){
+  return parcelasFuturasCartao(card).reduce((s,p)=> s + p.restantes*p.valor, 0);
+}
+
+// Quanto uma recorrência de despesa contribui para a fatura do ciclo "ym" de um cartão.
+function recorrenciaContribuiEmCiclo(r, ym){
+  if(!r.active || r.type!=="despesa" || !r.card_id) return 0;
+  const inicioYm = r.start_date.slice(0,7);
+  if(monthDiff(inicioYm, ym) < 0) return 0;
+  if(r.end_date && monthDiff(ym, r.end_date.slice(0,7)) > 0) return 0;
+  if(r.frequency==="mensal") return Number(r.amount);
+  if(r.frequency==="anual") return r.start_date.slice(5,7)===ym.slice(5,7) ? Number(r.amount) : 0;
+  if(r.frequency==="semanal") return Number(r.amount) * 4.345; // média de semanas por mês (estimativa)
+  return 0;
+}
+
+// Projeção do valor da fatura de um cartão num ciclo "ym": lançamentos já
+// datados + parcelas em aberto que caem nesse ciclo + recorrências vinculadas ao cartão.
+function projecaoFaturaCartao(card, ym){
+  const jaLancado = despesasFaturaCartao(card, ym).reduce((s,t)=>s+Number(t.amount),0);
+  const parcelas = db.transactions.filter(t=>t.card_id===card.id).reduce((s,t)=> s + parcelaContribuiEm(card, t, ym), 0);
+  const recorrentes = db.recurrences.filter(r=>r.card_id===card.id).reduce((s,r)=> s + recorrenciaContribuiEmCiclo(r, ym), 0);
+  return jaLancado + parcelas + recorrentes;
+}
+
 /* =========================================================
    VISÃO GERAL
    ========================================================= */
 function renderVisaoGeral(){
+  atualizarResumoRecorrencias();
   const txs = transacoesDoMes();
   const receitas = txs.filter(t=>t.type==="receita").reduce((s,t)=>s+Number(t.amount),0);
   const despesas = txs.filter(t=>t.type==="despesa").reduce((s,t)=>s+Number(t.amount),0);
@@ -1566,7 +1909,7 @@ function renderVisaoGeral(){
         }]
       },
       options: {
-        plugins: { legend: { position:"right", labels:{ boxWidth:10, font:{ family:"Quicksand", size:11 } } } },
+        plugins: { legend: { position:"right", labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } } },
       }
     });
   }
@@ -1603,12 +1946,12 @@ function renderVisaoGeral(){
       data: {
         labels: ["Este mês"],
         datasets: [
-          { label: "Teto de gasto", data: [totalTeto], backgroundColor: "#EAC0D4" },
-          { label: "Real", data: [totalReal], backgroundColor: "#D6708F" },
+          { label: "Teto de gasto", data: [totalTeto], backgroundColor: "#E7C5D6" },
+          { label: "Real", data: [totalReal], backgroundColor: "#D34D7D" },
         ]
       },
       options: {
-        plugins: { legend: { position:"bottom", labels:{ font:{ family:"Quicksand", size:11 } } } },
+        plugins: { legend: { position:"bottom", labels:{ font:{ family:"DM Sans", size:11 } } } },
         scales: { y: { ticks: { callback: (v)=> brl(v) } } }
       }
     });
@@ -1634,7 +1977,7 @@ function renderVisaoGeral(){
         labels: labelsPg,
         datasets: [{ data: labelsPg.map(l=>porPagamento[l]), backgroundColor: paleta(labelsPg.length), borderWidth: 0 }]
       },
-      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"Quicksand", size:11 } } } } }
+      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } } } }
     });
   }
 
@@ -1647,7 +1990,7 @@ function renderVisaoGeral(){
 }
 
 function paleta(n){
-  const base = ["#D6708F","#B79FCB","#C79A55","#7EA88A","#E0798A","#9C7F91","#EAC0D4","#D9C08A","#A8C4B0","#C79AAE","#8FA6C4"];
+  const base = ["#D34D7D","#8758A7","#C96F61","#9D3565","#B58AD1","#E17896","#6E447F","#D6A25C","#BC607A","#A97BBA","#D78E86"];
   const out = [];
   for(let i=0;i<n;i++) out.push(base[i%base.length]);
   return out;
@@ -1928,6 +2271,150 @@ function openTransacaoModal(t){
 }
 
 /* =========================================================
+   BUSCA GLOBAL (transações)
+   ========================================================= */
+function nomeCartao(id){
+  const c = db.cards.find(x=>x.id===id);
+  return c ? c.name : "";
+}
+
+// Busca simples: compara o termo com descrição, categoria, forma de pagamento,
+// nome do cartão, valor (aceita vírgula ou ponto) e data (dd/mm, dd/mm/aaaa ou aaaa-mm-dd).
+function buscarTransacoes(termo, filtros = {}){
+  const termoNorm = normalizeTexto(termo.trim());
+  const valorBuscado = termoNorm ? parseFloat(termoNorm.replace(",", ".")) : NaN;
+  let resultados = db.transactions.filter(t=>{
+    if(!termoNorm) return true;
+    const campos = [t.description, t.category, t.payment_method, nomeCartao(t.card_id)];
+    const bateTexto = campos.some(c=> c && normalizeTexto(c).includes(termoNorm));
+    const bateValor = !isNaN(valorBuscado) && Math.abs(Number(t.amount) - valorBuscado) < 0.01;
+    const bateData = t.date.includes(termoNorm) || fmtDate(t.date).includes(termo.trim());
+    return bateTexto || bateValor || bateData;
+  });
+  if(filtros.dataInicio) resultados = resultados.filter(t=> t.date >= filtros.dataInicio);
+  if(filtros.dataFim) resultados = resultados.filter(t=> t.date <= filtros.dataFim);
+  if(filtros.valorMin) resultados = resultados.filter(t=> Number(t.amount) >= parseFloat(filtros.valorMin));
+  if(filtros.valorMax) resultados = resultados.filter(t=> Number(t.amount) <= parseFloat(filtros.valorMax));
+  if(filtros.categoria) resultados = resultados.filter(t=> t.category === filtros.categoria);
+  if(filtros.pagamento) resultados = resultados.filter(t=> t.payment_method === filtros.pagamento);
+  if(filtros.cartao) resultados = resultados.filter(t=> t.card_id === filtros.cartao);
+  return resultados.sort((a,b)=> b.date.localeCompare(a.date));
+}
+
+function linhaResultadoBusca(t){
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "search-result";
+  btn.innerHTML = `
+    <span class="search-result-main">
+      <span class="search-result-desc">${escapeHtml(t.description)}</span>
+      <span class="search-result-meta">${fmtDate(t.date)} · ${escapeHtml(t.category)}${t.card_id?" · "+escapeHtml(nomeCartao(t.card_id)):""}</span>
+    </span>
+    <span class="${t.type==='receita'?'amount--pos':'amount--neg'}">${t.type==='receita'?'+':'−'} ${brl(t.amount)}</span>
+  `;
+  btn.addEventListener("click", ()=>{
+    closeSearchResults();
+    document.getElementById("global-search").value = "";
+    closeModal();
+    goTo("transacoes");
+    openTransacaoModal(t);
+  });
+  return btn;
+}
+
+let searchDebounce = null;
+const searchInput = document.getElementById("global-search");
+const searchResultsEl = document.getElementById("search-results");
+
+function closeSearchResults(){ searchResultsEl.hidden = true; }
+
+searchInput.addEventListener("input", ()=>{
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(()=>{
+    const termo = searchInput.value.trim();
+    if(!termo){ closeSearchResults(); return; }
+    const resultados = buscarTransacoes(termo).slice(0, 8);
+    searchResultsEl.innerHTML = "";
+    if(!resultados.length){
+      searchResultsEl.innerHTML = `<p class="search-empty">Nenhum lançamento encontrado.</p>`;
+    } else {
+      resultados.forEach(t=> searchResultsEl.appendChild(linhaResultadoBusca(t)));
+    }
+    const btnAvancada = document.createElement("button");
+    btnAvancada.type = "button";
+    btnAvancada.className = "search-advanced-toggle";
+    btnAvancada.textContent = "Busca avançada →";
+    btnAvancada.addEventListener("click", ()=>{ closeSearchResults(); openBuscaAvancadaModal(termo); });
+    searchResultsEl.appendChild(btnAvancada);
+    searchResultsEl.hidden = false;
+  }, 200);
+});
+document.addEventListener("click", (e)=>{
+  if(!e.target.closest(".search-wrap")) closeSearchResults();
+});
+
+function openBuscaAvancadaModal(termoInicial=""){
+  const catOptions = getTodasCategorias().map(c=>`<option value="${c}">${c}</option>`).join("");
+  const cardOptions = db.cards.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+  openReadOnlyModal("Busca avançada", `
+    <div class="field">
+      <label>Descrição, categoria, conta, cartão, valor ou data</label>
+      <input type="text" id="ba-termo" value="${escapeHtml(termoInicial)}">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>De</label><input type="date" id="ba-inicio"></div>
+      <div class="field"><label>Até</label><input type="date" id="ba-fim"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Valor mínimo</label><input type="number" step="0.01" id="ba-min"></div>
+      <div class="field"><label>Valor máximo</label><input type="number" step="0.01" id="ba-max"></div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Categoria</label>
+        <select id="ba-categoria"><option value="">Todas</option>${catOptions}</select>
+      </div>
+      <div class="field">
+        <label>Forma de pagamento</label>
+        <select id="ba-pagamento"><option value="">Todas</option>${FORMAS_PAGAMENTO.map(p=>`<option value="${p}">${p}</option>`).join("")}</select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Cartão</label>
+      <select id="ba-cartao"><option value="">Todos</option>${cardOptions}</select>
+    </div>
+    <button type="button" class="btn btn-primary btn-block" id="ba-buscar" style="margin-bottom:16px;">Buscar</button>
+    <div id="ba-resultados"></div>
+  `);
+  function rodarBusca(){
+    const filtros = {
+      dataInicio: document.getElementById("ba-inicio").value,
+      dataFim: document.getElementById("ba-fim").value,
+      valorMin: document.getElementById("ba-min").value,
+      valorMax: document.getElementById("ba-max").value,
+      categoria: document.getElementById("ba-categoria").value,
+      pagamento: document.getElementById("ba-pagamento").value,
+      cartao: document.getElementById("ba-cartao").value,
+    };
+    const termo = document.getElementById("ba-termo").value;
+    const resultados = buscarTransacoes(termo, filtros);
+    const wrap = document.getElementById("ba-resultados");
+    wrap.innerHTML = "";
+    if(!resultados.length){
+      wrap.innerHTML = `<p class="empty-hint">Nenhum lançamento encontrado com esses filtros.</p>`;
+      return;
+    }
+    const contagem = document.createElement("p");
+    contagem.className = "muted";
+    contagem.textContent = `${resultados.length} lançamento(s) encontrado(s):`;
+    wrap.appendChild(contagem);
+    resultados.slice(0, 60).forEach(t=> wrap.appendChild(linhaResultadoBusca(t)));
+  }
+  document.getElementById("ba-buscar").addEventListener("click", rodarBusca);
+  if(termoInicial) rodarBusca();
+}
+
+/* =========================================================
    CARTÕES
    ========================================================= */
 function renderCartoes(){
@@ -1936,6 +2423,7 @@ function renderCartoes(){
   document.getElementById("cartoes-empty").hidden = db.cards.length>0;
   db.cards.forEach(c=>{
     const fatura = despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0);
+    const disponivel = c.card_limit ? Math.max(0, c.card_limit - fatura) : null;
     const el = document.createElement("div");
     el.className = "credit-card";
     el.style.background = c.color;
@@ -1943,8 +2431,7 @@ function renderCartoes(){
       ? `fatura que fecha dia ${c.closing_day}`
       : `fatura de ${monthLabel(currentMonth)}`;
     const rodape = [
-      c.card_limit ? "limite "+brl(c.card_limit) : "sem limite definido",
-      c.closing_day ? "fecha dia "+c.closing_day : null,
+      disponivel!==null ? "disponível "+brl(disponivel) : "sem limite definido",
       "vence dia "+(c.due_day||"—"),
     ].filter(Boolean).join(" · ");
     el.innerHTML = `
@@ -1962,9 +2449,11 @@ function renderCartoes(){
         <div class="cc-fatura-label">${faturaLabel}</div>
         <div class="cc-fatura-valor">${brl(fatura)}</div>
         <div class="cc-limite">${rodape}</div>
+        <button type="button" class="cc-more-btn" data-detalhes>Ver detalhes</button>
       </div>
     `;
     el.querySelector(".cc-edit").addEventListener("click", ()=> openCartaoModal(c));
+    el.querySelector("[data-detalhes]").addEventListener("click", ()=> openCartaoDetalhesModal(c));
     el.querySelector(".cc-remove").addEventListener("click", async ()=>{
       if(confirm(`Remover o cartão "${c.name}"? Lançamentos vinculados a ele não serão apagados.`)){
         const { error } = await sbClient.from("cards").delete().eq("id", c.id);
@@ -1974,6 +2463,171 @@ function renderCartoes(){
       }
     });
     wrap.appendChild(el);
+  });
+  renderPagamentoKeywords();
+}
+
+// Palavras-chave para as formas de pagamento sem cartão (Pix, Débito,
+// Dinheiro, Boleto) — usadas para sugerir a forma de pagamento de cada
+// lançamento ao importar um extrato sem escolher um cartão fixo.
+function renderPagamentoKeywords(){
+  document.getElementById("pagamento-keywords-indisponivel").hidden = !palavrasChavePagamentoIndisponivel;
+  const wrap = document.getElementById("lista-pagamento-keywords");
+  wrap.innerHTML = "";
+  if(palavrasChavePagamentoIndisponivel) return;
+  METODOS_SEM_CARTAO.forEach(metodo=>{
+    const registro = db.paymentKeywords.find(p=>p.method===metodo);
+    const kws = registro && Array.isArray(registro.keywords) ? registro.keywords : [];
+    const row = document.createElement("div");
+    row.className = "goal-row";
+    row.style.flexDirection = "column";
+    row.style.alignItems = "stretch";
+    row.style.gap = "10px";
+    row.innerHTML = `
+      <strong style="font-size:0.86rem;">${metodo}</strong>
+      <div class="keyword-chips">
+        ${kws.map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-pk="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
+        <span class="keyword-add-form">
+          <input type="text" class="keyword-input" placeholder="+ palavra-chave" title="Separe várias palavras por vírgula, tecle Enter">
+        </span>
+      </div>
+    `;
+    const input = row.querySelector(".keyword-input");
+    async function salvar(novasKeywords){
+      if(registro){
+        const { data: updated, error } = await sbClient.from("payment_keywords").update({ keywords: novasKeywords }).eq("id", registro.id).select().single();
+        if(error) return alert("Não foi possível salvar: " + error.message);
+        db.paymentKeywords = db.paymentKeywords.map(x=> x.id===registro.id ? updated : x);
+      } else {
+        const { data: created, error } = await sbClient.from("payment_keywords").insert({ method: metodo, keywords: novasKeywords }).select().single();
+        if(error) return alert("Não foi possível salvar: " + error.message + " — talvez falte rodar o script add-payment-keywords.sql no SQL Editor do Supabase.");
+        db.paymentKeywords.push(created);
+      }
+      renderPagamentoKeywords();
+    }
+    input.addEventListener("keydown", (e)=>{
+      if(e.key!=="Enter") return;
+      e.preventDefault();
+      const novasPalavras = input.value.split(/[,\n]/).map(kw=>kw.trim()).filter(Boolean);
+      if(!novasPalavras.length) return;
+      const novas = [...kws];
+      novasPalavras.forEach(kw=>{ if(!novas.some(x=>x.toLocaleLowerCase("pt-BR")===kw.toLocaleLowerCase("pt-BR"))) novas.push(kw); });
+      if(novas.length===kws.length){ input.value=""; return; }
+      salvar(novas);
+    });
+    row.querySelectorAll("[data-del-pk]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const kw = btn.dataset.delPk;
+        salvar(kws.filter(x=>x!==kw));
+      });
+    });
+    wrap.appendChild(row);
+  });
+}
+
+// Modal somente leitura com os dados avançados do cartão: próxima fatura,
+// limite comprometido, parcelas futuras, projeção de faturas e as transações do ciclo atual.
+function openCartaoDetalhesModal(c){
+  const cicloAtual = despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0);
+  const proximoYm = ymAdd(currentMonth, 1);
+  const proximaFatura = projecaoFaturaCartao(c, proximoYm);
+  const pendentes = totalParcelasPendentes(c);
+  const limiteComprometido = cicloAtual + pendentes;
+  const parcelas = parcelasFuturasCartao(c);
+
+  const projecaoHtml = Array.from({length:6}, (_,i)=> ymAdd(currentMonth, i)).map((ym,i)=>{
+    const valor = i===0 ? cicloAtual : projecaoFaturaCartao(c, ym);
+    return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(valor)}</strong></div>`;
+  }).join("");
+
+  const parcelasHtml = parcelas.length ? parcelas.map(p=>`
+    <div class="installment-row">
+      <span>${escapeHtml(p.t.description)}<span class="installment-tag">${Number(p.t.installment_current||1)+1}/${p.t.installment_total}</span></span>
+      <strong>${brl(p.valor)}</strong>
+    </div>
+  `).join("") : `<p class="empty-hint" style="padding:10px 0;">Nenhuma parcela em aberto neste cartão.</p>`;
+
+  const transacoesCiclo = despesasFaturaCartao(c).sort((a,b)=> b.date.localeCompare(a.date));
+  const transacoesHtml = transacoesCiclo.length ? `
+    <table class="ledger-table">
+      <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="num">Valor</th></tr></thead>
+      <tbody>${transacoesCiclo.map(t=>`
+        <tr>
+          <td>${fmtDate(t.date)}</td>
+          <td>${escapeHtml(t.description)}</td>
+          <td>${escapeHtml(t.category)}</td>
+          <td class="num">${brl(t.amount)}</td>
+        </tr>
+      `).join("")}</tbody>
+    </table>
+  ` : `<p class="empty-hint" style="padding:10px 0;">Nenhuma transação neste ciclo.</p>`;
+
+  openReadOnlyModal(`Detalhes — ${c.name}`, `
+    <div class="detail-grid">
+      <div class="detail-stat"><span class="ledger-label">Próxima fatura</span><strong>${brl(proximaFatura)}</strong></div>
+      <div class="detail-stat"><span class="ledger-label">Limite comprometido</span><strong>${brl(limiteComprometido)}</strong></div>
+      <div class="detail-stat"><span class="ledger-label">Parcelas em aberto</span><strong>${parcelas.length}</strong></div>
+    </div>
+    <p class="muted" style="margin-top:-10px;">"Próxima fatura" e a projeção abaixo são estimativas, com base nas parcelas em aberto e nas recorrências vinculadas a este cartão — lançamentos futuros ainda não cadastrados não entram na conta.</p>
+
+    <div class="detail-section">
+      <h4>Projeção de faturas</h4>
+      <div class="projection-strip">${projecaoHtml}</div>
+    </div>
+
+    <div class="detail-section">
+      <h4>Parcelas futuras</h4>
+      ${parcelasHtml}
+    </div>
+
+    <div class="detail-section">
+      <h4>Transações do ciclo atual</h4>
+      ${transacoesHtml}
+    </div>
+
+    <div class="detail-section">
+      <h4>Palavras-chave deste cartão</h4>
+      <p class="muted" style="margin:0 0 10px;">Ao importar um extrato (sem escolher um cartão fixo), uma descrição que contenha uma dessas palavras já vem com "Crédito · ${escapeHtml(c.name)}" sugerido.</p>
+      <div class="keyword-chips" id="card-keyword-chips">
+        ${(Array.isArray(c.keywords)?c.keywords:[]).map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-card-kw="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
+        <span class="keyword-add-form">
+          <input type="text" class="keyword-input" id="card-keyword-input" placeholder="+ palavra-chave" title="Separe várias palavras por vírgula, tecle Enter">
+        </span>
+      </div>
+    </div>
+  `);
+
+  async function salvarPalavraChaveCartao(){
+    const input = document.getElementById("card-keyword-input");
+    const novasPalavras = input.value.split(/[,\n]/).map(kw=>kw.trim()).filter(Boolean);
+    if(!novasPalavras.length) return;
+    const atuais = Array.isArray(c.keywords) ? c.keywords : [];
+    const novas = [...atuais];
+    novasPalavras.forEach(kw=>{
+      if(!novas.some(x=>x.toLocaleLowerCase("pt-BR")===kw.toLocaleLowerCase("pt-BR"))) novas.push(kw);
+    });
+    if(novas.length === atuais.length){ input.value=""; return; }
+    const { data: updated, error } = await sbClient.from("cards").update({ keywords: novas }).eq("id", c.id).select().single();
+    if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-payment-keywords.sql no SQL Editor do Supabase.");
+    db.cards = db.cards.map(x=> x.id===c.id ? updated : x);
+    closeModal();
+    renderAll();
+    openCartaoDetalhesModal(updated);
+  }
+  document.getElementById("card-keyword-input").addEventListener("keydown", (e)=>{
+    if(e.key==="Enter"){ e.preventDefault(); salvarPalavraChaveCartao(); }
+  });
+  document.querySelectorAll("[data-del-card-kw]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const kw = btn.dataset.delCardKw;
+      const atuais = (Array.isArray(c.keywords)?c.keywords:[]).filter(x=>x!==kw);
+      const { data: updated, error } = await sbClient.from("cards").update({ keywords: atuais }).eq("id", c.id).select().single();
+      if(error) return alert("Não foi possível remover a palavra-chave: " + error.message);
+      db.cards = db.cards.map(x=> x.id===c.id ? updated : x);
+      closeModal();
+      renderAll();
+      openCartaoDetalhesModal(updated);
+    });
   });
 }
 
@@ -2068,7 +2722,7 @@ function renderInvestimentos(){
     chartInvestimentos = new Chart(canvas, {
       type: "doughnut",
       data: { labels, datasets: [{ data: labels.map(l=>porTipo[l]), backgroundColor: paleta(labels.length), borderWidth: 0 }] },
-      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"Quicksand", size:11 } } } }, cutout:"62%" }
+      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } } }, cutout:"62%" }
     });
   }
 
@@ -2226,6 +2880,203 @@ document.getElementById("form-meta").addEventListener("submit", async (e)=>{
   db.goals.push(created);
   input.value = "";
   renderMetas();
+});
+
+/* =========================================================
+   RECORRÊNCIAS (receitas/despesas que se repetem)
+   ========================================================= */
+const FREQUENCIAS_RECORRENCIA = { semanal: "Semanal", mensal: "Mensal", anual: "Anual" };
+
+// Converte o valor de uma recorrência para um equivalente mensal (estimativa),
+// só para mostrar totais comparáveis no painel — não altera o valor cadastrado.
+function valorMensalEquivalente(r){
+  const v = Number(r.amount);
+  if(r.frequency === "semanal") return v * 4.345;
+  if(r.frequency === "anual") return v / 12;
+  return v;
+}
+
+// Uma recorrência é considerada ativa "hoje" se: active=true, já começou e (sem fim ou ainda não terminou).
+function recorrenciaAtivaHoje(r){
+  if(!r.active) return false;
+  const hoje = new Date().toISOString().slice(0,10);
+  if(r.start_date > hoje) return false;
+  if(r.end_date && r.end_date < hoje) return false;
+  return true;
+}
+
+function atualizarResumoRecorrencias(){
+  const bar = document.getElementById("dash-recorrencias");
+  if(!bar) return;
+  if(recorrenciasIndisponiveis){ bar.hidden = true; return; }
+  bar.hidden = false;
+  const ativas = db.recurrences.filter(recorrenciaAtivaHoje);
+  const netMensal = ativas.reduce((s,r)=> s + (r.type==="receita" ? valorMensalEquivalente(r) : -valorMensalEquivalente(r)), 0);
+  document.getElementById("dash-recorrencias-texto").textContent =
+    `${ativas.length} recorrência${ativas.length===1?"":"s"} · ${brl(netMensal)}/mês`;
+}
+
+function contaLabelRecorrencia(r){
+  if(r.card_id){
+    const c = db.cards.find(x=>x.id===r.card_id);
+    return c ? `Cartão · ${c.name}` : "Cartão";
+  }
+  return r.payment_method || "—";
+}
+
+function renderRecorrencias(){
+  document.getElementById("recorrencias-indisponivel").hidden = !recorrenciasIndisponiveis;
+  const wrap = document.getElementById("lista-recorrencias");
+  wrap.innerHTML = "";
+  if(recorrenciasIndisponiveis){
+    document.getElementById("recorrencias-empty").hidden = true;
+    return;
+  }
+  const ordenadas = [...db.recurrences].sort((a,b)=> Number(b.active)-Number(a.active) || a.description.localeCompare(b.description));
+  document.getElementById("recorrencias-empty").hidden = ordenadas.length>0;
+  ordenadas.forEach(r=>{
+    const row = document.createElement("div");
+    row.className = "recurrence-row" + (recorrenciaAtivaHoje(r) ? "" : " is-inactive");
+    const periodo = r.end_date ? `${fmtDate(r.start_date)} — ${fmtDate(r.end_date)}` : `desde ${fmtDate(r.start_date)}`;
+    row.innerHTML = `
+      <div class="recurrence-main">
+        <strong>${escapeHtml(r.description)}</strong>
+        <div class="recurrence-meta">${escapeHtml(r.category||"—")} · ${FREQUENCIAS_RECORRENCIA[r.frequency]||r.frequency} · ${escapeHtml(contaLabelRecorrencia(r))} · ${periodo}${r.active?"":" · pausada"}</div>
+      </div>
+      <span class="recurrence-amount ${r.type==='receita'?'amount--pos':'amount--neg'}">${r.type==='receita'?'+':'−'} ${brl(r.amount)}</span>
+      <div class="recurrence-actions">
+        <button data-toggle>${r.active?"pausar":"reativar"}</button>
+        <button data-editar>editar</button>
+        <button data-del>excluir</button>
+      </div>
+    `;
+    row.querySelector("[data-toggle]").addEventListener("click", async ()=>{
+      const { data: updated, error } = await sbClient.from("recurrences").update({ active: !r.active }).eq("id", r.id).select().single();
+      if(error) return alert("Não foi possível salvar: " + error.message);
+      db.recurrences = db.recurrences.map(x=> x.id===r.id ? updated : x);
+      renderAll();
+    });
+    row.querySelector("[data-editar]").addEventListener("click", ()=> openRecorrenciaModal(r));
+    row.querySelector("[data-del]").addEventListener("click", async ()=>{
+      if(!confirm(`Excluir a recorrência "${r.description}"?`)) return;
+      const { error } = await sbClient.from("recurrences").delete().eq("id", r.id);
+      if(error) return alert("Não foi possível excluir: " + error.message);
+      db.recurrences = db.recurrences.filter(x=>x.id!==r.id);
+      renderAll();
+    });
+    wrap.appendChild(row);
+  });
+}
+
+function openRecorrenciaModal(r){
+  const isEdit = !!r;
+  const cardOptions = db.cards.map(c=>`<option value="card:${c.id}">Cartão · ${escapeHtml(c.name)}</option>`).join("");
+  openModal(isEdit ? "Editar recorrência" : "Nova recorrência", `
+    <div class="field-row">
+      <div class="field">
+        <label>Tipo</label>
+        <select name="type" id="rf-type">
+          <option value="despesa">Despesa</option>
+          <option value="receita">Receita</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valor (R$)</label>
+        <input type="number" step="0.01" min="0" name="amount" required>
+      </div>
+    </div>
+    <div class="field">
+      <label>Descrição</label>
+      <input type="text" name="description" placeholder="Ex.: Netflix, Salário, Aluguel" required>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Categoria</label>
+        <select name="category" id="rf-category"></select>
+      </div>
+      <div class="field">
+        <label>Frequência</label>
+        <select name="frequency">
+          <option value="mensal">Mensal</option>
+          <option value="semanal">Semanal</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Conta ou cartão</label>
+      <select name="conta" id="rf-conta">
+        ${FORMAS_PAGAMENTO.map(p=>`<option value="pag:${p}">${p}</option>`).join("")}
+        ${cardOptions}
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Início</label>
+        <input type="date" name="start_date" required>
+      </div>
+      <div class="field">
+        <label>Fim (opcional)</label>
+        <input type="date" name="end_date">
+      </div>
+    </div>
+  `, async (form)=>{
+    const data = Object.fromEntries(new FormData(form));
+    const amount = parseFloat(data.amount);
+    if(!data.description.trim() || isNaN(amount) || amount<=0) return alert("Preencha descrição e valor corretamente.");
+    if(data.end_date && data.end_date < data.start_date) return alert("A data de fim não pode ser antes da data de início.");
+    const isCard = data.conta.startsWith("card:");
+    const payload = {
+      type: data.type,
+      description: data.description.trim(),
+      amount,
+      category: data.category,
+      frequency: data.frequency,
+      payment_method: isCard ? null : data.conta.replace("pag:",""),
+      card_id: isCard ? data.conta.replace("card:","") : null,
+      start_date: data.start_date,
+      end_date: data.end_date || null,
+      active: true,
+    };
+    if(isEdit){
+      const { data: updated, error } = await sbClient.from("recurrences").update(payload).eq("id", r.id).select().single();
+      if(error) return alert("Não foi possível salvar: " + error.message);
+      db.recurrences = db.recurrences.map(x=> x.id===r.id ? updated : x);
+    } else {
+      const { data: created, error } = await sbClient.from("recurrences").insert(payload).select().single();
+      if(error) return alert("Não foi possível salvar: " + error.message);
+      db.recurrences.push(created);
+    }
+    closeModal(); renderAll();
+  });
+
+  const typeSel = document.getElementById("rf-type");
+  const catSel = document.getElementById("rf-category");
+  function refreshCats(){
+    const list = getCategorias(typeSel.value==="receita" ? "receita" : "despesa");
+    catSel.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
+    if(r) catSel.value = r.category;
+  }
+  typeSel.addEventListener("change", refreshCats);
+
+  if(isEdit){
+    const form = document.getElementById("modal-form");
+    form.description.value = r.description;
+    form.amount.value = r.amount;
+    typeSel.value = r.type;
+    form.frequency.value = r.frequency;
+    form.conta.value = r.card_id ? `card:${r.card_id}` : `pag:${r.payment_method}`;
+    form.start_date.value = r.start_date;
+    if(r.end_date) form.end_date.value = r.end_date;
+  } else {
+    document.getElementById("modal-form").start_date.value = new Date().toISOString().slice(0,10);
+  }
+  refreshCats();
+}
+
+document.getElementById("btn-nova-recorrencia").addEventListener("click", ()=>{
+  if(recorrenciasIndisponiveis) return alert("Essa função ainda não está disponível — rode o script add-recurrences.sql no Supabase (veja o README) e recarregue a página.");
+  openRecorrenciaModal();
 });
 
 /* =========================================================
@@ -2388,6 +3239,15 @@ function renderImportar(){
   sel.value = prev;
 }
 
+// Controla o indicador visual das 3 etapas (arquivo → revisão → confirmação).
+function setImportStep(step){
+  document.querySelectorAll("#import-stepper .import-step").forEach(el=>{
+    const ordem = ["arquivo","revisao","confirmacao"];
+    el.classList.toggle("is-active", el.dataset.step===step);
+    el.classList.toggle("is-done", ordem.indexOf(el.dataset.step) < ordem.indexOf(step));
+  });
+}
+
 function normalizeValor(raw){
   if(typeof raw === "number") return raw;
   let s = String(raw||"").replace(/R\$\s?/gi,"").trim();
@@ -2457,6 +3317,7 @@ function tentarDataISO(str){
 document.getElementById("import-file").addEventListener("change", (e)=>{
   const file = e.target.files[0];
   if(!file) return;
+  setImportStep("arquivo");
   const errEl = document.getElementById("import-error");
   errEl.hidden = true;
   document.getElementById("import-mapping").hidden = true;
@@ -2528,18 +3389,36 @@ function aplicarMapeamentoCSV(idxData, idxDesc, idxValor){
 }
 
 function montarPreviaImportacao(rows){
+  setImportStep("revisao");
+  const cardIdFixo = document.getElementById("import-card").value || null;
   importRows = rows.map(r=>{
     const tipo = r.amount < 0 ? "despesa" : "receita";
-    const sugestao = sugerirCategoriaPorPalavraChave(r.description, tipo);
+    const sugestaoCategoria = sugerirCategoriaPorPalavraChave(r.description, tipo);
+    let payment_method = cardIdFixo ? "Crédito" : null;
+    let card_id = cardIdFixo;
+    let pagamentoSugerido = false;
+    if(!cardIdFixo){
+      // Sem um cartão fixo pra fatura inteira (ex.: importando um extrato com
+      // formas de pagamento variadas), tenta sugerir por palavra-chave.
+      const sugestaoPag = sugerirPagamentoPorPalavraChave(r.description, tipo);
+      if(sugestaoPag){
+        payment_method = sugestaoPag.payment_method;
+        card_id = sugestaoPag.card_id;
+        pagamentoSugerido = true;
+      }
+    }
     return {
       date: r.date,
       description: r.description,
       amount: Math.abs(r.amount),
       type: tipo,
-      category: sugestao || "Outros",
+      category: sugestaoCategoria || "Outros",
       include: true,
       duplicateInfo: null,
-      sugerida: !!sugestao,
+      sugerida: !!sugestaoCategoria,
+      payment_method,
+      card_id,
+      pagamentoSugerido,
     };
   });
   marcarDuplicatasImportacao();
@@ -2568,9 +3447,20 @@ function marcarDuplicatasImportacao(){
 }
 
 function atualizarContadorImportacao(){
+  const total = importRows.length;
   const dupCount = importRows.filter(r=>r.duplicateInfo).length;
-  let texto = `Prévia — ${importRows.filter(r=>r.include).length} de ${importRows.length} selecionados`;
-  if(dupCount) texto += ` (${dupCount} possível${dupCount>1?"is":""} duplicata${dupCount>1?"s":""} já desmarcada${dupCount>1?"s":""})`;
+  const categorizadas = importRows.filter(r=> r.category && r.category!=="Outros").length;
+  const pendentes = total - categorizadas;
+
+  document.getElementById("import-summary").innerHTML = `
+    <div class="import-summary-item"><span class="ledger-label">Total</span><strong>${total}</strong></div>
+    <div class="import-summary-item"><span class="ledger-label">Categorizadas</span><strong>${categorizadas}</strong></div>
+    <div class="import-summary-item"><span class="ledger-label">Pendentes</span><strong>${pendentes}</strong></div>
+    <div class="import-summary-item"><span class="ledger-label">Possíveis duplicadas</span><strong>${dupCount}</strong></div>
+  `;
+
+  let texto = `${importRows.filter(r=>r.include).length} de ${total} selecionados para importar`;
+  if(dupCount) texto += ` — ${dupCount} possível${dupCount>1?"is":""} duplicata${dupCount>1?"s":""} já desmarcada${dupCount>1?"s":""}`;
   document.getElementById("import-preview-count").textContent = texto;
 }
 
@@ -2580,10 +3470,25 @@ function renderPreviaImportacao(){
   atualizarContadorImportacao();
   const tbody = document.querySelector("#tabela-import tbody");
   tbody.innerHTML = "";
+  const cardIdFixo = document.getElementById("import-card").value || null;
   importRows.forEach((r, i)=>{
     const tr = document.createElement("tr");
     if(r.duplicateInfo) tr.style.background = "var(--red-bg)";
     const cats = getCategorias(r.type);
+    const pagCell = cardIdFixo
+      ? `<span class="muted" style="font-size:0.78rem;">Crédito · ${escapeHtml(nomeCartao(cardIdFixo))}</span>`
+      : `
+        <select data-i="${i}" data-f="payment_method" style="width:100%;">
+          <option value="">—</option>
+          ${FORMAS_PAGAMENTO.map(p=>`<option value="${p}" ${p===r.payment_method?"selected":""}>${p}</option>`).join("")}
+        </select>
+        ${r.payment_method==="Crédito" ? `
+          <select data-i="${i}" data-f="card_id" style="width:100%;margin-top:4px;">
+            <option value="">Qual cartão?</option>
+            ${db.cards.map(c=>`<option value="${c.id}" ${c.id===r.card_id?"selected":""}>${escapeHtml(c.name)}</option>`).join("")}
+          </select>` : ""}
+        ${r.pagamentoSugerido ? `<div style="font-size:0.68rem;color:var(--green);margin-top:4px;">🔎 sugerida por palavra-chave</div>` : ""}
+      `;
     tr.innerHTML = `
       <td><input type="checkbox" ${r.include?"checked":""} data-i="${i}" data-f="include"></td>
       <td><input type="date" value="${r.date}" data-i="${i}" data-f="date" style="width:130px;"></td>
@@ -2597,6 +3502,7 @@ function renderPreviaImportacao(){
         </select>
         ${r.sugerida ? `<div style="font-size:0.68rem;color:var(--green);margin-top:4px;">🔎 sugerida por palavra-chave</div>` : ""}
       </td>
+      <td>${pagCell}</td>
       <td>
         <select data-i="${i}" data-f="type">
           <option value="despesa" ${r.type==="despesa"?"selected":""}>Despesa</option>
@@ -2615,14 +3521,26 @@ function renderPreviaImportacao(){
       if(f==="amount") v = parseFloat(v)||0;
       importRows[i][f] = v;
       if(f==="category") importRows[i].sugerida = false;
-      if(f==="type" || f==="category") renderPreviaImportacao(); // categorias/sugestão mudam de exibição
-      else atualizarContadorImportacao();
+      if(f==="payment_method"){
+        importRows[i].pagamentoSugerido = false;
+        if(v!=="Crédito") importRows[i].card_id = null;
+        renderPreviaImportacao(); // mostra/some o select de cartão
+      } else if(f==="card_id"){
+        atualizarContadorImportacao();
+      } else if(f==="date" || f==="description" || f==="amount"){
+        marcarDuplicatasImportacao(); // reavalia duplicatas — evita duplicidade após edição manual
+        renderPreviaImportacao();
+      } else if(f==="type" || f==="category"){
+        renderPreviaImportacao(); // categorias/sugestão mudam de exibição
+      } else {
+        atualizarContadorImportacao();
+      }
     });
   });
 }
 
 document.getElementById("btn-confirmar-importacao").addEventListener("click", async ()=>{
-  const cardId = document.getElementById("import-card").value || null;
+  const cardIdFixo = document.getElementById("import-card").value || null;
   const selecionados = importRows.filter(r=>r.include);
   if(!selecionados.length) return alert("Nenhum lançamento selecionado.");
   const payload = selecionados.map(r=>({
@@ -2631,8 +3549,8 @@ document.getElementById("btn-confirmar-importacao").addEventListener("click", as
     description: r.description || "Lançamento importado",
     category: r.category,
     amount: r.amount,
-    payment_method: cardId ? "Crédito" : null,
-    card_id: cardId,
+    payment_method: cardIdFixo ? "Crédito" : (r.payment_method || null),
+    card_id: cardIdFixo || (r.payment_method==="Crédito" ? (r.card_id || null) : null),
     fixed: false,
   }));
   const btn = document.getElementById("btn-confirmar-importacao");
@@ -2640,6 +3558,7 @@ document.getElementById("btn-confirmar-importacao").addEventListener("click", as
   const { data: created, error } = await sbClient.from("transactions").insert(payload).select();
   btn.disabled = false; btn.textContent = "Importar selecionados";
   if(error) return alert("Não foi possível importar: " + error.message);
+  setImportStep("confirmacao");
   db.transactions.push(...created);
   importRows = [];
   document.getElementById("import-preview").hidden = true;
@@ -2665,14 +3584,17 @@ document.getElementById("btn-apagar-tudo").addEventListener("click", async ()=>{
   if(!confirm("Isso vai apagar todos os dados da sua conta na nuvem. Tem certeza?")) return;
   if(!confirm("Confirma mesmo? Essa ação não pode ser desfeita.")) return;
   const userId = currentUser.id;
-  await Promise.all([
+  const exclusoes = [
     sbClient.from("transactions").delete().eq("user_id", userId),
     sbClient.from("cards").delete().eq("user_id", userId),
     sbClient.from("investments").delete().eq("user_id", userId),
     sbClient.from("budgets").delete().eq("user_id", userId),
     sbClient.from("goals").delete().eq("user_id", userId),
-  ]);
-  db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: db.categories };
+  ];
+  if(!recorrenciasIndisponiveis) exclusoes.push(sbClient.from("recurrences").delete().eq("user_id", userId));
+  if(!palavrasChavePagamentoIndisponivel) exclusoes.push(sbClient.from("payment_keywords").delete().eq("user_id", userId));
+  await Promise.all(exclusoes);
+  db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: db.categories, recurrences: [], paymentKeywords: [] };
   goTo("visao-geral");
 });
 
@@ -2680,6 +3602,7 @@ document.getElementById("btn-apagar-tudo").addEventListener("click", async ()=>{
    MODAL GENÉRICO
    ========================================================= */
 function openModal(title, bodyHtml, onSubmit){
+  document.querySelector(".modal").classList.remove("modal--wide");
   document.getElementById("modal-title").textContent = title;
   const form = document.getElementById("modal-form");
   form.innerHTML = bodyHtml + `
@@ -2691,6 +3614,20 @@ function openModal(title, bodyHtml, onSubmit){
   document.getElementById("modal-overlay").hidden = false;
   document.getElementById("modal-cancel").addEventListener("click", closeModal);
   form.onsubmit = (e)=>{ e.preventDefault(); onSubmit(form); };
+}
+
+// Modal maior, só para exibir informação (sem salvar nada) — usado nos detalhes
+// avançados de cartão e na busca avançada.
+function openReadOnlyModal(title, bodyHtml){
+  document.querySelector(".modal").classList.add("modal--wide");
+  document.getElementById("modal-title").textContent = title;
+  const form = document.getElementById("modal-form");
+  form.innerHTML = bodyHtml + `
+    <div class="modal-actions"><button type="button" class="btn btn-primary" id="modal-fechar-readonly">Fechar</button></div>
+  `;
+  form.onsubmit = (e)=> e.preventDefault();
+  document.getElementById("modal-overlay").hidden = false;
+  document.getElementById("modal-fechar-readonly").addEventListener("click", closeModal);
 }
 function closeModal(){
   document.getElementById("modal-overlay").hidden = true;
