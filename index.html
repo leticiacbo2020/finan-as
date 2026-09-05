@@ -595,6 +595,7 @@ select{ cursor:pointer; }
 .detail-section h4{ font-size:0.8rem; color:var(--pink-dark); margin:0 0 10px; text-transform:uppercase; letter-spacing:.03em; }
 .installment-row{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-size:0.86rem; }
 .installment-row:last-child{ border-bottom:none; }
+.ledger-table tbody tr[data-editar-transacao]:hover{ background: var(--pink-bg); }
 .installment-tag{ font-size:0.68rem; font-weight:700; color:var(--pink-dark); background:var(--pink-bg); border-radius:999px; padding:2px 8px; margin-left:8px; }
 .projection-strip{ display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
 .projection-item{ flex: 0 0 auto; min-width: 92px; text-align:center; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 8px; }
@@ -1154,7 +1155,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Clique em <strong>"Novo cartão"</strong> e informe nome, bandeira, limite e cor.</li>
             <li>Preencha o <strong>dia de fechamento</strong> para a fatura seguir o ciclo real do cartão, em vez do mês do calendário.</li>
             <li>Sem o dia de fechamento, a fatura continua somando pelo mês do calendário, como sempre foi.</li>
-            <li>O resumo do cartão mostra o <strong>limite disponível</strong> e o vencimento; clique em <strong>"Ver detalhes"</strong> para a próxima fatura, o limite comprometido, as parcelas em aberto, uma projeção de até 6 faturas, as transações do ciclo atual e as palavras-chave desse cartão.</li>
+            <li>O resumo do cartão mostra o <strong>limite disponível</strong> e o vencimento; clique em <strong>"Ver detalhes"</strong> para a próxima fatura, o limite comprometido, as parcelas em aberto, uma projeção de até 6 faturas, as palavras-chave desse cartão e as transações de cada fatura — use as setas pra navegar entre faturas anteriores e clique numa linha pra editar, inclusive a forma de pagamento.</li>
             <li>Palavras-chave do cartão (em "Ver detalhes") e das formas de pagamento sem cartão (Pix, Débito, Dinheiro, Boleto — logo abaixo da lista de cartões) ajudam a sugerir automaticamente a forma de pagamento de cada lançamento ao importar um extrato.</li>
             <li>Ao adicionar uma palavra-chave nova, o site também confere lançamentos já existentes que combinam com ela — mesmo que já tenham outra forma de pagamento — e pergunta se quer atualizar eles também.</li>
           </ol>
@@ -2591,7 +2592,8 @@ function renderPagamentoKeywords(){
 
 // Modal somente leitura com os dados avançados do cartão: próxima fatura,
 // limite comprometido, parcelas futuras, projeção de faturas e as transações do ciclo atual.
-function openCartaoDetalhesModal(c){
+function openCartaoDetalhesModal(c, cicloVisualizado){
+  cicloVisualizado = cicloVisualizado || currentMonth;
   const cicloAtual = despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0);
   const proximoYm = ymAdd(currentMonth, 1);
   const proximaFatura = projecaoFaturaCartao(c, proximoYm);
@@ -2611,20 +2613,24 @@ function openCartaoDetalhesModal(c){
     </div>
   `).join("") : `<p class="empty-hint" style="padding:10px 0;">Nenhuma parcela em aberto neste cartão.</p>`;
 
-  const transacoesCiclo = despesasFaturaCartao(c).sort((a,b)=> b.date.localeCompare(a.date));
+  // "Transações da fatura" navega entre ciclos — dá pra voltar em faturas
+  // anteriores pra revisar ou corrigir a forma de pagamento de algo que já
+  // foi lançado. Clique numa linha pra abrir e editar o lançamento.
+  const transacoesCiclo = despesasFaturaCartao(c, cicloVisualizado).sort((a,b)=> b.date.localeCompare(a.date));
   const transacoesHtml = transacoesCiclo.length ? `
     <table class="ledger-table">
-      <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="num">Valor</th></tr></thead>
+      <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Pagamento</th><th class="num">Valor</th></tr></thead>
       <tbody>${transacoesCiclo.map(t=>`
-        <tr>
+        <tr data-editar-transacao="${t.id}" style="cursor:pointer;">
           <td>${fmtDate(t.date)}</td>
           <td>${escapeHtml(t.description)}</td>
           <td>${escapeHtml(t.category)}</td>
+          <td>${escapeHtml(t.payment_method||"—")}</td>
           <td class="num">${brl(t.amount)}</td>
         </tr>
       `).join("")}</tbody>
     </table>
-  ` : `<p class="empty-hint" style="padding:10px 0;">Nenhuma transação neste ciclo.</p>`;
+  ` : `<p class="empty-hint" style="padding:10px 0;">Nenhuma transação nesta fatura.</p>`;
 
   openReadOnlyModal(`Detalhes — ${c.name}`, `
     <div class="detail-grid">
@@ -2645,7 +2651,15 @@ function openCartaoDetalhesModal(c){
     </div>
 
     <div class="detail-section">
-      <h4>Transações do ciclo atual</h4>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <h4 style="margin:0;">Transações da fatura</h4>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button type="button" id="ciclo-prev" class="icon-btn" aria-label="Fatura anterior">‹</button>
+          <span style="font-size:0.82rem;">${monthLabel(cicloVisualizado)}</span>
+          <button type="button" id="ciclo-next" class="icon-btn" aria-label="Próxima fatura">›</button>
+        </div>
+      </div>
+      <p class="muted" style="margin:8px 0 10px;">Clique numa linha pra editar a categoria, a forma de pagamento ou qualquer outro dado do lançamento.</p>
       ${transacoesHtml}
     </div>
 
@@ -2708,6 +2722,16 @@ function openCartaoDetalhesModal(c){
       closeModal();
       renderAll();
       openCartaoDetalhesModal(updated);
+    });
+  });
+  document.getElementById("ciclo-prev").addEventListener("click", ()=> openCartaoDetalhesModal(c, ymAdd(cicloVisualizado, -1)));
+  document.getElementById("ciclo-next").addEventListener("click", ()=> openCartaoDetalhesModal(c, ymAdd(cicloVisualizado, 1)));
+  document.querySelectorAll("[data-editar-transacao]").forEach(tr=>{
+    tr.addEventListener("click", ()=>{
+      const alvo = db.transactions.find(x=>x.id===tr.dataset.editarTransacao);
+      if(!alvo) return;
+      closeModal();
+      openTransacaoModal(alvo);
     });
   });
 }
