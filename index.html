@@ -1156,7 +1156,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Sem o dia de fechamento, a fatura continua somando pelo mês do calendário, como sempre foi.</li>
             <li>O resumo do cartão mostra o <strong>limite disponível</strong> e o vencimento; clique em <strong>"Ver detalhes"</strong> para a próxima fatura, o limite comprometido, as parcelas em aberto, uma projeção de até 6 faturas, as transações do ciclo atual e as palavras-chave desse cartão.</li>
             <li>Palavras-chave do cartão (em "Ver detalhes") e das formas de pagamento sem cartão (Pix, Débito, Dinheiro, Boleto — logo abaixo da lista de cartões) ajudam a sugerir automaticamente a forma de pagamento de cada lançamento ao importar um extrato.</li>
-            <li>Ao adicionar uma palavra-chave nova, o site também confere lançamentos já existentes sem forma de pagamento definida e pergunta se quer atualizar eles também.</li>
+            <li>Ao adicionar uma palavra-chave nova, o site também confere lançamentos já existentes que combinam com ela — mesmo que já tenham outra forma de pagamento — e pergunta se quer atualizar eles também.</li>
           </ol>
         </details>
         <details class="tutorial-item">
@@ -1196,7 +1196,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Adicione, renomeie ou remova qualquer categoria — inclusive as que já vêm prontas.</li>
             <li>Ao renomear, os lançamentos e metas de orçamento com o nome antigo são atualizados sozinhos.</li>
             <li>Adicione uma ou várias <strong>palavras-chave</strong> (separe por vírgula) a uma categoria — cada uma vira uma etiqueta removível e é usada para sugerir a categoria certa ao importar.</li>
-            <li>Ao adicionar uma palavra-chave nova, o site também confere lançamentos já existentes sem categoria definida ("Outros") e pergunta se quer atualizar eles também.</li>
+            <li>Ao adicionar uma palavra-chave nova, o site também confere lançamentos já existentes que combinam com ela — mesmo que já tenham outra categoria — e pergunta se quer atualizar eles também.</li>
           </ol>
         </details>
         <details class="tutorial-item">
@@ -1214,6 +1214,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>O site já <strong>sugere uma categoria</strong> para cada lançamento, comparando a descrição com as palavras-chave cadastradas em Categorias.</li>
             <li>Se você não escolher um cartão fixo (por exemplo, ao importar um extrato com Pix, débito e dinheiro misturados), o site também sugere a <strong>forma de pagamento</strong> de cada linha, usando as palavras-chave cadastradas em Cartões.</li>
             <li>Na revisão, veja o resumo com total, categorizadas, pendentes e possíveis duplicadas antes de continuar.</li>
+            <li>Se a descrição tiver um padrão como "3/12", o site já entende como <strong>parcela</strong> e preenche sozinho — clique em "não é parcela" se ele tiver interpretado uma data errada.</li>
             <li>Linhas parecidas com algo que já existe aparecem destacadas e desmarcadas — revise antes de continuar.</li>
             <li>Ajuste o que for preciso e clique em <strong>"Importar selecionados"</strong> — nada é salvo antes disso.</li>
           </ol>
@@ -1340,6 +1341,26 @@ function normalizeTexto(str){
   return String(str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 }
 
+// Procura um padrão "N/M" na descrição (ex.: "AMAZON 3/12", "compra - 01/06")
+// que indique parcelamento, e retorna { current, total }, ou null se não achar
+// nada plausível. Evita confundir com datas (ex.: "25/08" ou "01/12/2026")
+// exigindo que o "N" nunca seja maior que o "M" e que não haja outra barra
+// logo depois (o que indicaria uma data completa dd/mm/aaaa).
+function extrairParcelaDaDescricao(descricao){
+  const desc = String(descricao||"");
+  const regex = /(?<!\d)(\d{1,2})\s*\/\s*(\d{1,2})(?!\s*\/\s*\d)(?!\d)/g;
+  let m;
+  while((m = regex.exec(desc))){
+    const atual = parseInt(m[1], 10);
+    const total = parseInt(m[2], 10);
+    if(!atual || !total) continue;
+    if(atual > total) continue;      // "25/08" (dia/mês) nunca teria N<=M assim, mas garante
+    if(total < 2 || total > 48) continue; // parcelamento plausível: de 2 a 48 vezes
+    return { current: atual, total };
+  }
+  return null;
+}
+
 // Procura, entre as categorias do usuário (do tipo informado) que já têm
 // palavras-chave cadastradas, alguma cujo termo apareça na descrição.
 // Retorna o nome da categoria sugerida, ou null se nada bater.
@@ -1361,13 +1382,14 @@ function sugerirCategoriaPorPalavraChave(descricao, tipo){
 // lançamentos que já existem (já importados/lançados antes) e que ainda
 // estão sem categoria/forma de pagamento definida — sem nunca sobrescrever
 // algo que a pessoa já revisou/escolheu manualmente.
-async function aplicarPalavraChaveRetroativa({ novasPalavras, filtro, aplicar, label }){
+async function aplicarPalavraChaveRetroativa({ novasPalavras, filtro, aplicar, label, valorNovo }){
   const termosNorm = novasPalavras.map(normalizeTexto).filter(Boolean);
   if(!termosNorm.length) return;
   const candidatos = db.transactions.filter(t=> filtro(t) && termosNorm.some(kw=> normalizeTexto(t.description).includes(kw)));
   if(!candidatos.length) return;
   const plural = candidatos.length>1;
-  if(!confirm(`${candidatos.length} lançamento${plural?"s":""} já existente${plural?"s":""} combina${plural?"m":""} com essa palavra-chave. Atualizar ${label} dele${plural?"s":""} também?`)) return;
+  const mensagem = `${candidatos.length} lançamento${plural?"s":""} já existente${plural?"s":""} combina${plural?"m":""} com essa palavra-chave — alguns podem já ter ${label} diferente. Atualizar para "${valorNovo}" mesmo assim?`;
+  if(!confirm(mensagem)) return;
   const ids = candidatos.map(t=>t.id);
   const { data: updated, error } = await sbClient.from("transactions").update(aplicar).in("id", ids).select();
   if(error){ alert("Não foi possível atualizar os lançamentos já existentes: " + error.message); return; }
@@ -2524,13 +2546,16 @@ function renderPagamentoKeywords(){
         db.paymentKeywords.push(created);
       }
       renderPagamentoKeywords();
-      // Aplica a palavra-chave nova também em lançamentos já existentes, sem forma de pagamento definida.
+      // Aplica a palavra-chave nova também em lançamentos já existentes — mesmo
+      // que já tenham outra forma de pagamento (ex.: "Crédito" por padrão em
+      // importações antigas) ou estejam vinculados a um cartão.
       if(novasPalavras && novasPalavras.length){
         await aplicarPalavraChaveRetroativa({
           novasPalavras,
-          filtro: t=> !t.card_id && !t.payment_method,
-          aplicar: { payment_method: metodo },
-          label: "a forma de pagamento",
+          filtro: t=> t.payment_method!==metodo,
+          aplicar: { payment_method: metodo, card_id: null },
+          label: "forma de pagamento",
+          valorNovo: metodo,
         });
       }
     }
@@ -2642,12 +2667,14 @@ function openCartaoDetalhesModal(c){
     closeModal();
     renderAll();
     openCartaoDetalhesModal(updated);
-    // Aplica a palavra-chave nova também em lançamentos já existentes, sem forma de pagamento definida.
+    // Aplica a palavra-chave nova também em lançamentos já existentes — mesmo
+    // que já tenham outra forma de pagamento ou outro cartão marcado.
     await aplicarPalavraChaveRetroativa({
       novasPalavras,
-      filtro: t=> t.type==="despesa" && !t.card_id && !t.payment_method,
+      filtro: t=> t.type==="despesa" && t.card_id!==c.id,
       aplicar: { payment_method:"Crédito", card_id:c.id },
-      label: "a forma de pagamento",
+      label: "forma de pagamento",
+      valorNovo: `Crédito · ${c.name}`,
     });
   }
   document.getElementById("card-keyword-input").addEventListener("keydown", (e)=>{
@@ -3183,12 +3210,15 @@ function categoriaRow(c){
     if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-keywords.sql no SQL Editor do Supabase.");
     db.categories = db.categories.map(x=> x.id===c.id ? updated : x);
     renderCategorias();
-    // Aplica a palavra-chave nova também em lançamentos já existentes, sem categoria definida.
+    // Aplica a palavra-chave nova também em lançamentos já existentes — mesmo
+    // que já tenham outra categoria, já que a pessoa acabou de dizer que essa
+    // palavra pertence a esta categoria.
     await aplicarPalavraChaveRetroativa({
       novasPalavras,
-      filtro: t=> t.type===c.type && (!t.category || t.category==="Outros"),
+      filtro: t=> t.type===c.type && t.category!==c.name,
       aplicar: { category: c.name },
-      label: "a categoria",
+      label: "categoria",
+      valorNovo: c.name,
     });
   });
   row.querySelectorAll("[data-del-kw]").forEach(btn=>{
@@ -3450,6 +3480,8 @@ function montarPreviaImportacao(rows){
         pagamentoSugerido = true;
       }
     }
+    // Detecta "3/12", "01/06" etc. na própria descrição — indício de compra parcelada.
+    const parcela = tipo==="despesa" ? extrairParcelaDaDescricao(r.description) : null;
     return {
       date: r.date,
       description: r.description,
@@ -3462,6 +3494,7 @@ function montarPreviaImportacao(rows){
       payment_method,
       card_id,
       pagamentoSugerido,
+      parcela,
     };
   });
   marcarDuplicatasImportacao();
@@ -3494,12 +3527,14 @@ function atualizarContadorImportacao(){
   const dupCount = importRows.filter(r=>r.duplicateInfo).length;
   const categorizadas = importRows.filter(r=> r.category && r.category!=="Outros").length;
   const pendentes = total - categorizadas;
+  const parcelasCount = importRows.filter(r=>r.parcela).length;
 
   document.getElementById("import-summary").innerHTML = `
     <div class="import-summary-item"><span class="ledger-label">Total</span><strong>${total}</strong></div>
     <div class="import-summary-item"><span class="ledger-label">Categorizadas</span><strong>${categorizadas}</strong></div>
     <div class="import-summary-item"><span class="ledger-label">Pendentes</span><strong>${pendentes}</strong></div>
     <div class="import-summary-item"><span class="ledger-label">Possíveis duplicadas</span><strong>${dupCount}</strong></div>
+    ${parcelasCount ? `<div class="import-summary-item"><span class="ledger-label">Parcelas detectadas</span><strong>${parcelasCount}</strong></div>` : ""}
   `;
 
   let texto = `${importRows.filter(r=>r.include).length} de ${total} selecionados para importar`;
@@ -3538,6 +3573,7 @@ function renderPreviaImportacao(){
       <td>
         <input type="text" value="${escapeHtml(r.description)}" data-i="${i}" data-f="description" style="width:100%;">
         ${r.duplicateInfo ? `<div style="font-size:0.72rem;color:var(--pink-dark);margin-top:4px;">⚠ ${escapeHtml(r.duplicateInfo)}</div>` : ""}
+        ${r.parcela ? `<div style="font-size:0.68rem;color:var(--pink-dark);margin-top:4px;">🔎 parcela ${r.parcela.current}/${r.parcela.total} detectada · <button type="button" data-cancelar-parcela="${i}" style="background:none;border:none;color:var(--ink-soft);text-decoration:underline;cursor:pointer;font-size:0.68rem;padding:0;">não é parcela</button></div>` : ""}
       </td>
       <td>
         <select data-i="${i}" data-f="category">
@@ -3571,13 +3607,22 @@ function renderPreviaImportacao(){
       } else if(f==="card_id"){
         atualizarContadorImportacao();
       } else if(f==="date" || f==="description" || f==="amount"){
+        if(f==="description") importRows[i].parcela = importRows[i].type==="despesa" ? extrairParcelaDaDescricao(v) : null;
         marcarDuplicatasImportacao(); // reavalia duplicatas — evita duplicidade após edição manual
         renderPreviaImportacao();
       } else if(f==="type" || f==="category"){
+        if(f==="type") importRows[i].parcela = v==="despesa" ? extrairParcelaDaDescricao(importRows[i].description) : null;
         renderPreviaImportacao(); // categorias/sugestão mudam de exibição
       } else {
         atualizarContadorImportacao();
       }
+    });
+  });
+  tbody.querySelectorAll("[data-cancelar-parcela]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const i = parseInt(btn.dataset.cancelarParcela);
+      importRows[i].parcela = null;
+      renderPreviaImportacao();
     });
   });
 }
@@ -3594,6 +3639,8 @@ document.getElementById("btn-confirmar-importacao").addEventListener("click", as
     amount: r.amount,
     payment_method: cardIdFixo ? "Crédito" : (r.payment_method || null),
     card_id: cardIdFixo || (r.payment_method==="Crédito" ? (r.card_id || null) : null),
+    installment_current: r.parcela ? r.parcela.current : null,
+    installment_total: r.parcela ? r.parcela.total : null,
     fixed: false,
   }));
   const btn = document.getElementById("btn-confirmar-importacao");
