@@ -393,6 +393,7 @@ select{ cursor:pointer; }
 .goal-row.is-done span{ color: var(--ink-soft); text-decoration: line-through; }
 .goal-row button{ background:none; border:none; color: var(--ink-soft); cursor:pointer; font-size: 0.8rem; font-weight: 600; }
 .goal-row button:hover{ color: var(--pink-dark); }
+.goal-row-actions{ display:flex; gap: 10px; }
 
 /* ============ SIDEBAR USER ============ */
 .sidebar-user{
@@ -792,7 +793,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <div class="stack" id="lista-categorias-receita" style="margin-top:14px;"></div>
         </div>
       </div>
-      <p class="muted">As categorias padrão (Moradia, Alimentação, Salário etc.) já vêm prontas e não podem ser removidas — mas você pode adicionar quantas quiser além delas.</p>
+      <p class="muted">Todas as categorias podem ser renomeadas ou removidas — inclusive as que já vêm prontas. Ao renomear, os lançamentos, orçamentos e filtros que usam essa categoria são atualizados automaticamente.</p>
     </section>
 
     <!-- ===== IMPORTAR ===== -->
@@ -864,9 +865,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <details class="tutorial-item">
           <summary>Cartões</summary>
           <p>Cadastre seus cartões aqui (nome, bandeira, limite, dia de
-          vencimento). A fatura do mês é calculada sozinha, somando as
-          despesas que você marcou como pagas nesse cartão em "Transações"
-          ou trouxe pela aba "Importar".</p>
+          fechamento e dia de vencimento). Se você preencher o dia de
+          fechamento, a fatura mostrada passa a ser calculada pelo ciclo real
+          da fatura (do dia seguinte ao fechamento anterior até o
+          fechamento deste mês) em vez do mês do calendário — do jeito que
+          aparece na fatura do seu cartão de verdade. Sem o dia de
+          fechamento preenchido, a fatura continua somando as despesas do
+          mês do calendário, como antes.</p>
         </details>
         <details class="tutorial-item">
           <summary>Investimentos</summary>
@@ -890,10 +895,11 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         </details>
         <details class="tutorial-item">
           <summary>Categorias</summary>
-          <p>As categorias padrão (Moradia, Alimentação, Salário etc.) já
-          vêm prontas. Se faltar alguma, adicione aqui — ela passa a
-          aparecer em todos os lugares que pedem categoria (lançamentos,
-          orçamento, filtros, importação).</p>
+          <p>Todas as categorias — inclusive as que já vêm prontas, como
+          Moradia ou Salário — podem ser renomeadas ou removidas aqui.
+          Ao renomear uma categoria, os lançamentos e metas de orçamento
+          que já usavam o nome antigo são atualizados automaticamente para
+          o nome novo.</p>
         </details>
         <details class="tutorial-item">
           <summary>Importar</summary>
@@ -975,12 +981,12 @@ window.addEventListener("error", (e)=>{
   document.body.appendChild(box);
 });
 
-const CATEGORIAS_DESPESA = [
+const CATEGORIAS_DESPESA_PADRAO = [
   "Moradia", "Alimentação", "Transporte", "Saúde", "Lazer",
   "Educação", "Assinaturas", "Compras", "Cuidados pessoais",
   "Pagamento de fatura", "Outros"
 ];
-const CATEGORIAS_RECEITA = [
+const CATEGORIAS_RECEITA_PADRAO = [
   "Salário", "Freelance", "Rendimentos", "Reembolso", "Outros"
 ];
 const TIPOS_INVESTIMENTO = [
@@ -989,14 +995,30 @@ const TIPOS_INVESTIMENTO = [
 const CORES_CARTAO = ["#D6708F", "#B79FCB", "#C79A55", "#7EA88A", "#E0798A"];
 const FORMAS_PAGAMENTO = ["Pix", "Débito", "Crédito", "Dinheiro", "Boleto"];
 
-// categorias-base + as que o usuário cadastrou manualmente (db.categories)
+// Todas as categorias (padrão + as que o usuário criou) moram na tabela
+// db.categories — as "padrão" são só a semente inicial (ver seedCategoriasPadrao),
+// depois disso são linhas normais, editáveis e removíveis como qualquer outra.
 function getCategorias(tipo){
-  const base = tipo === "receita" ? CATEGORIAS_RECEITA : CATEGORIAS_DESPESA;
-  const custom = db.categories.filter(c=>c.type===tipo).map(c=>c.name);
-  return [...base, ...custom.filter(c=>!base.includes(c))];
+  return db.categories.filter(c=>c.type===tipo).map(c=>c.name);
 }
 function getTodasCategorias(){
   return [...new Set([...getCategorias("despesa"), ...getCategorias("receita")])];
+}
+
+// Garante que todo usuário tenha as categorias padrão na tabela (uma vez só,
+// e sem duplicar as que já existirem — inclusive se o usuário já tinha
+// categorias personalizadas de antes dessa mudança).
+async function seedCategoriasPadrao(){
+  const existentesDespesa = new Set(getCategorias("despesa"));
+  const existentesReceita = new Set(getCategorias("receita"));
+  const faltando = [
+    ...CATEGORIAS_DESPESA_PADRAO.filter(n=>!existentesDespesa.has(n)).map(name=>({ type:"despesa", name })),
+    ...CATEGORIAS_RECEITA_PADRAO.filter(n=>!existentesReceita.has(n)).map(name=>({ type:"receita", name })),
+  ];
+  if(!faltando.length) return;
+  const { data, error } = await sbClient.from("categories").insert(faltando).select();
+  if(error){ console.error(error); return; }
+  if(data) db.categories.push(...data);
 }
 
 /* ---------- estado ---------- */
@@ -1121,6 +1143,7 @@ sbClient.auth.onAuthStateChange((event, session)=>{
    ========================================================= */
 async function boot(){
   await loadAllData();
+  await seedCategoriasPadrao();
   goTo("visao-geral");
 }
 
@@ -1142,7 +1165,7 @@ async function loadAllData(){
   const firstErr = [tx, cards, invest, budgets, goals, categories].find(r=>r.error);
   if(firstErr){
     console.error(firstErr.error);
-    alert("Não consegui carregar seus dados. Confira se SUPABASE_URL e SUPABASE_ANON_KEY (no início do index.html) estão corretos, e se rodou o supabase-schema.sql (ou o add-categories.sql, se o site já era antigo).");
+    alert("Não consegui carregar seus dados. Confira se SUPABASE_URL e SUPABASE_ANON_KEY (no início do index.html) estão corretos, e se rodou o supabase-schema.sql (ou os scripts add-categories.sql / add-closing-day.sql, se o site já era antigo).");
   }
 }
 
@@ -1156,7 +1179,7 @@ const VIEW_META = {
   "investimentos": ["Investimentos", "Onde seu dinheiro está alocado"],
   "orcamento": ["Orçamento", "Metas de gasto por categoria"],
   "metas": ["Metas", "O que você quer alcançar"],
-  "categorias": ["Categorias", "Adicione suas próprias categorias de receita e despesa"],
+  "categorias": ["Categorias", "Adicione, renomeie ou remova categorias de receita e despesa"],
   "importar": ["Importar", "Suba uma fatura ou extrato (.ofx ou .csv) e revise antes de lançar"],
   "tutoriais": ["Tutoriais", "Um passo a passo rápido de cada parte do site"],
   "backup": ["Backup", "Exportar ou apagar seus dados"],
@@ -1205,6 +1228,37 @@ function renderAll(){
 
 function transacoesDoMes(mes = currentMonth){
   return db.transactions.filter(t => t.date.startsWith(mes));
+}
+
+/* ---- ciclo de fatura de um cartão, considerando o dia de fechamento ---- */
+function diasNoMes(ano, mes){ // mes: 1-12
+  return new Date(ano, mes, 0).getDate();
+}
+function pad2(n){ return String(n).padStart(2,"0"); }
+
+// Retorna { start, end } (strings ISO "YYYY-MM-DD", ambas fazendo parte da fatura)
+// que fecha durante o mês "ym", para um cartão com dia de fechamento "closingDay".
+function periodoFatura(closingDay, ym){
+  const [y, m] = ym.split("-").map(Number);
+  const fimDia = Math.min(closingDay, diasNoMes(y, m));
+  const end = `${y}-${pad2(m)}-${pad2(fimDia)}`;
+
+  let py = y, pm = m - 1;
+  if(pm === 0){ pm = 12; py = y - 1; }
+  const inicioDia = Math.min(closingDay + 1, diasNoMes(py, pm));
+  const start = `${py}-${pad2(pm)}-${pad2(inicioDia)}`;
+
+  return { start, end };
+}
+
+// Todas as despesas que entram na fatura do cartão no mês selecionado.
+// Sem dia de fechamento cadastrado, cai de volta no comportamento antigo
+// (soma pelo mês do calendário).
+function despesasFaturaCartao(card, ym = currentMonth){
+  const todas = db.transactions.filter(t=> t.card_id===card.id && t.type==="despesa");
+  if(!card.closing_day) return todas.filter(t=> t.date.startsWith(ym));
+  const { start, end } = periodoFatura(card.closing_day, ym);
+  return todas.filter(t=> t.date > start && t.date <= end || t.date === start);
 }
 
 /* =========================================================
@@ -1268,7 +1322,7 @@ function renderVisaoGeral(){
   wrap.innerHTML = "";
   document.getElementById("resumo-cartoes-empty").hidden = db.cards.length>0;
   db.cards.forEach(c=>{
-    const fatura = txs.filter(t=>t.card_id===c.id && t.type==="despesa").reduce((s,t)=>s+Number(t.amount),0);
+    const fatura = despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0);
     const row = document.createElement("div");
     row.className = "budget-row";
     const pct = c.card_limit ? Math.min(100, (fatura/c.card_limit)*100) : 0;
@@ -1563,12 +1617,19 @@ function renderCartoes(){
   const wrap = document.getElementById("lista-cartoes");
   wrap.innerHTML = "";
   document.getElementById("cartoes-empty").hidden = db.cards.length>0;
-  const txs = transacoesDoMes();
   db.cards.forEach(c=>{
-    const fatura = txs.filter(t=>t.card_id===c.id && t.type==="despesa").reduce((s,t)=>s+Number(t.amount),0);
+    const fatura = despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0);
     const el = document.createElement("div");
     el.className = "credit-card";
     el.style.background = c.color;
+    const faturaLabel = c.closing_day
+      ? `fatura que fecha dia ${c.closing_day}`
+      : `fatura de ${monthLabel(currentMonth)}`;
+    const rodape = [
+      c.card_limit ? "limite "+brl(c.card_limit) : "sem limite definido",
+      c.closing_day ? "fecha dia "+c.closing_day : null,
+      "vence dia "+(c.due_day||"—"),
+    ].filter(Boolean).join(" · ");
     el.innerHTML = `
       <div class="cc-actions">
         <button class="cc-edit" title="Editar cartão">✎</button>
@@ -1581,9 +1642,9 @@ function renderCartoes(){
         </div>
       </div>
       <div>
-        <div class="cc-fatura-label">fatura de ${monthLabel(currentMonth)}</div>
+        <div class="cc-fatura-label">${faturaLabel}</div>
         <div class="cc-fatura-valor">${brl(fatura)}</div>
-        <div class="cc-limite">${c.card_limit ? 'limite '+brl(c.card_limit) : 'sem limite definido'} · vence dia ${c.due_day||'—'}</div>
+        <div class="cc-limite">${rodape}</div>
       </div>
     `;
     el.querySelector(".cc-edit").addEventListener("click", ()=> openCartaoModal(c));
@@ -1618,16 +1679,23 @@ function openCartaoModal(c){
         <input type="number" step="0.01" min="0" name="card_limit">
       </div>
       <div class="field">
+        <label>Cor</label>
+        <select name="color">
+          ${CORES_CARTAO.map(cor=>`<option value="${cor}" style="background:${cor};color:#fff">${cor}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Dia de fechamento (opcional)</label>
+        <input type="number" min="1" max="31" name="closing_day" placeholder="Ex.: 22">
+      </div>
+      <div class="field">
         <label>Dia de vencimento</label>
         <input type="number" min="1" max="31" name="due_day">
       </div>
     </div>
-    <div class="field">
-      <label>Cor</label>
-      <select name="color">
-        ${CORES_CARTAO.map(cor=>`<option value="${cor}" style="background:${cor};color:#fff">${cor}</option>`).join("")}
-      </select>
-    </div>
+    <p class="muted" style="margin-top:-6px;">Se preencher o dia de fechamento, a fatura passa a somar as despesas do ciclo real do cartão (do dia seguinte ao fechamento anterior até o fechamento deste mês), em vez do mês do calendário.</p>
   `, async (form)=>{
     const data = Object.fromEntries(new FormData(form));
     if(!data.name.trim()) return alert("Dê um nome ao cartão.");
@@ -1635,16 +1703,17 @@ function openCartaoModal(c){
       name: data.name.trim(),
       brand: data.brand.trim(),
       card_limit: data.card_limit ? parseFloat(data.card_limit) : null,
+      closing_day: data.closing_day ? parseInt(data.closing_day) : null,
       due_day: data.due_day ? parseInt(data.due_day) : null,
       color: data.color,
     };
     if(isEdit){
       const { data: updated, error } = await sbClient.from("cards").update(payload).eq("id", c.id).select().single();
-      if(error) return alert("Não foi possível salvar: " + error.message);
+      if(error) return alert("Não foi possível salvar: " + error.message + " — se a mensagem falar de coluna \"closing_day\", rode o script add-closing-day.sql no SQL Editor do Supabase.");
       db.cards = db.cards.map(x=> x.id===c.id ? updated : x);
     } else {
       const { data: created, error } = await sbClient.from("cards").insert(payload).select().single();
-      if(error) return alert("Não foi possível salvar: " + error.message);
+      if(error) return alert("Não foi possível salvar: " + error.message + " — se a mensagem falar de coluna \"closing_day\", rode o script add-closing-day.sql no SQL Editor do Supabase.");
       db.cards.push(created);
     }
     closeModal(); renderAll();
@@ -1655,6 +1724,7 @@ function openCartaoModal(c){
     form.name.value = c.name;
     form.brand.value = c.brand || "";
     if(c.card_limit) form.card_limit.value = c.card_limit;
+    if(c.closing_day) form.closing_day.value = c.closing_day;
     if(c.due_day) form.due_day.value = c.due_day;
     form.color.value = c.color;
   }
@@ -1850,22 +1920,33 @@ function renderCategorias(){
   wrapDespesa.innerHTML = "";
   wrapReceita.innerHTML = "";
 
-  db.categories.filter(c=>c.type==="despesa").forEach(c=> wrapDespesa.appendChild(categoriaRow(c)));
-  db.categories.filter(c=>c.type==="receita").forEach(c=> wrapReceita.appendChild(categoriaRow(c)));
+  const despesa = db.categories.filter(c=>c.type==="despesa");
+  const receita = db.categories.filter(c=>c.type==="receita");
 
-  if(!db.categories.some(c=>c.type==="despesa")){
-    wrapDespesa.innerHTML = '<p class="empty-hint" style="border:none;padding:4px 0;">Nenhuma categoria extra ainda.</p>';
+  despesa.forEach(c=> wrapDespesa.appendChild(categoriaRow(c)));
+  receita.forEach(c=> wrapReceita.appendChild(categoriaRow(c)));
+
+  if(!despesa.length){
+    wrapDespesa.innerHTML = '<p class="empty-hint" style="border:none;padding:4px 0;">Nenhuma categoria ainda.</p>';
   }
-  if(!db.categories.some(c=>c.type==="receita")){
-    wrapReceita.innerHTML = '<p class="empty-hint" style="border:none;padding:4px 0;">Nenhuma categoria extra ainda.</p>';
+  if(!receita.length){
+    wrapReceita.innerHTML = '<p class="empty-hint" style="border:none;padding:4px 0;">Nenhuma categoria ainda.</p>';
   }
 }
 
 function categoriaRow(c){
   const row = document.createElement("div");
   row.className = "goal-row";
-  row.innerHTML = `<span>${escapeHtml(c.name)}</span><button>remover</button>`;
-  row.querySelector("button").addEventListener("click", async ()=>{
+  row.innerHTML = `
+    <span>${escapeHtml(c.name)}</span>
+    <div class="goal-row-actions">
+      <button data-editar>renomear</button>
+      <button data-remover>remover</button>
+    </div>
+  `;
+  row.querySelector("[data-editar]").addEventListener("click", ()=> openRenomearCategoriaModal(c));
+  row.querySelector("[data-remover]").addEventListener("click", async ()=>{
+    if(!confirm(`Remover a categoria "${c.name}"? Lançamentos que já usam esse nome não serão apagados, só deixam de aparecer nas listas.`)) return;
     const { error } = await sbClient.from("categories").delete().eq("id", c.id);
     if(error) return alert("Não foi possível remover: " + error.message);
     db.categories = db.categories.filter(x=>x.id!==c.id);
@@ -1874,7 +1955,47 @@ function categoriaRow(c){
   return row;
 }
 
-async function adicionarCategoria(type, inputId, formId){
+function openRenomearCategoriaModal(c){
+  openModal("Renomear categoria", `
+    <div class="field">
+      <label>Nome da categoria</label>
+      <input type="text" name="name" value="${escapeHtml(c.name)}" required>
+    </div>
+  `, async (form)=>{
+    const novoNome = new FormData(form).get("name").trim();
+    if(!novoNome) return alert("Digite um nome.");
+    if(novoNome === c.name) return closeModal();
+    const jaExiste = getCategorias(c.type).some(n=> n.toLowerCase()===novoNome.toLowerCase() && n.toLowerCase()!==c.name.toLowerCase());
+    if(jaExiste) return alert("Já existe uma categoria com esse nome.");
+
+    const { data: updated, error } = await sbClient.from("categories").update({ name: novoNome }).eq("id", c.id).select().single();
+    if(error) return alert("Não foi possível renomear: " + error.message);
+    db.categories = db.categories.map(x=> x.id===c.id ? updated : x);
+
+    // Atualiza também os lançamentos e (se for despesa) o orçamento que já
+    // usavam o nome antigo, pra tudo continuar consistente.
+    const nomeAntigo = c.name;
+    const { data: txsAtualizadas, error: errTx } = await sbClient
+      .from("transactions").update({ category: novoNome })
+      .eq("category", nomeAntigo).eq("type", c.type).select();
+    if(!errTx && txsAtualizadas){
+      const porId = new Map(txsAtualizadas.map(t=>[t.id, t]));
+      db.transactions = db.transactions.map(t=> porId.get(t.id) || t);
+    }
+    if(c.type === "despesa"){
+      const { data: budgetsAtualizados, error: errB } = await sbClient
+        .from("budgets").update({ category: novoNome })
+        .eq("category", nomeAntigo).select();
+      if(!errB && budgetsAtualizados){
+        const porId = new Map(budgetsAtualizados.map(b=>[b.id, b]));
+        db.budgets = db.budgets.map(b=> porId.get(b.id) || b);
+      }
+    }
+    closeModal(); renderAll();
+  });
+}
+
+async function adicionarCategoria(type, inputId){
   const input = document.getElementById(inputId);
   const name = input.value.trim();
   if(!name) return;
@@ -1888,11 +2009,11 @@ async function adicionarCategoria(type, inputId, formId){
 }
 document.getElementById("form-categoria-despesa").addEventListener("submit", (e)=>{
   e.preventDefault();
-  adicionarCategoria("despesa", "input-categoria-despesa", "form-categoria-despesa");
+  adicionarCategoria("despesa", "input-categoria-despesa");
 });
 document.getElementById("form-categoria-receita").addEventListener("submit", (e)=>{
   e.preventDefault();
-  adicionarCategoria("receita", "input-categoria-receita", "form-categoria-receita");
+  adicionarCategoria("receita", "input-categoria-receita");
 });
 
 /* =========================================================
@@ -2155,7 +2276,7 @@ document.getElementById("btn-apagar-tudo").addEventListener("click", async ()=>{
     sbClient.from("budgets").delete().eq("user_id", userId),
     sbClient.from("goals").delete().eq("user_id", userId),
   ]);
-  db = { transactions: [], cards: [], investments: [], budgets: [], goals: [] };
+  db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: db.categories };
   goTo("visao-geral");
 });
 
