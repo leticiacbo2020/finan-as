@@ -462,6 +462,77 @@ select{ cursor:pointer; }
   font-size: 0.92rem;
   line-height: 1.6;
 }
+.tutorial-badge-new{
+  display:inline-block;
+  background: var(--pink);
+  color:#fff;
+  font-size: 0.6rem;
+  font-weight:700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.tutorial-steps{
+  list-style: none;
+  counter-reset: tut-step;
+  margin: 12px 0 4px 4px;
+  padding: 0;
+}
+.tutorial-steps li{
+  counter-increment: tut-step;
+  position: relative;
+  padding: 4px 0 16px 34px;
+  margin-left: 14px;
+  border-left: 2px solid var(--line);
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.tutorial-steps li:last-child{
+  border-left: 2px solid transparent;
+  padding-bottom: 2px;
+}
+.tutorial-steps li::before{
+  content: counter(tut-step);
+  position: absolute;
+  left: -15px;
+  top: -2px;
+  width: 26px; height: 26px;
+  background: var(--pink);
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items:center; justify-content:center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  box-shadow: var(--shadow-sm);
+}
+.tutorial-steps li strong{ color: var(--pink-dark); }
+
+/* ============ PALAVRAS-CHAVE DE CATEGORIA ============ */
+.keyword-chips{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.keyword-chip{
+  display:inline-flex; align-items:center; gap:4px;
+  background: var(--pink-bg); color: var(--pink-dark);
+  font-size: 0.74rem; font-weight: 700;
+  padding: 4px 6px 4px 11px;
+  border-radius: 999px;
+}
+.keyword-chip button{
+  background:none; border:none; color: var(--pink-dark);
+  cursor:pointer; font-size: 0.85rem; line-height:1; padding: 0 2px;
+}
+.keyword-add-form{ display:flex; }
+.keyword-input{
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  width: 140px;
+}
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 880px){
@@ -796,7 +867,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <div class="stack" id="lista-categorias-receita" style="margin-top:14px;"></div>
         </div>
       </div>
-      <p class="muted">Todas as categorias podem ser renomeadas ou removidas — inclusive as que já vêm prontas. Ao renomear, os lançamentos, orçamentos e filtros que usam essa categoria são atualizados automaticamente.</p>
+      <p class="muted">Todas as categorias podem ser renomeadas ou removidas — inclusive as que já vêm prontas. Ao renomear, os lançamentos, orçamentos e filtros que usam essa categoria são atualizados automaticamente. Adicione palavras-chave (ex.: "ifood") para o site sugerir a categoria certa ao importar uma fatura. <span class="tutorial-badge-new">novo</span></p>
     </section>
 
     <!-- ===== IMPORTAR ===== -->
@@ -849,86 +920,75 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <div class="panel">
         <details class="tutorial-item" open>
           <summary>Visão geral</summary>
-          <p>É a tela inicial. Mostra o saldo, receitas e despesas do mês
-          selecionado, um gráfico de pizza com os gastos por categoria, as
-          faturas dos seus cartões, um comparativo entre o que você planejou
-          gastar e o que gastou de verdade, e a forma de pagamento mais
-          usada. Use as setinhas <strong>‹ ›</strong> no topo pra trocar de mês —
-          nada é apagado ao trocar, é só um filtro de visualização.</p>
+          <ol class="tutorial-steps">
+            <li>Confira o <strong>saldo, receitas e despesas</strong> do mês selecionado no topo da tela.</li>
+            <li>Veja o gráfico de <strong>gastos por categoria</strong>, as faturas dos cartões e o comparativo planejado x real.</li>
+            <li>Use as setas <strong>‹ ›</strong>, ao lado do título, para trocar de mês — nada é apagado, é só um filtro.</li>
+          </ol>
         </details>
         <details class="tutorial-item">
           <summary>Transações</summary>
-          <p>Onde você lança receitas e despesas manualmente. Clique em
-          "Novo lançamento", preencha data, descrição, categoria e valor.
-          Se for uma despesa no cartão, escolha "Crédito" na forma de
-          pagamento pra aparecerem os campos de cartão e parcelas. Marque
-          "despesa fixa" para contas recorrentes (aluguel, assinaturas) —
-          essa marcação é só uma etiqueta, ela não cria o lançamento
-          sozinha no mês seguinte, você ainda lança (ou importa) todo mês.
-          Use os filtros no topo da tabela pra achar lançamentos específicos,
-          e o botão "Verificar duplicados" pra encontrar lançamentos com a
-          mesma descrição, valor e data parecidos que talvez tenham entrado
-          duas vezes.</p>
+          <ol class="tutorial-steps">
+            <li>Clique em <strong>"Novo lançamento"</strong> e preencha data, descrição, categoria e valor.</li>
+            <li>Escolha <strong>"Crédito"</strong> na forma de pagamento para liberar os campos de cartão e parcelas.</li>
+            <li>Marque <strong>"despesa fixa"</strong> para contas recorrentes — é só uma etiqueta, você ainda lança (ou importa) todo mês.</li>
+            <li>Use os <strong>filtros</strong> no topo da tabela para achar lançamentos específicos.</li>
+            <li>Clique em <strong>"Verificar duplicados"</strong> para encontrar lançamentos repetidos por engano.</li>
+          </ol>
         </details>
         <details class="tutorial-item">
           <summary>Cartões</summary>
-          <p>Cadastre seus cartões aqui (nome, bandeira, limite, dia de
-          fechamento e dia de vencimento). Se você preencher o dia de
-          fechamento, a fatura mostrada passa a ser calculada pelo ciclo real
-          da fatura (do dia seguinte ao fechamento anterior até o
-          fechamento deste mês) em vez do mês do calendário — do jeito que
-          aparece na fatura do seu cartão de verdade. Sem o dia de
-          fechamento preenchido, a fatura continua somando as despesas do
-          mês do calendário, como antes.</p>
+          <ol class="tutorial-steps">
+            <li>Clique em <strong>"Novo cartão"</strong> e informe nome, bandeira, limite e cor.</li>
+            <li>Preencha o <strong>dia de fechamento</strong> para a fatura seguir o ciclo real do cartão, em vez do mês do calendário.</li>
+            <li>Sem o dia de fechamento, a fatura continua somando pelo mês do calendário, como sempre foi.</li>
+          </ol>
         </details>
         <details class="tutorial-item">
           <summary>Investimentos</summary>
-          <p>Registre suas posições (renda fixa, ações, reserva de
-          emergência etc.) com nome, tipo e valor atual. O gráfico mostra a
-          distribuição por tipo. Diferente das outras telas, aqui mostra o
-          total acumulado — não filtra por mês, porque investimento é uma
-          posição atual, não um gasto do mês.</p>
+          <ol class="tutorial-steps">
+            <li>Clique em <strong>"Novo investimento"</strong> e informe nome, tipo e valor atual.</li>
+            <li>Acompanhe a <strong>distribuição por tipo</strong> no gráfico.</li>
+            <li>Diferente das outras telas, aqui aparece o <strong>total acumulado</strong> — não filtra por mês.</li>
+          </ol>
         </details>
         <details class="tutorial-item">
           <summary>Orçamento</summary>
-          <p>Defina um teto de gasto mensal por categoria (ex.: R$500 em
-          Lazer). A barra mostra quanto já foi gasto naquela categoria no
-          mês selecionado, e muda de cor quando passa do limite.</p>
+          <ol class="tutorial-steps">
+            <li>Clique em <strong>"Nova meta"</strong> e escolha uma categoria e um teto de gasto mensal.</li>
+            <li>Acompanhe a barra — ela muda de cor quando o gasto passa do limite.</li>
+          </ol>
         </details>
         <details class="tutorial-item">
           <summary>Metas</summary>
-          <p>Uma lista simples de metas ou anotações, com uma caixinha pra
-          marcar como concluída. Não tem valor nem data — é só um lembrete
-          do que você quer alcançar.</p>
+          <ol class="tutorial-steps">
+            <li>Escreva algo que você quer alcançar e clique em <strong>"Adicionar"</strong>.</li>
+            <li>Marque a caixinha quando concluir — é só um lembrete, sem valor nem data.</li>
+          </ol>
         </details>
         <details class="tutorial-item">
-          <summary>Categorias</summary>
-          <p>Todas as categorias — inclusive as que já vêm prontas, como
-          Moradia ou Salário — podem ser renomeadas ou removidas aqui.
-          Ao renomear uma categoria, os lançamentos e metas de orçamento
-          que já usavam o nome antigo são atualizados automaticamente para
-          o nome novo.</p>
+          <summary>Categorias <span class="tutorial-badge-new">novo</span></summary>
+          <ol class="tutorial-steps">
+            <li>Adicione, renomeie ou remova qualquer categoria — inclusive as que já vêm prontas.</li>
+            <li>Ao renomear, os lançamentos e metas de orçamento com o nome antigo são atualizados sozinhos.</li>
+            <li>Adicione <strong>palavras-chave</strong> a uma categoria (ex.: "ifood" em Alimentação) — o site usa isso para sugerir a categoria certa ao importar uma fatura.</li>
+          </ol>
         </details>
         <details class="tutorial-item">
-          <summary>Importar</summary>
-          <p>Em vez de digitar lançamento por lançamento, suba o arquivo da
-          fatura ou extrato que seu banco/cartão exporta (formato .OFX é o
-          mais confiável; .CSV também funciona). Escolha o cartão
-          correspondente (se for fatura de crédito), suba o arquivo, e uma
-          prévia aparece pra você revisar — pode corrigir categoria, tipo,
-          valor ou desmarcar alguma linha antes de confirmar. Se alguma
-          linha tiver a mesma descrição, o mesmo valor e uma data próxima
-          de algo que já está salvo (ou repetida no próprio arquivo), ela
-          aparece destacada e já vem desmarcada, com um aviso — revise e
-          marque de novo se for mesmo um gasto novo. Nada é salvo sem você
-          clicar em "Importar selecionados".</p>
+          <summary>Importar <span class="tutorial-badge-new">novo</span></summary>
+          <ol class="tutorial-steps">
+            <li>Escolha o <strong>cartão</strong> desta fatura (se for de crédito) e suba o arquivo <strong>.ofx ou .csv</strong>.</li>
+            <li>O site já <strong>sugere uma categoria</strong> para cada lançamento, comparando a descrição com as palavras-chave cadastradas em Categorias.</li>
+            <li>Linhas parecidas com algo que já existe aparecem destacadas e desmarcadas — revise antes de continuar.</li>
+            <li>Ajuste o que for preciso e clique em <strong>"Importar selecionados"</strong> — nada é salvo antes disso.</li>
+          </ol>
         </details>
         <details class="tutorial-item">
           <summary>Backup</summary>
-          <p>Baixa um arquivo .json com tudo o que está salvo na nuvem —
-          bom pra guardar uma cópia de segurança de vez em quando. Também
-          é onde fica o botão pra apagar todos os dados da conta, caso
-          precise recomeçar do zero.</p>
+          <ol class="tutorial-steps">
+            <li>Clique em <strong>"Baixar backup"</strong> para salvar um .json com tudo o que está na nuvem.</li>
+            <li>Use <strong>"Apagar todos os dados"</strong> só se quiser recomeçar do zero — não pode ser desfeito.</li>
+          </ol>
         </details>
       </div>
     </section>
@@ -1007,6 +1067,44 @@ const TIPOS_INVESTIMENTO = [
 const CORES_CARTAO = ["#D6708F", "#B79FCB", "#C79A55", "#7EA88A", "#E0798A"];
 const FORMAS_PAGAMENTO = ["Pix", "Débito", "Crédito", "Dinheiro", "Boleto"];
 
+// Palavras-chave que já vêm prontas nas categorias padrão, usadas para
+// sugerir a categoria de um lançamento importado (ver sugerirCategoriaPorPalavraChave).
+// Só são aplicadas na primeira vez que a categoria é criada (seedCategoriasPadrao) —
+// depois disso o usuário pode adicionar, renomear ou remover livremente em Categorias.
+const PALAVRAS_CHAVE_PADRAO = {
+  "Moradia": ["aluguel","condominio","condomínio","iptu","energia","luz","agua","água","gas","gás"],
+  "Alimentação": ["mercado","supermercado","ifood","restaurante","lanchonete","padaria","feira"],
+  "Transporte": ["uber","99app","combustivel","combustível","posto","estacionamento","pedagio","pedágio","onibus","ônibus"],
+  "Saúde": ["farmacia","farmácia","drogaria","hospital","plano de saude","plano de saúde"],
+  "Assinaturas": ["netflix","spotify","amazon prime","hbo","disney+","youtube premium"],
+  "Educação": ["escola","faculdade","curso","mensalidade escolar"],
+  "Cuidados pessoais": ["salao","salão","barbearia","academia"],
+  "Pagamento de fatura": ["pagamento de fatura","pagamento cartao","pagamento cartão"],
+  "Salário": ["salario","salário","folha de pagamento"],
+  "Rendimentos": ["rendimento","dividendo","juros"],
+  "Reembolso": ["reembolso","estorno"],
+};
+
+function normalizeTexto(str){
+  return String(str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+// Procura, entre as categorias do usuário (do tipo informado) que já têm
+// palavras-chave cadastradas, alguma cujo termo apareça na descrição.
+// Retorna o nome da categoria sugerida, ou null se nada bater.
+function sugerirCategoriaPorPalavraChave(descricao, tipo){
+  const desc = normalizeTexto(descricao);
+  if(!desc) return null;
+  const candidatas = db.categories.filter(c=> c.type===tipo && Array.isArray(c.keywords) && c.keywords.length);
+  for(const c of candidatas){
+    for(const kw of c.keywords){
+      const kwNorm = normalizeTexto(kw);
+      if(kwNorm && desc.includes(kwNorm)) return c.name;
+    }
+  }
+  return null;
+}
+
 // Todas as categorias (padrão + as que o usuário criou) moram na tabela
 // db.categories — as "padrão" são só a semente inicial (ver seedCategoriasPadrao),
 // depois disso são linhas normais, editáveis e removíveis como qualquer outra.
@@ -1024,11 +1122,17 @@ async function seedCategoriasPadrao(){
   const existentesDespesa = new Set(getCategorias("despesa"));
   const existentesReceita = new Set(getCategorias("receita"));
   const faltando = [
-    ...CATEGORIAS_DESPESA_PADRAO.filter(n=>!existentesDespesa.has(n)).map(name=>({ type:"despesa", name })),
-    ...CATEGORIAS_RECEITA_PADRAO.filter(n=>!existentesReceita.has(n)).map(name=>({ type:"receita", name })),
+    ...CATEGORIAS_DESPESA_PADRAO.filter(n=>!existentesDespesa.has(n)).map(name=>({ type:"despesa", name, keywords: PALAVRAS_CHAVE_PADRAO[name]||[] })),
+    ...CATEGORIAS_RECEITA_PADRAO.filter(n=>!existentesReceita.has(n)).map(name=>({ type:"receita", name, keywords: PALAVRAS_CHAVE_PADRAO[name]||[] })),
   ];
   if(!faltando.length) return;
-  const { data, error } = await sbClient.from("categories").insert(faltando).select();
+  let { data, error } = await sbClient.from("categories").insert(faltando).select();
+  if(error && /keywords/i.test(error.message)){
+    // banco ainda não tem a coluna "keywords" (rode add-keywords.sql) — cria as
+    // categorias sem palavras-chave por enquanto, pra não travar o primeiro acesso.
+    const semKeywords = faltando.map(({ keywords, ...resto })=>resto);
+    ({ data, error } = await sbClient.from("categories").insert(semKeywords).select());
+  }
   if(error){ console.error(error); return; }
   if(data) db.categories.push(...data);
 }
@@ -2030,11 +2134,23 @@ function renderCategorias(){
 function categoriaRow(c){
   const row = document.createElement("div");
   row.className = "goal-row";
+  row.style.flexDirection = "column";
+  row.style.alignItems = "stretch";
+  row.style.gap = "10px";
+  const kws = Array.isArray(c.keywords) ? c.keywords : [];
   row.innerHTML = `
-    <span>${escapeHtml(c.name)}</span>
-    <div class="goal-row-actions">
-      <button data-editar>renomear</button>
-      <button data-remover>remover</button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="flex:1;">${escapeHtml(c.name)}</span>
+      <div class="goal-row-actions">
+        <button data-editar>renomear</button>
+        <button data-remover>remover</button>
+      </div>
+    </div>
+    <div class="keyword-chips">
+      ${kws.map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-kw="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
+      <form class="keyword-add-form">
+        <input type="text" class="keyword-input" placeholder="+ palavra-chave">
+      </form>
     </div>
   `;
   row.querySelector("[data-editar]").addEventListener("click", ()=> openRenomearCategoriaModal(c));
@@ -2044,6 +2160,29 @@ function categoriaRow(c){
     if(error) return alert("Não foi possível remover: " + error.message);
     db.categories = db.categories.filter(x=>x.id!==c.id);
     renderCategorias();
+  });
+  row.querySelector(".keyword-add-form").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const input = row.querySelector(".keyword-input");
+    const kw = input.value.trim();
+    if(!kw) return;
+    const atuais = Array.isArray(c.keywords) ? c.keywords : [];
+    if(atuais.some(x=>x.toLowerCase()===kw.toLowerCase())){ input.value=""; return; }
+    const novas = [...atuais, kw];
+    const { data: updated, error } = await sbClient.from("categories").update({ keywords: novas }).eq("id", c.id).select().single();
+    if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-keywords.sql no SQL Editor do Supabase.");
+    db.categories = db.categories.map(x=> x.id===c.id ? updated : x);
+    renderCategorias();
+  });
+  row.querySelectorAll("[data-del-kw]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const kw = btn.dataset.delKw;
+      const atuais = (Array.isArray(c.keywords)?c.keywords:[]).filter(x=>x!==kw);
+      const { data: updated, error } = await sbClient.from("categories").update({ keywords: atuais }).eq("id", c.id).select().single();
+      if(error) return alert("Não foi possível remover a palavra-chave: " + error.message);
+      db.categories = db.categories.map(x=> x.id===c.id ? updated : x);
+      renderCategorias();
+    });
   });
   return row;
 }
@@ -2266,15 +2405,20 @@ function aplicarMapeamentoCSV(idxData, idxDesc, idxValor){
 }
 
 function montarPreviaImportacao(rows){
-  importRows = rows.map(r=>({
-    date: r.date,
-    description: r.description,
-    amount: Math.abs(r.amount),
-    type: r.amount < 0 ? "despesa" : "receita",
-    category: r.amount < 0 ? "Outros" : "Outros",
-    include: true,
-    duplicateInfo: null,
-  }));
+  importRows = rows.map(r=>{
+    const tipo = r.amount < 0 ? "despesa" : "receita";
+    const sugestao = sugerirCategoriaPorPalavraChave(r.description, tipo);
+    return {
+      date: r.date,
+      description: r.description,
+      amount: Math.abs(r.amount),
+      type: tipo,
+      category: sugestao || "Outros",
+      include: true,
+      duplicateInfo: null,
+      sugerida: !!sugestao,
+    };
+  });
   marcarDuplicatasImportacao();
   renderPreviaImportacao();
 }
@@ -2328,6 +2472,7 @@ function renderPreviaImportacao(){
         <select data-i="${i}" data-f="category">
           ${cats.map(c=>`<option value="${c}" ${c===r.category?"selected":""}>${c}</option>`).join("")}
         </select>
+        ${r.sugerida ? `<div style="font-size:0.68rem;color:var(--green);margin-top:4px;">🔎 sugerida por palavra-chave</div>` : ""}
       </td>
       <td>
         <select data-i="${i}" data-f="type">
@@ -2346,7 +2491,8 @@ function renderPreviaImportacao(){
       let v = e.target.type==="checkbox" ? e.target.checked : e.target.value;
       if(f==="amount") v = parseFloat(v)||0;
       importRows[i][f] = v;
-      if(f==="type") renderPreviaImportacao(); // categorias mudam conforme o tipo
+      if(f==="category") importRows[i].sugerida = false;
+      if(f==="type" || f==="category") renderPreviaImportacao(); // categorias/sugestão mudam de exibição
       else atualizarContadorImportacao();
     });
   });
