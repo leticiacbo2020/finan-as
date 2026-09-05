@@ -673,7 +673,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <div class="panel">
         <div class="panel-head">
           <h2>Lançamentos do mês</h2>
-          <button class="btn btn-primary" id="btn-nova-transacao">Novo lançamento</button>
+          <div style="display:flex;gap:10px;">
+            <button class="btn" id="btn-verificar-duplicados">Verificar duplicados</button>
+            <button class="btn btn-primary" id="btn-nova-transacao">Novo lançamento</button>
+          </div>
         </div>
 
         <div class="filters">
@@ -859,8 +862,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           "Novo lançamento", preencha data, descrição, categoria e valor.
           Se for uma despesa no cartão, escolha "Crédito" na forma de
           pagamento pra aparecerem os campos de cartão e parcelas. Marque
-          "despesa fixa" para contas recorrentes (aluguel, assinaturas).
-          Use os filtros no topo da tabela pra achar lançamentos específicos.</p>
+          "despesa fixa" para contas recorrentes (aluguel, assinaturas) —
+          essa marcação é só uma etiqueta, ela não cria o lançamento
+          sozinha no mês seguinte, você ainda lança (ou importa) todo mês.
+          Use os filtros no topo da tabela pra achar lançamentos específicos,
+          e o botão "Verificar duplicados" pra encontrar lançamentos com a
+          mesma descrição, valor e data parecidos que talvez tenham entrado
+          duas vezes.</p>
         </details>
         <details class="tutorial-item">
           <summary>Cartões</summary>
@@ -908,8 +916,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           mais confiável; .CSV também funciona). Escolha o cartão
           correspondente (se for fatura de crédito), suba o arquivo, e uma
           prévia aparece pra você revisar — pode corrigir categoria, tipo,
-          valor ou desmarcar alguma linha antes de confirmar. Nada é salvo
-          sem você clicar em "Importar selecionados".</p>
+          valor ou desmarcar alguma linha antes de confirmar. Se alguma
+          linha tiver a mesma descrição, o mesmo valor e uma data próxima
+          de algo que já está salvo (ou repetida no próprio arquivo), ela
+          aparece destacada e já vem desmarcada, com um aviso — revise e
+          marque de novo se for mesmo um gasto novo. Nada é salvo sem você
+          clicar em "Importar selecionados".</p>
         </details>
         <details class="tutorial-item">
           <summary>Backup</summary>
@@ -1052,6 +1064,24 @@ function escapeHtml(str){
   return String(str??"").replace(/[&<>"']/g, s=>({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[s]));
+}
+
+/* ---- ajuda a detectar lançamentos duplicados (mesma descrição, valor e data próxima) ---- */
+function normalizeDesc(str){
+  return String(str||"").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/\s+/g," ");
+}
+function diffDias(dataA, dataB){
+  const a = new Date(dataA+"T00:00:00");
+  const b = new Date(dataB+"T00:00:00");
+  return Math.abs((a-b)/86400000);
+}
+function saoParecidos(a, b, janelaDias){
+  return a.type===b.type &&
+    Math.abs(Number(a.amount)-Number(b.amount)) < 0.01 &&
+    normalizeDesc(a.description)===normalizeDesc(b.description) &&
+    diffDias(a.date, b.date) <= janelaDias;
 }
 
 /* =========================================================
@@ -1482,6 +1512,69 @@ function trTransacao(t, withActions){
 }
 
 document.getElementById("btn-nova-transacao").addEventListener("click", ()=> openTransacaoModal());
+
+/* ---- verificar duplicados entre TODOS os lançamentos já salvos ---- */
+function encontrarGruposDuplicados(){
+  const txs = [...db.transactions].sort((a,b)=> a.date.localeCompare(b.date));
+  const usados = new Set();
+  const grupos = [];
+  txs.forEach((t, i)=>{
+    if(usados.has(t.id)) return;
+    const grupo = [t];
+    txs.forEach((t2, j)=>{
+      if(i===j || usados.has(t2.id)) return;
+      if(saoParecidos(t, t2, 5)){ grupo.push(t2); usados.add(t2.id); }
+    });
+    if(grupo.length>1){ usados.add(t.id); grupos.push(grupo); }
+  });
+  return grupos;
+}
+
+function abrirModalDuplicados(){
+  const grupos = encontrarGruposDuplicados();
+  document.getElementById("modal-title").textContent = "Possíveis duplicados";
+  const form = document.getElementById("modal-form");
+  if(!grupos.length){
+    form.innerHTML = `
+      <p class="muted">Não encontrei lançamentos parecidos (mesma descrição, mesmo valor e datas próximas).</p>
+      <div class="modal-actions"><button type="button" class="btn btn-primary" id="modal-fechar-dup">Fechar</button></div>
+    `;
+  } else {
+    const gruposHtml = grupos.map(g=> `
+      <div class="panel" style="padding:14px 16px;margin-bottom:12px;box-shadow:none;">
+        <p class="muted" style="margin:0 0 8px;"><strong style="color:var(--ink);">${escapeHtml(g[0].description)}</strong> — ${brl(g[0].amount)}</p>
+        <div class="stack">
+          ${g.map(t=>`
+            <div class="goal-row">
+              <span>${fmtDate(t.date)} · ${escapeHtml(t.category)}${t.card_id ? " · cartão" : ""}${t.payment_method ? " · "+escapeHtml(t.payment_method) : ""}</span>
+              <button type="button" data-del-dup="${t.id}">excluir este</button>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `).join("");
+    form.innerHTML = `
+      <p class="muted">Encontrei lançamentos com a mesma descrição, o mesmo valor e datas próximas (até 5 dias) — confira se não são gastos recorrentes legítimos antes de excluir.</p>
+      ${gruposHtml}
+      <div class="modal-actions"><button type="button" class="btn btn-primary" id="modal-fechar-dup">Fechar</button></div>
+    `;
+    form.querySelectorAll("[data-del-dup]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const id = btn.dataset.delDup;
+        if(!confirm("Excluir este lançamento?")) return;
+        const { error } = await sbClient.from("transactions").delete().eq("id", id);
+        if(error) return alert("Não foi possível excluir: " + error.message);
+        db.transactions = db.transactions.filter(x=>x.id!==id);
+        renderAll();
+        abrirModalDuplicados(); // atualiza a lista dentro do próprio modal
+      });
+    });
+  }
+  form.onsubmit = (e)=> e.preventDefault();
+  document.getElementById("modal-overlay").hidden = false;
+  document.getElementById("modal-fechar-dup").addEventListener("click", closeModal);
+}
+document.getElementById("btn-verificar-duplicados").addEventListener("click", abrirModalDuplicados);
 
 function openTransacaoModal(t){
   const isEdit = !!t;
@@ -2180,23 +2273,57 @@ function montarPreviaImportacao(rows){
     type: r.amount < 0 ? "despesa" : "receita",
     category: r.amount < 0 ? "Outros" : "Outros",
     include: true,
+    duplicateInfo: null,
   }));
+  marcarDuplicatasImportacao();
   renderPreviaImportacao();
+}
+
+// Compara cada linha da prévia com o que já está salvo, e também com as
+// outras linhas do próprio arquivo, para avisar de possíveis duplicatas
+// (mesma descrição, mesmo valor, data a até 5 dias de distância).
+function marcarDuplicatasImportacao(){
+  importRows.forEach((r, i)=>{
+    const jaSalvo = db.transactions.find(t=> saoParecidos(t, r, 5));
+    if(jaSalvo){
+      r.duplicateInfo = `parece repetir um lançamento de ${fmtDate(jaSalvo.date)}`;
+      r.include = false;
+      return;
+    }
+    const noProprioArquivo = importRows.find((r2, j)=> j<i && saoParecidos(r2, r, 5));
+    if(noProprioArquivo){
+      r.duplicateInfo = `repetido no próprio arquivo (linha de ${fmtDate(noProprioArquivo.date)})`;
+      r.include = false;
+      return;
+    }
+    r.duplicateInfo = null;
+  });
+}
+
+function atualizarContadorImportacao(){
+  const dupCount = importRows.filter(r=>r.duplicateInfo).length;
+  let texto = `Prévia — ${importRows.filter(r=>r.include).length} de ${importRows.length} selecionados`;
+  if(dupCount) texto += ` (${dupCount} possível${dupCount>1?"is":""} duplicata${dupCount>1?"s":""} já desmarcada${dupCount>1?"s":""})`;
+  document.getElementById("import-preview-count").textContent = texto;
 }
 
 function renderPreviaImportacao(){
   const wrap = document.getElementById("import-preview");
   wrap.hidden = false;
-  document.getElementById("import-preview-count").textContent = `Prévia — ${importRows.filter(r=>r.include).length} de ${importRows.length} selecionados`;
+  atualizarContadorImportacao();
   const tbody = document.querySelector("#tabela-import tbody");
   tbody.innerHTML = "";
   importRows.forEach((r, i)=>{
     const tr = document.createElement("tr");
+    if(r.duplicateInfo) tr.style.background = "var(--red-bg)";
     const cats = getCategorias(r.type);
     tr.innerHTML = `
       <td><input type="checkbox" ${r.include?"checked":""} data-i="${i}" data-f="include"></td>
       <td><input type="date" value="${r.date}" data-i="${i}" data-f="date" style="width:130px;"></td>
-      <td><input type="text" value="${escapeHtml(r.description)}" data-i="${i}" data-f="description" style="width:100%;"></td>
+      <td>
+        <input type="text" value="${escapeHtml(r.description)}" data-i="${i}" data-f="description" style="width:100%;">
+        ${r.duplicateInfo ? `<div style="font-size:0.72rem;color:var(--pink-dark);margin-top:4px;">⚠ ${escapeHtml(r.duplicateInfo)}</div>` : ""}
+      </td>
       <td>
         <select data-i="${i}" data-f="category">
           ${cats.map(c=>`<option value="${c}" ${c===r.category?"selected":""}>${c}</option>`).join("")}
@@ -2213,14 +2340,14 @@ function renderPreviaImportacao(){
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll("[data-i]").forEach(el=>{
-    el.addEventListener(el.type==="checkbox" ? "change" : "change", (e)=>{
+    el.addEventListener("change", (e)=>{
       const i = parseInt(e.target.dataset.i);
       const f = e.target.dataset.f;
       let v = e.target.type==="checkbox" ? e.target.checked : e.target.value;
       if(f==="amount") v = parseFloat(v)||0;
       importRows[i][f] = v;
       if(f==="type") renderPreviaImportacao(); // categorias mudam conforme o tipo
-      else document.getElementById("import-preview-count").textContent = `Prévia — ${importRows.filter(r=>r.include).length} de ${importRows.length} selecionados`;
+      else atualizarContadorImportacao();
     });
   });
 }
