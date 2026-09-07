@@ -268,6 +268,34 @@ dezembro), cada detecção mostra um aviso na prévia com a opção
 **"não é parcela"** — clique nela para desfazer, se o site tiver
 interpretado errado.
 
+### Pagamento de fatura não conta como gasto duas vezes — novo
+
+Se você importa tanto o extrato da conta quanto a fatura do
+cartão, o pagamento da fatura aparece nos dois lugares: como uma
+saída no extrato, e como a soma de cada compra na fatura. Contar os
+dois é contar o mesmo dinheiro duas vezes. Por isso, ao importar
+(seja de extrato ou de fatura), um lançamento cuja descrição pareça
+ser o pagamento da própria fatura (ex.: "Pagamento de fatura",
+"Pgto cartão de crédito") já vem **desmarcado** na revisão, com uma
+explicação — marque a caixinha se quiser incluir mesmo assim. As
+demais despesas (débito, crédito, Pix, transferências, boletos)
+continuam entrando normalmente. O resumo da importação mostra
+quantos foram ignorados dessa forma.
+
+### Assinaturas ligadas a Recorrências — novo
+
+A categoria "Assinaturas" agora conversa com a tela de
+Recorrências:
+
+- Ao editar um lançamento e marcar a categoria como "Assinaturas",
+  aparece um aviso com o botão **"Criar recorrência"** — clique
+  para abrir o cadastro de Recorrências já preenchido com a
+  descrição, o valor, a forma de pagamento e a data desse
+  lançamento (frequência mensal por padrão).
+- Na tela de Categorias, a categoria "Assinaturas" mostra quantas
+  recorrências já estão cadastradas com essa categoria, com um
+  atalho **"gerenciar →"** direto para a tela de Recorrências.
+
 ### Palavras-chave aplicadas em lançamentos antigos — novo
 
 Ao cadastrar uma palavra-chave nova (em Categorias, Cartões ou nas
