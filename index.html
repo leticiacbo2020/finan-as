@@ -132,7 +132,9 @@ button, input, select{ font-family: var(--sans); }
   position: sticky;
   top: 0;
   height: 100vh;
+  transition: margin-left .18s ease;
 }
+.sidebar.is-hidden{ display:none; }
 
 .brand{ display:flex; align-items:center; gap:12px; margin-bottom: 40px; }
 .brand-mark{
@@ -259,10 +261,11 @@ button, input, select{ font-family: var(--sans); }
 .chart-panel .panel-head{ margin-bottom:0; }
 .chart-panel:not(.is-collapsed) .panel-head{ margin-bottom:14px; }
 .collapse-panel{
-  border:0; border-bottom:1px solid var(--line-strong); background:transparent; color:var(--pink-dark);
-  cursor:pointer; padding:3px 0; font-size:.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+  border:1px solid var(--line-strong); border-radius:50%; background:var(--surface); color:var(--pink-dark);
+  cursor:pointer; width:26px; height:26px; line-height:1; font-size:1rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
-.collapse-panel:hover{ color:var(--pink); }
+.collapse-panel:hover{ color:#fff; background:var(--pink); border-color:var(--pink); }
 .chart-panel.is-collapsed{ padding-bottom:16px; }
 .chart-panel.is-collapsed .panel-chart-content{ display:none; }
 
@@ -310,7 +313,8 @@ button, input, select{ font-family: var(--sans); }
 .ledger-table .num{ text-align:right; font-weight: 600; }
 .amount--pos{ color: var(--green); }
 .amount--neg{ color: var(--red); }
-.row-actions{ display:flex; gap: 10px; justify-content:flex-end; }
+.ledger-table td.row-actions-cell{ text-align:right; white-space:nowrap; }
+.row-actions{ display:inline-flex; gap: 10px; justify-content:flex-end; align-items:center; }
 .row-actions button{
   background:none; border:none; cursor:pointer;
   color: var(--ink-soft); font-size: 0.8rem; font-weight: 600;
@@ -812,9 +816,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
   <main class="main">
 
     <header class="topbar">
-      <div>
-        <h1 id="view-title">Visão geral</h1>
-        <p id="view-sub" class="muted">Resumo do seu momento financeiro</p>
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <button type="button" id="btn-toggle-sidebar" class="icon-btn" aria-label="Esconder ou mostrar o menu" title="Esconder/mostrar menu" style="margin-top:4px;">☰</button>
+        <div>
+          <h1 id="view-title">Visão geral</h1>
+          <p id="view-sub" class="muted">Resumo do seu momento financeiro</p>
+        </div>
       </div>
       <div class="search-wrap">
         <input type="text" id="global-search" class="search-input" placeholder="Buscar lançamentos…" autocomplete="off" aria-label="Buscar lançamentos">
@@ -857,7 +864,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <div class="panel chart-panel" data-chart-panel>
           <div class="panel-head">
             <h2>Gastos por categoria</h2>
-            <button type="button" class="collapse-panel" aria-expanded="true">recolher</button>
+            <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
           </div>
           <div class="panel-chart-content">
           <div class="mini-stats" id="mini-maior-menor" hidden>
@@ -879,7 +886,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <div class="panel chart-panel" data-chart-panel>
           <div class="panel-head">
             <h2>Planejado x real</h2>
-            <button type="button" class="collapse-panel" aria-expanded="true">recolher</button>
+            <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
           </div>
           <div class="panel-chart-content">
           <canvas id="chart-planejado" height="200"></canvas>
@@ -889,7 +896,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <div class="panel chart-panel" data-chart-panel>
           <div class="panel-head">
             <h2>Forma de pagamento mais usada</h2>
-            <button type="button" class="collapse-panel" aria-expanded="true">recolher</button>
+            <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
           </div>
           <div class="panel-chart-content">
           <canvas id="chart-pagamento" height="200"></canvas>
@@ -992,7 +999,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <div class="panel chart-panel" data-chart-panel>
           <div class="panel-head">
             <h2>Distribuição por tipo</h2>
-            <button type="button" class="collapse-panel" aria-expanded="true">recolher</button>
+            <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
           </div>
           <div class="panel-chart-content">
           <canvas id="chart-investimentos" height="220"></canvas>
@@ -1091,6 +1098,17 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           fatura fecha, em "compartilhar fatura" ou "exportar extrato". Nada é salvo
           automaticamente: você revisa e confirma cada lançamento antes.
         </p>
+        <p class="muted" style="background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;">
+          Dá pra importar tanto o <strong>extrato da conta</strong> quanto a
+          <strong>fatura do cartão</strong> — eles costumam se completar: o extrato traz
+          Pix, transferências, boletos pagos e o pagamento da fatura; a fatura traz o
+          detalhe de cada compra no crédito/débito. Só uma coisa não deve entrar duas
+          vezes: o <strong>pagamento da própria fatura</strong> (ex.: "Pagamento de
+          fatura", "Pgto cartão de crédito") já é a soma das compras que você importou
+          separadamente — por isso, esse tipo de lançamento já vem <strong>desmarcado</strong>
+          na revisão. As demais despesas (débito, crédito, Pix, transferências,
+          boletos) continuam entrando normalmente.
+        </p>
         <div class="field-row">
           <div class="field">
             <label>Cartão desta fatura (se for de crédito)</label>
@@ -1182,6 +1200,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Use <strong>"pausar"</strong> para suspender uma recorrência sem excluí-la — ela some do resumo mensal até ser reativada.</li>
             <li>Na Visão geral, um resumo compacto mostra quantas recorrências estão ativas e o impacto mensal estimado.</li>
             <li>Recorrências vinculadas a um cartão entram na projeção de faturas futuras desse cartão, em "Ver detalhes".</li>
+            <li>Ao editar um lançamento com a categoria <strong>"Assinaturas"</strong>, aparece um botão pra já criar a recorrência a partir dele — e em Categorias, "Assinaturas" mostra um atalho direto pra essa tela.</li>
           </ol>
         </details>
         <details class="tutorial-item">
@@ -1216,6 +1235,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Se você não escolher um cartão fixo (por exemplo, ao importar um extrato com Pix, débito e dinheiro misturados), o site também sugere a <strong>forma de pagamento</strong> de cada linha, usando as palavras-chave cadastradas em Cartões.</li>
             <li>Na revisão, veja o resumo com total, categorizadas, pendentes e possíveis duplicadas antes de continuar.</li>
             <li>Se a descrição tiver um padrão como "3/12", o site já entende como <strong>parcela</strong> e preenche sozinho — clique em "não é parcela" se ele tiver interpretado uma data errada.</li>
+            <li>Um lançamento que pareça ser o <strong>pagamento da própria fatura</strong> do cartão já vem desmarcado — evita contar a mesma despesa duas vezes ao importar extrato e fatura juntos.</li>
             <li>Linhas parecidas com algo que já existe aparecem destacadas e desmarcadas — revise antes de continuar.</li>
             <li>Ajuste o que for preciso e clique em <strong>"Importar selecionados"</strong> — nada é salvo antes disso.</li>
           </ol>
@@ -1319,6 +1339,21 @@ const TIPOS_INVESTIMENTO = [
 const CORES_CARTAO = ["#A65E64", "#8D625F", "#B77B56", "#6F8878", "#703D46"];
 const FORMAS_PAGAMENTO = ["Pix", "Débito", "Crédito", "Dinheiro", "Boleto"];
 const METODOS_SEM_CARTAO = ["Pix", "Débito", "Dinheiro", "Boleto"]; // formas de pagamento que podem ganhar palavra-chave própria (sem ser um cartão)
+
+// Termos que indicam que um lançamento é o PAGAMENTO da fatura do cartão em
+// si (ex.: no extrato da conta corrente) — e não uma compra. Isso já está
+// contado nas compras individuais (importadas da fatura ou lançadas à parte),
+// então não deve entrar de novo como despesa, senão conta o mesmo gasto duas vezes.
+const TERMOS_PAGAMENTO_FATURA = [
+  "pagamento de fatura", "pagamento fatura", "pgto fatura", "pgto de fatura",
+  "pagamento de cartao de credito", "pagamento cartao de credito", "pagamento cartao credito",
+  "pagto cartao", "pgto cartao", "pagamento cartao",
+  "fatura cartao de credito", "fatura cartao credito", "pagto fatura",
+];
+function pareceSerPagamentoDeFatura(descricao){
+  const desc = normalizeTexto(descricao);
+  return TERMOS_PAGAMENTO_FATURA.some(termo=> desc.includes(termo));
+}
 
 // Palavras-chave que já vêm prontas nas categorias padrão, usadas para
 // sugerir a categoria de um lançamento importado (ver sugerirCategoriaPorPalavraChave).
@@ -1755,11 +1790,30 @@ document.querySelectorAll("[data-view]").forEach(el=>{
   el.addEventListener("click", ()=> goTo(el.dataset.view));
 });
 
+// Esconder/mostrar o menu lateral — lembra a preferência entre sessões.
+(function(){
+  const sidebarEl = document.querySelector(".sidebar");
+  const btn = document.getElementById("btn-toggle-sidebar");
+  let hidden = false;
+  try{ hidden = localStorage.getItem("lefinance_sidebar_hidden") === "1"; }catch(e){}
+  function aplicar(){
+    sidebarEl.classList.toggle("is-hidden", hidden);
+    btn.setAttribute("aria-label", hidden ? "Mostrar menu" : "Esconder menu");
+  }
+  aplicar();
+  btn.addEventListener("click", ()=>{
+    hidden = !hidden;
+    aplicar();
+    try{ localStorage.setItem("lefinance_sidebar_hidden", hidden ? "1" : "0"); }catch(e){}
+  });
+})();
+
 document.querySelectorAll("[data-chart-panel]").forEach(panel=>{
   const button = panel.querySelector(".collapse-panel");
   button.addEventListener("click", ()=>{
     const collapsed = panel.classList.toggle("is-collapsed");
-    button.textContent = collapsed ? "expandir" : "recolher";
+    button.textContent = collapsed ? "+" : "−";
+    button.setAttribute("aria-label", collapsed ? "Expandir painel" : "Recolher painel");
     button.setAttribute("aria-expanded", String(!collapsed));
     if(!collapsed){
       requestAnimationFrame(()=>[chartCategorias, chartPlanejado, chartPagamento, chartInvestimentos].forEach(chart=>chart?.resize()));
@@ -2105,7 +2159,7 @@ function trTransacao(t, withActions){
     <td>${escapeHtml(t.category)}</td>
     ${withActions ? `<td>${escapeHtml(pagamentoTxt)}</td>` : ""}
     <td class="num ${t.type==='receita'?'amount--pos':'amount--neg'}">${t.type==='receita'?'+':'−'} ${brl(t.amount)}</td>
-    ${withActions ? `<td class="row-actions"><button data-edit="${t.id}">editar</button><button data-del="${t.id}">excluir</button></td>` : ""}
+    ${withActions ? `<td class="row-actions-cell"><div class="row-actions"><button data-edit="${t.id}">editar</button><button data-del="${t.id}">excluir</button></div></td>` : ""}
   `;
   if(withActions){
     tr.querySelector("[data-edit]").addEventListener("click", ()=> openTransacaoModal(t));
@@ -2217,6 +2271,10 @@ function openTransacaoModal(t){
         <input type="number" step="0.01" min="0" name="amount" required>
       </div>
     </div>
+    <p class="muted" id="f-assinatura-hint" hidden style="background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <span>É uma assinatura que se repete todo mês? Cadastre em Recorrências pra acompanhar o total mensal.</span>
+      <button type="button" class="btn" id="f-criar-recorrencia" style="padding:6px 12px;font-size:0.78rem;white-space:nowrap;">Criar recorrência</button>
+    </p>
     <div class="field" id="field-despesa-extra">
       <label>Forma de pagamento</label>
       <select name="payment_method" id="f-payment">
@@ -2271,7 +2329,18 @@ function openTransacaoModal(t){
       db.transactions.push(created);
     }
     closeModal(); renderAll();
-  });
+  }, isEdit ? `<button type="button" class="btn" id="modal-excluir" style="margin-right:auto;color:var(--red);border-color:var(--red);">Excluir</button>` : "");
+
+  if(isEdit){
+    document.getElementById("modal-excluir").addEventListener("click", async ()=>{
+      if(!confirm("Excluir este lançamento?")) return;
+      const { error } = await sbClient.from("transactions").delete().eq("id", t.id);
+      if(error) return alert("Não foi possível excluir: " + error.message);
+      db.transactions = db.transactions.filter(x=>x.id!==t.id);
+      closeModal();
+      renderAll();
+    });
+  }
 
   const typeSel = document.getElementById("f-type");
   const catSel = document.getElementById("f-category");
@@ -2286,6 +2355,7 @@ function openTransacaoModal(t){
     if(t) catSel.value = t.category;
     fieldFixa.hidden = typeSel.value !== "despesa"; // "despesa fixa" só faz sentido pra despesa
     refreshPagamento();
+    refreshDicaAssinatura();
   }
   function refreshPagamento(){
     // A forma de pagamento vale tanto pra despesa quanto pra receita (ex.: um
@@ -2294,8 +2364,14 @@ function openTransacaoModal(t){
     fieldCartao.hidden = !show;
     fieldParcelas.hidden = !show;
   }
+  // Liga a categoria "Assinaturas" à aba de Recorrências: se a pessoa marcar
+  // esse lançamento como assinatura, oferece já cadastrar como recorrência.
+  function refreshDicaAssinatura(){
+    document.getElementById("f-assinatura-hint").hidden = catSel.value !== "Assinaturas" || recorrenciasIndisponiveis;
+  }
   typeSel.addEventListener("change", refreshCats);
   paySel.addEventListener("change", refreshPagamento);
+  catSel.addEventListener("change", refreshDicaAssinatura);
 
   if(t){
     document.getElementById("modal-form").date.value = t.date;
@@ -2311,6 +2387,23 @@ function openTransacaoModal(t){
     document.getElementById("modal-form").date.value = new Date().toISOString().slice(0,10);
   }
   refreshCats();
+
+  document.getElementById("f-criar-recorrencia").addEventListener("click", ()=>{
+    const form = document.getElementById("modal-form");
+    const prefill = {
+      description: form.description.value,
+      amount: parseFloat(form.amount.value) || "",
+      type: typeSel.value,
+      category: "Assinaturas",
+      payment_method: paySel.value || "Débito",
+      card_id: paySel.value==="Crédito" ? (form.card_id.value || null) : null,
+      frequency: "mensal",
+      start_date: form.date.value || new Date().toISOString().slice(0,10),
+    };
+    closeModal();
+    if(recorrenciasIndisponiveis) return alert("Essa função ainda não está disponível — rode o script add-recurrences.sql no Supabase (veja o README) e recarregue a página.");
+    openRecorrenciaModal(null, prefill);
+  });
 }
 
 /* =========================================================
@@ -2841,7 +2934,7 @@ function renderInvestimentos(){
       <td>${escapeHtml(i.type)}</td>
       <td>${fmtDate(i.date)}</td>
       <td class="num">${brl(i.amount)}</td>
-      <td class="row-actions"><button data-del>excluir</button></td>
+      <td class="row-actions-cell"><div class="row-actions"><button data-del>excluir</button></div></td>
     `;
     tr.querySelector("[data-del]").addEventListener("click", async ()=>{
       if(confirm("Excluir este investimento?")){
@@ -3010,6 +3103,13 @@ function recorrenciaAtivaHoje(r){
   return true;
 }
 
+// Quantas recorrências (de qualquer status) estão na categoria "Assinaturas" —
+// usado no link entre Categorias e Recorrências.
+function countAssinaturasRecorrentes(){
+  if(recorrenciasIndisponiveis) return 0;
+  return db.recurrences.filter(r=>r.category==="Assinaturas").length;
+}
+
 function atualizarResumoRecorrencias(){
   const bar = document.getElementById("dash-recorrencias");
   if(!bar) return;
@@ -3073,7 +3173,7 @@ function renderRecorrencias(){
   });
 }
 
-function openRecorrenciaModal(r){
+function openRecorrenciaModal(r, prefill){
   const isEdit = !!r;
   const cardOptions = db.cards.map(c=>`<option value="card:${c.id}">Cartão · ${escapeHtml(c.name)}</option>`).join("");
   openModal(isEdit ? "Editar recorrência" : "Nova recorrência", `
@@ -3173,10 +3273,23 @@ function openRecorrenciaModal(r){
     form.conta.value = r.card_id ? `card:${r.card_id}` : `pag:${r.payment_method}`;
     form.start_date.value = r.start_date;
     if(r.end_date) form.end_date.value = r.end_date;
+  } else if(prefill){
+    // Vem de "Criar recorrência" a partir de um lançamento já existente (ex.:
+    // uma assinatura) — pré-preenche com os dados desse lançamento.
+    const form = document.getElementById("modal-form");
+    form.description.value = prefill.description || "";
+    form.amount.value = prefill.amount || "";
+    typeSel.value = prefill.type || "despesa";
+    if(prefill.frequency) form.frequency.value = prefill.frequency;
+    form.conta.value = prefill.card_id ? `card:${prefill.card_id}` : `pag:${prefill.payment_method||"Pix"}`;
+    form.start_date.value = prefill.start_date || new Date().toISOString().slice(0,10);
   } else {
     document.getElementById("modal-form").start_date.value = new Date().toISOString().slice(0,10);
   }
   refreshCats();
+  if(prefill && prefill.category){
+    document.getElementById("rf-category").value = prefill.category;
+  }
 }
 
 document.getElementById("btn-nova-recorrencia").addEventListener("click", ()=>{
@@ -3222,6 +3335,12 @@ function categoriaRow(c){
         <button data-remover>remover</button>
       </div>
     </div>
+    ${c.name==="Assinaturas" && !recorrenciasIndisponiveis ? `
+      <button type="button" class="dash-recurrence-bar" data-ir-recorrencias style="margin:0;padding:10px 14px;">
+        <span class="muted" style="margin:0;">${countAssinaturasRecorrentes()} assinatura${countAssinaturasRecorrentes()===1?"":"s"} cadastrada${countAssinaturasRecorrentes()===1?"":"s"} em Recorrências</span>
+        <strong>gerenciar →</strong>
+      </button>
+    ` : ""}
     <div class="keyword-chips">
       ${kws.map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-kw="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
       <form class="keyword-add-form">
@@ -3230,6 +3349,9 @@ function categoriaRow(c){
       </form>
     </div>
   `;
+  if(c.name==="Assinaturas" && !recorrenciasIndisponiveis){
+    row.querySelector("[data-ir-recorrencias]").addEventListener("click", ()=> goTo("recorrencias"));
+  }
   row.querySelector("[data-editar]").addEventListener("click", ()=> openRenomearCategoriaModal(c));
   row.querySelector("[data-remover]").addEventListener("click", async ()=>{
     if(!confirm(`Remover a categoria "${c.name}"? Lançamentos que já usam esse nome não serão apagados, só deixam de aparecer nas listas.`)) return;
@@ -3532,19 +3654,23 @@ function montarPreviaImportacao(rows){
     }
     // Detecta "3/12", "01/06" etc. na própria descrição — indício de compra parcelada.
     const parcela = tipo==="despesa" ? extrairParcelaDaDescricao(r.description) : null;
+    // Pagamento da própria fatura do cartão (ex.: no extrato da conta) já está
+    // contado nas compras — vem desmarcado por padrão pra não contar duas vezes.
+    const pareceFatura = tipo==="despesa" && pareceSerPagamentoDeFatura(r.description);
     return {
       date: r.date,
       description: r.description,
       amount: Math.abs(r.amount),
       type: tipo,
       category: sugestaoCategoria || "Outros",
-      include: true,
+      include: !pareceFatura,
       duplicateInfo: null,
       sugerida: !!sugestaoCategoria,
       payment_method,
       card_id,
       pagamentoSugerido,
       parcela,
+      pareceFatura,
     };
   });
   marcarDuplicatasImportacao();
@@ -3578,6 +3704,7 @@ function atualizarContadorImportacao(){
   const categorizadas = importRows.filter(r=> r.category && r.category!=="Outros").length;
   const pendentes = total - categorizadas;
   const parcelasCount = importRows.filter(r=>r.parcela).length;
+  const faturaCount = importRows.filter(r=>r.pareceFatura).length;
 
   document.getElementById("import-summary").innerHTML = `
     <div class="import-summary-item"><span class="ledger-label">Total</span><strong>${total}</strong></div>
@@ -3585,10 +3712,12 @@ function atualizarContadorImportacao(){
     <div class="import-summary-item"><span class="ledger-label">Pendentes</span><strong>${pendentes}</strong></div>
     <div class="import-summary-item"><span class="ledger-label">Possíveis duplicadas</span><strong>${dupCount}</strong></div>
     ${parcelasCount ? `<div class="import-summary-item"><span class="ledger-label">Parcelas detectadas</span><strong>${parcelasCount}</strong></div>` : ""}
+    ${faturaCount ? `<div class="import-summary-item"><span class="ledger-label">Pagamento de fatura ignorado</span><strong>${faturaCount}</strong></div>` : ""}
   `;
 
   let texto = `${importRows.filter(r=>r.include).length} de ${total} selecionados para importar`;
   if(dupCount) texto += ` — ${dupCount} possível${dupCount>1?"is":""} duplicata${dupCount>1?"s":""} já desmarcada${dupCount>1?"s":""}`;
+  if(faturaCount) texto += ` — ${faturaCount} pagamento${faturaCount>1?"s":""} de fatura já desmarcado${faturaCount>1?"s":""}`;
   document.getElementById("import-preview-count").textContent = texto;
 }
 
@@ -3602,6 +3731,7 @@ function renderPreviaImportacao(){
   importRows.forEach((r, i)=>{
     const tr = document.createElement("tr");
     if(r.duplicateInfo) tr.style.background = "var(--red-bg)";
+    else if(r.pareceFatura) tr.style.background = "var(--pink-bg)";
     const cats = getCategorias(r.type);
     const pagCell = cardIdFixo
       ? `<span class="muted" style="font-size:0.78rem;">Crédito · ${escapeHtml(nomeCartao(cardIdFixo))}</span>`
@@ -3624,6 +3754,7 @@ function renderPreviaImportacao(){
         <input type="text" value="${escapeHtml(r.description)}" data-i="${i}" data-f="description" style="width:100%;">
         ${r.duplicateInfo ? `<div style="font-size:0.72rem;color:var(--pink-dark);margin-top:4px;">⚠ ${escapeHtml(r.duplicateInfo)}</div>` : ""}
         ${r.parcela ? `<div style="font-size:0.68rem;color:var(--pink-dark);margin-top:4px;">🔎 parcela ${r.parcela.current}/${r.parcela.total} detectada · <button type="button" data-cancelar-parcela="${i}" style="background:none;border:none;color:var(--ink-soft);text-decoration:underline;cursor:pointer;font-size:0.68rem;padding:0;">não é parcela</button></div>` : ""}
+        ${r.pareceFatura ? `<div style="font-size:0.68rem;color:var(--pink-dark);margin-top:4px;">⚠ parece ser o pagamento da fatura do cartão — deixamos desmarcado pra não contar como gasto duas vezes. Marque a caixinha se quiser incluir mesmo assim.</div>` : ""}
       </td>
       <td>
         <select data-i="${i}" data-f="category">
@@ -3657,11 +3788,17 @@ function renderPreviaImportacao(){
       } else if(f==="card_id"){
         atualizarContadorImportacao();
       } else if(f==="date" || f==="description" || f==="amount"){
-        if(f==="description") importRows[i].parcela = importRows[i].type==="despesa" ? extrairParcelaDaDescricao(v) : null;
+        if(f==="description"){
+          importRows[i].parcela = importRows[i].type==="despesa" ? extrairParcelaDaDescricao(v) : null;
+          importRows[i].pareceFatura = importRows[i].type==="despesa" && pareceSerPagamentoDeFatura(v);
+        }
         marcarDuplicatasImportacao(); // reavalia duplicatas — evita duplicidade após edição manual
         renderPreviaImportacao();
       } else if(f==="type" || f==="category"){
-        if(f==="type") importRows[i].parcela = v==="despesa" ? extrairParcelaDaDescricao(importRows[i].description) : null;
+        if(f==="type"){
+          importRows[i].parcela = v==="despesa" ? extrairParcelaDaDescricao(importRows[i].description) : null;
+          importRows[i].pareceFatura = v==="despesa" && pareceSerPagamentoDeFatura(importRows[i].description);
+        }
         renderPreviaImportacao(); // categorias/sugestão mudam de exibição
       } else {
         atualizarContadorImportacao();
@@ -3741,12 +3878,13 @@ document.getElementById("btn-apagar-tudo").addEventListener("click", async ()=>{
 /* =========================================================
    MODAL GENÉRICO
    ========================================================= */
-function openModal(title, bodyHtml, onSubmit){
+function openModal(title, bodyHtml, onSubmit, extraActionHtml){
   document.querySelector(".modal").classList.remove("modal--wide");
   document.getElementById("modal-title").textContent = title;
   const form = document.getElementById("modal-form");
   form.innerHTML = bodyHtml + `
     <div class="modal-actions">
+      ${extraActionHtml || ""}
       <button type="button" class="btn" id="modal-cancel">Cancelar</button>
       <button type="submit" class="btn btn-primary">Salvar</button>
     </div>
