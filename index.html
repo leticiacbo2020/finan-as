@@ -137,6 +137,15 @@ button, input, select{ font-family: var(--sans); }
 .sidebar.is-hidden{ display:none; }
 
 .brand{ display:flex; align-items:center; gap:12px; margin-bottom: 40px; }
+.icon-btn--light{ color:#EABFD4; width:auto; height:auto; padding:4px; }
+.icon-btn--light:hover{ color:#fff; }
+#btn-show-sidebar{
+  position: fixed; top: 18px; left: 18px; z-index: 90;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-sm); font-size: 1.1rem;
+  display:flex; align-items:center; justify-content:center;
+}
 .brand-mark{
   font-family: var(--serif);
   font-size: 1.15rem;
@@ -766,6 +775,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <div class="brand-name">LeFinance</div>
         <div class="brand-sub">painel de controle financeiro</div>
       </div>
+      <button type="button" id="btn-toggle-sidebar" class="icon-btn icon-btn--light" aria-label="Esconder menu" title="Esconder menu" style="margin-left:auto;">☰</button>
     </div>
 
     <nav class="nav" id="nav">
@@ -812,16 +822,15 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
     </div>
   </aside>
 
+  <button type="button" id="btn-show-sidebar" class="icon-btn" aria-label="Mostrar menu" title="Mostrar menu" hidden>☰</button>
+
   <!-- MAIN -->
   <main class="main">
 
     <header class="topbar">
-      <div style="display:flex;align-items:flex-start;gap:14px;">
-        <button type="button" id="btn-toggle-sidebar" class="icon-btn" aria-label="Esconder ou mostrar o menu" title="Esconder/mostrar menu" style="margin-top:4px;">☰</button>
-        <div>
-          <h1 id="view-title">Visão geral</h1>
-          <p id="view-sub" class="muted">Resumo do seu momento financeiro</p>
-        </div>
+      <div>
+        <h1 id="view-title">Visão geral</h1>
+        <p id="view-sub" class="muted">Resumo do seu momento financeiro</p>
       </div>
       <div class="search-wrap">
         <input type="text" id="global-search" class="search-input" placeholder="Buscar lançamentos…" autocomplete="off" aria-label="Buscar lançamentos">
@@ -1793,18 +1802,24 @@ document.querySelectorAll("[data-view]").forEach(el=>{
 // Esconder/mostrar o menu lateral — lembra a preferência entre sessões.
 (function(){
   const sidebarEl = document.querySelector(".sidebar");
-  const btn = document.getElementById("btn-toggle-sidebar");
+  const btnHide = document.getElementById("btn-toggle-sidebar");
+  const btnShow = document.getElementById("btn-show-sidebar");
   let hidden = false;
   try{ hidden = localStorage.getItem("lefinance_sidebar_hidden") === "1"; }catch(e){}
   function aplicar(){
     sidebarEl.classList.toggle("is-hidden", hidden);
-    btn.setAttribute("aria-label", hidden ? "Mostrar menu" : "Esconder menu");
+    btnShow.hidden = !hidden;
   }
   aplicar();
-  btn.addEventListener("click", ()=>{
-    hidden = !hidden;
+  btnHide.addEventListener("click", ()=>{
+    hidden = true;
     aplicar();
-    try{ localStorage.setItem("lefinance_sidebar_hidden", hidden ? "1" : "0"); }catch(e){}
+    try{ localStorage.setItem("lefinance_sidebar_hidden", "1"); }catch(e){}
+  });
+  btnShow.addEventListener("click", ()=>{
+    hidden = false;
+    aplicar();
+    try{ localStorage.setItem("lefinance_sidebar_hidden", "0"); }catch(e){}
   });
 })();
 
@@ -2364,10 +2379,11 @@ function openTransacaoModal(t){
     fieldCartao.hidden = !show;
     fieldParcelas.hidden = !show;
   }
-  // Liga a categoria "Assinaturas" à aba de Recorrências: se a pessoa marcar
-  // esse lançamento como assinatura, oferece já cadastrar como recorrência.
+  // Liga categorias de gasto recorrente (Assinaturas, Compras recorrentes etc.)
+  // à aba de Recorrências: se a pessoa marcar esse lançamento com uma delas,
+  // oferece já cadastrar como recorrência.
   function refreshDicaAssinatura(){
-    document.getElementById("f-assinatura-hint").hidden = catSel.value !== "Assinaturas" || recorrenciasIndisponiveis;
+    document.getElementById("f-assinatura-hint").hidden = !ehCategoriaRecorrente(catSel.value) || recorrenciasIndisponiveis;
   }
   typeSel.addEventListener("change", refreshCats);
   paySel.addEventListener("change", refreshPagamento);
@@ -2394,7 +2410,7 @@ function openTransacaoModal(t){
       description: form.description.value,
       amount: parseFloat(form.amount.value) || "",
       type: typeSel.value,
-      category: "Assinaturas",
+      category: catSel.value,
       payment_method: paySel.value || "Débito",
       card_id: paySel.value==="Crédito" ? (form.card_id.value || null) : null,
       frequency: "mensal",
@@ -3103,11 +3119,18 @@ function recorrenciaAtivaHoje(r){
   return true;
 }
 
-// Quantas recorrências (de qualquer status) estão na categoria "Assinaturas" —
-// usado no link entre Categorias e Recorrências.
-function countAssinaturasRecorrentes(){
+// Quantas recorrências (de qualquer status) estão numa categoria — usado no
+// link entre Categorias e Recorrências.
+function countRecorrenciasPorCategoria(nomeCategoria){
   if(recorrenciasIndisponiveis) return 0;
-  return db.recurrences.filter(r=>r.category==="Assinaturas").length;
+  return db.recurrences.filter(r=>r.category===nomeCategoria).length;
+}
+// Uma categoria "conversa" com Recorrências quando o nome dela sugere gasto
+// recorrente — cobre "Assinaturas", "Compras recorrentes", "Recorrentes" etc.,
+// não só o nome exato "Assinaturas".
+function ehCategoriaRecorrente(nomeCategoria){
+  const n = normalizeTexto(nomeCategoria||"");
+  return n.includes("assinatura") || n.includes("recorrente") || n.includes("recorrencia");
 }
 
 function atualizarResumoRecorrencias(){
@@ -3327,6 +3350,8 @@ function categoriaRow(c){
   row.style.alignItems = "stretch";
   row.style.gap = "10px";
   const kws = Array.isArray(c.keywords) ? c.keywords : [];
+  const ligaRecorrencia = ehCategoriaRecorrente(c.name) && !recorrenciasIndisponiveis;
+  const qtdRecorrencias = ligaRecorrencia ? countRecorrenciasPorCategoria(c.name) : 0;
   row.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;">
       <span style="flex:1;">${escapeHtml(c.name)}</span>
@@ -3335,10 +3360,10 @@ function categoriaRow(c){
         <button data-remover>remover</button>
       </div>
     </div>
-    ${c.name==="Assinaturas" && !recorrenciasIndisponiveis ? `
+    ${ligaRecorrencia ? `
       <button type="button" class="dash-recurrence-bar" data-ir-recorrencias style="margin:0;padding:10px 14px;">
-        <span class="muted" style="margin:0;">${countAssinaturasRecorrentes()} assinatura${countAssinaturasRecorrentes()===1?"":"s"} cadastrada${countAssinaturasRecorrentes()===1?"":"s"} em Recorrências</span>
-        <strong>gerenciar →</strong>
+        <span class="muted" style="margin:0;">${qtdRecorrencias} recorrência${qtdRecorrencias===1?"":"s"} cadastrada${qtdRecorrencias===1?"":"s"} nessa categoria</span>
+        <strong>gerenciar em Recorrências →</strong>
       </button>
     ` : ""}
     <div class="keyword-chips">
@@ -3349,7 +3374,7 @@ function categoriaRow(c){
       </form>
     </div>
   `;
-  if(c.name==="Assinaturas" && !recorrenciasIndisponiveis){
+  if(ligaRecorrencia){
     row.querySelector("[data-ir-recorrencias]").addEventListener("click", ()=> goTo("recorrencias"));
   }
   row.querySelector("[data-editar]").addEventListener("click", ()=> openRenomearCategoriaModal(c));
