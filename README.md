@@ -421,6 +421,11 @@ Isso não muda nada em como os dados são salvos — continua sendo o
 mesmo site, com login e sincronização pelo Supabase; só a aparência
 fica mais parecida com um app nativo.
 
+O layout também ficou mais compacto no celular, e há um botão de
+**atualizar** (↻) ao lado da navegação de mês, no topo da tela —
+busca os dados mais recentes do Supabase sem precisar recarregar a
+página inteira.
+
 ## Do que o site é feito
 
 HTML, CSS e JavaScript num arquivo só — sem framework, sem etapa de
