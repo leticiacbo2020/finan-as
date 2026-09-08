@@ -976,6 +976,16 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <div class="card-grid" id="lista-cartoes"></div>
       <p class="empty-hint" id="cartoes-empty" hidden>Nenhum cartão cadastrado ainda.</p>
 
+      <div class="panel" id="painel-faturas-futuras" style="margin-top:24px;">
+        <h2>Resumo de faturas futuras</h2>
+        <p class="muted" style="margin:6px 0 14px;">
+          Soma de todos os cartões, mês a mês — a fatura atual é o valor real
+          já lançado; os meses seguintes são uma estimativa com base nas
+          parcelas em aberto e nas recorrências vinculadas a cada cartão.
+        </p>
+        <div class="projection-strip" id="projecao-faturas-todos-cartoes"></div>
+      </div>
+
       <details class="tutorial-item" style="margin-top:24px;">
         <summary>Palavras-chave por forma de pagamento</summary>
         <p class="muted" style="margin:10px 0 14px;">
@@ -1050,6 +1060,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <p class="muted" id="recorrencias-indisponivel" hidden>
         Essa função ainda não está disponível na sua conta — rode o script <code>add-recurrences.sql</code> no SQL Editor do Supabase (veja o README) e recarregue a página.
       </p>
+      <div class="detail-grid" id="recorrencias-totais"></div>
       <div class="stack" id="lista-recorrencias"></div>
       <p class="empty-hint" id="recorrencias-empty" hidden>Nenhuma recorrência cadastrada — adicione uma assinatura, salário ou conta fixa para acompanhar o impacto mensal.</p>
     </section>
@@ -1183,6 +1194,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Preencha o <strong>dia de fechamento</strong> para a fatura seguir o ciclo real do cartão, em vez do mês do calendário.</li>
             <li>Sem o dia de fechamento, a fatura continua somando pelo mês do calendário, como sempre foi.</li>
             <li>O resumo do cartão mostra o <strong>limite disponível</strong> e o vencimento; clique em <strong>"Ver detalhes"</strong> para a próxima fatura, o limite comprometido, as parcelas em aberto, uma projeção de até 6 faturas, as palavras-chave desse cartão e as transações de cada fatura — use as setas pra navegar entre faturas anteriores e clique numa linha pra editar, inclusive a forma de pagamento.</li>
+            <li>Logo abaixo dos cartões, o painel <strong>"Resumo de faturas futuras"</strong> já mostra, sem precisar clicar em nada, a soma de todos os cartões mês a mês.</li>
             <li>Palavras-chave do cartão (em "Ver detalhes") e das formas de pagamento sem cartão (Pix, Débito, Dinheiro, Boleto — logo abaixo da lista de cartões) ajudam a sugerir automaticamente a forma de pagamento de cada lançamento ao importar um extrato.</li>
             <li>Ao adicionar uma palavra-chave nova, o site também confere lançamentos já existentes que combinam com ela — mesmo que já tenham outra forma de pagamento — e pergunta se quer atualizar eles também.</li>
           </ol>
@@ -1208,6 +1220,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Clique em <strong>"Nova recorrência"</strong> e informe descrição, valor, categoria, conta ou cartão, frequência e o período.</li>
             <li>Use <strong>"pausar"</strong> para suspender uma recorrência sem excluí-la — ela some do resumo mensal até ser reativada.</li>
             <li>Na Visão geral, um resumo compacto mostra quantas recorrências estão ativas e o impacto mensal estimado.</li>
+            <li>No topo da tela, veja a soma das despesas recorrentes, das receitas recorrentes e o saldo recorrente por mês.</li>
             <li>Recorrências vinculadas a um cartão entram na projeção de faturas futuras desse cartão, em "Ver detalhes".</li>
             <li>Ao editar um lançamento com a categoria <strong>"Assinaturas"</strong>, aparece um botão pra já criar a recorrência a partir dele — e em Categorias, "Assinaturas" mostra um atalho direto pra essa tela.</li>
           </ol>
@@ -2617,6 +2630,24 @@ function renderCartoes(){
     wrap.appendChild(el);
   });
   renderPagamentoKeywords();
+  renderProjecaoFaturasTodosCartoes();
+}
+
+// Resumo visível (fora de qualquer modal) somando a projeção de faturas de
+// TODOS os cartões, mês a mês — mesmo cálculo usado em "Ver detalhes",
+// só que somado entre os cartões em vez de mostrar um de cada vez.
+function renderProjecaoFaturasTodosCartoes(){
+  const painel = document.getElementById("painel-faturas-futuras");
+  const wrap = document.getElementById("projecao-faturas-todos-cartoes");
+  if(!db.cards.length){
+    painel.hidden = true;
+    return;
+  }
+  painel.hidden = false;
+  wrap.innerHTML = Array.from({length:6}, (_,i)=> ymAdd(currentMonth, i)).map((ym,i)=>{
+    const total = db.cards.reduce((s,c)=> s + (i===0 ? despesasFaturaCartao(c).reduce((s2,t)=>s2+Number(t.amount),0) : projecaoFaturaCartao(c, ym)), 0);
+    return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(total)}</strong></div>`;
+  }).join("");
 }
 
 // Palavras-chave para as formas de pagamento sem cartão (Pix, Débito,
@@ -3155,11 +3186,23 @@ function contaLabelRecorrencia(r){
 function renderRecorrencias(){
   document.getElementById("recorrencias-indisponivel").hidden = !recorrenciasIndisponiveis;
   const wrap = document.getElementById("lista-recorrencias");
+  const totaisWrap = document.getElementById("recorrencias-totais");
   wrap.innerHTML = "";
+  totaisWrap.innerHTML = "";
   if(recorrenciasIndisponiveis){
     document.getElementById("recorrencias-empty").hidden = true;
     return;
   }
+  // Soma dos valores — só das recorrências ativas hoje, convertendo tudo pro
+  // equivalente mensal pra dar pra somar semanal + mensal + anual juntos.
+  const ativas = db.recurrences.filter(recorrenciaAtivaHoje);
+  const totalDespesas = ativas.filter(r=>r.type==="despesa").reduce((s,r)=>s+valorMensalEquivalente(r),0);
+  const totalReceitas = ativas.filter(r=>r.type==="receita").reduce((s,r)=>s+valorMensalEquivalente(r),0);
+  totaisWrap.innerHTML = `
+    <div class="detail-stat"><span class="ledger-label">Despesas recorrentes</span><strong style="color:var(--red);">${brl(totalDespesas)}/mês</strong></div>
+    <div class="detail-stat"><span class="ledger-label">Receitas recorrentes</span><strong style="color:var(--green);">${brl(totalReceitas)}/mês</strong></div>
+    <div class="detail-stat"><span class="ledger-label">Saldo recorrente</span><strong>${brl(totalReceitas-totalDespesas)}/mês</strong></div>
+  `;
   const ordenadas = [...db.recurrences].sort((a,b)=> Number(b.active)-Number(a.active) || a.description.localeCompare(b.description));
   document.getElementById("recorrencias-empty").hidden = ordenadas.length>0;
   ordenadas.forEach(r=>{
