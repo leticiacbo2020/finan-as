@@ -194,17 +194,18 @@ visão geral de quanto está previsto de fatura mês a mês.
 
 ### Recorrências — novo
 
-Uma tela própria para receitas e despesas que se repetem (Netflix,
-salário, aluguel, etc.), separada das transações do dia a dia:
+Uma tela própria para despesas que se repetem (Netflix, aluguel,
+academia, etc.), separada das transações do dia a dia — Recorrências
+é só para despesas, não para receitas:
 
 - Cadastre descrição, valor, categoria, conta ou cartão, frequência
   (semanal, mensal ou anual) e o período (início e, se quiser, fim).
 - Pause ou reative uma recorrência sem precisar excluí-la.
-- Na tela de Recorrências, o topo mostra a soma das despesas
-  recorrentes, das receitas recorrentes e o saldo entre elas, por
-  mês (convertendo semanal/anual para o equivalente mensal).
+- Na tela de Recorrências, o topo mostra quantas estão ativas e a
+  soma do total recorrente por mês (convertendo semanal/anual para
+  o equivalente mensal).
 - Na Visão geral, aparece só um resumo compacto: quantas
-  recorrências estão ativas e o impacto mensal estimado — clique
+  recorrências estão ativas e o total mensal estimado — clique
   nele para ver a lista completa.
 - Recorrências vinculadas a um cartão entram automaticamente na
   projeção de faturas futuras desse cartão (veja "Cartões" acima).
