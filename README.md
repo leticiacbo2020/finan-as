@@ -396,6 +396,31 @@ não precisa editar um por um. Remover uma categoria não apaga os
 lançamentos que já usam aquele nome; eles só deixam de aparecer nas
 listas de sugestão.
 
+## Instalar como app (tela de início) — novo
+
+O LeFinance agora está preparado pra parecer um app de verdade quando
+adicionado à tela de início do celular — sem barra de endereço, com
+ícone próprio e cor de tema combinando com o site.
+
+**No iPhone (Safari):**
+1. Abra o site no Safari (precisa ser o Safari — outros navegadores no
+   iPhone, como Chrome, não conseguem instalar na tela de início).
+2. Toque no ícone de compartilhar (o quadrado com uma seta pra cima).
+3. Toque em **"Adicionar à Tela de Início"**.
+4. Pronto — o ícone aparece na tela de início e abre em tela cheia,
+   sem a barra do Safari.
+
+**No Android (Chrome):**
+1. Abra o site no Chrome.
+2. Toque nos três pontinhos (menu) no canto superior direito.
+3. Toque em **"Adicionar à tela inicial"** (ou "Instalar app", se
+   aparecer essa opção).
+4. Pronto — o ícone aparece na tela de início e abre em tela cheia.
+
+Isso não muda nada em como os dados são salvos — continua sendo o
+mesmo site, com login e sincronização pelo Supabase; só a aparência
+fica mais parecida com um app nativo.
+
 ## Do que o site é feito
 
 HTML, CSS e JavaScript num arquivo só — sem framework, sem etapa de
