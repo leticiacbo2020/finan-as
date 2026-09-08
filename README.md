@@ -187,6 +187,11 @@ Essas projeções são estimativas — elas somam parcelas já
 cadastradas e recorrências vinculadas ao cartão, mas não adivinham
 lançamentos novos que você ainda não fez.
 
+Logo abaixo da lista de cartões, sem precisar clicar em nada, o
+painel **"Resumo de faturas futuras"** já mostra a mesma projeção
+de até 6 meses, só que somada entre todos os seus cartões — uma
+visão geral de quanto está previsto de fatura mês a mês.
+
 ### Recorrências — novo
 
 Uma tela própria para receitas e despesas que se repetem (Netflix,
@@ -195,6 +200,9 @@ salário, aluguel, etc.), separada das transações do dia a dia:
 - Cadastre descrição, valor, categoria, conta ou cartão, frequência
   (semanal, mensal ou anual) e o período (início e, se quiser, fim).
 - Pause ou reative uma recorrência sem precisar excluí-la.
+- Na tela de Recorrências, o topo mostra a soma das despesas
+  recorrentes, das receitas recorrentes e o saldo entre elas, por
+  mês (convertendo semanal/anual para o equivalente mensal).
 - Na Visão geral, aparece só um resumo compacto: quantas
   recorrências estão ativas e o impacto mensal estimado — clique
   nele para ver a lista completa.
