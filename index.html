@@ -614,6 +614,11 @@ select{ cursor:pointer; }
 .projection-item{ flex: 0 0 auto; min-width: 92px; text-align:center; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 8px; }
 .projection-item .ledger-label{ font-size:0.62rem; }
 .projection-item strong{ display:block; margin-top:4px; font-family:var(--serif); font-size:0.92rem; }
+.fatura-futura-cartao{ padding:12px 0; border-bottom:1px solid var(--line); }
+.fatura-futura-cartao:last-child{ border-bottom:none; }
+.fatura-futura-cartao-nome{ display:flex; align-items:center; gap:8px; font-size:0.86rem; font-weight:700; margin-bottom:10px; }
+.fatura-futura-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.fatura-futura-total{ padding-top:16px; }
 .cc-more-btn{
   background: rgba(255,255,255,0.25); border:none; color:#fff; width:100%;
   margin-top:10px; padding:7px 0; border-radius:999px; font-size:0.72rem; font-weight:700;
@@ -979,11 +984,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <div class="panel" id="painel-faturas-futuras" style="margin-top:24px;">
         <h2>Resumo de faturas futuras</h2>
         <p class="muted" style="margin:6px 0 14px;">
-          Soma de todos os cartões, mês a mês — a fatura atual é o valor real
-          já lançado; os meses seguintes são uma estimativa com base nas
-          parcelas em aberto e nas recorrências vinculadas a cada cartão.
+          Cada cartão, mês a mês — a fatura atual é o valor real já lançado;
+          os meses seguintes são uma estimativa com base nas parcelas em
+          aberto e nas recorrências vinculadas a cada cartão. No final, o
+          total de todos os cartões somados.
         </p>
-        <div class="projection-strip" id="projecao-faturas-todos-cartoes"></div>
+        <div class="stack" id="projecao-faturas-todos-cartoes"></div>
       </div>
 
       <details class="tutorial-item" style="margin-top:24px;">
@@ -1217,10 +1223,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <details class="tutorial-item">
           <summary>Recorrências <span class="tutorial-badge-new">novo</span></summary>
           <ol class="tutorial-steps">
-            <li>Clique em <strong>"Nova recorrência"</strong> e informe descrição, valor, categoria, conta ou cartão, frequência e o período.</li>
+            <li>Clique em <strong>"Nova recorrência"</strong> e informe descrição, valor, categoria, conta ou cartão, frequência e o período — recorrências são só para despesas (contas fixas, assinaturas, etc.).</li>
             <li>Use <strong>"pausar"</strong> para suspender uma recorrência sem excluí-la — ela some do resumo mensal até ser reativada.</li>
             <li>Na Visão geral, um resumo compacto mostra quantas recorrências estão ativas e o impacto mensal estimado.</li>
-            <li>No topo da tela, veja a soma das despesas recorrentes, das receitas recorrentes e o saldo recorrente por mês.</li>
+            <li>No topo da tela, veja quantas estão ativas e a soma do total recorrente por mês.</li>
             <li>Recorrências vinculadas a um cartão entram na projeção de faturas futuras desse cartão, em "Ver detalhes".</li>
             <li>Ao editar um lançamento com a categoria <strong>"Assinaturas"</strong>, aparece um botão pra já criar a recorrência a partir dele — e em Categorias, "Assinaturas" mostra um atalho direto pra essa tela.</li>
           </ol>
@@ -2393,10 +2399,10 @@ function openTransacaoModal(t){
     fieldParcelas.hidden = !show;
   }
   // Liga categorias de gasto recorrente (Assinaturas, Compras recorrentes etc.)
-  // à aba de Recorrências: se a pessoa marcar esse lançamento com uma delas,
-  // oferece já cadastrar como recorrência.
+  // à aba de Recorrências: se a pessoa marcar essa DESPESA com uma delas,
+  // oferece já cadastrar como recorrência. Recorrências são só pra despesas.
   function refreshDicaAssinatura(){
-    document.getElementById("f-assinatura-hint").hidden = !ehCategoriaRecorrente(catSel.value) || recorrenciasIndisponiveis;
+    document.getElementById("f-assinatura-hint").hidden = typeSel.value!=="despesa" || !ehCategoriaRecorrente(catSel.value) || recorrenciasIndisponiveis;
   }
   typeSel.addEventListener("change", refreshCats);
   paySel.addEventListener("change", refreshPagamento);
@@ -2422,7 +2428,6 @@ function openTransacaoModal(t){
     const prefill = {
       description: form.description.value,
       amount: parseFloat(form.amount.value) || "",
-      type: typeSel.value,
       category: catSel.value,
       payment_method: paySel.value || "Débito",
       card_id: paySel.value==="Crédito" ? (form.card_id.value || null) : null,
@@ -2644,10 +2649,29 @@ function renderProjecaoFaturasTodosCartoes(){
     return;
   }
   painel.hidden = false;
-  wrap.innerHTML = Array.from({length:6}, (_,i)=> ymAdd(currentMonth, i)).map((ym,i)=>{
-    const total = db.cards.reduce((s,c)=> s + (i===0 ? despesasFaturaCartao(c).reduce((s2,t)=>s2+Number(t.amount),0) : projecaoFaturaCartao(c, ym)), 0);
-    return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(total)}</strong></div>`;
-  }).join("");
+  const meses = Array.from({length:6}, (_,i)=> ymAdd(currentMonth, i));
+  // Uma linha por cartão, cada um com sua própria projeção de 6 meses —
+  // e uma última linha com o total somado de todos juntos.
+  wrap.innerHTML = db.cards.map(c=>{
+    const linha = meses.map((ym,i)=>{
+      const valor = i===0 ? despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0) : projecaoFaturaCartao(c, ym);
+      return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(valor)}</strong></div>`;
+    }).join("");
+    return `
+      <div class="fatura-futura-cartao">
+        <div class="fatura-futura-cartao-nome"><span class="fatura-futura-dot" style="background:${c.color||'var(--pink)'};"></span>${escapeHtml(c.name)}</div>
+        <div class="projection-strip">${linha}</div>
+      </div>
+    `;
+  }).join("") + (db.cards.length>1 ? `
+    <div class="fatura-futura-cartao fatura-futura-total">
+      <div class="fatura-futura-cartao-nome"><strong>Total de todos os cartões</strong></div>
+      <div class="projection-strip">${meses.map((ym,i)=>{
+        const total = db.cards.reduce((s,c)=> s + (i===0 ? despesasFaturaCartao(c).reduce((s2,t)=>s2+Number(t.amount),0) : projecaoFaturaCartao(c, ym)), 0);
+        return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(total)}</strong></div>`;
+      }).join("")}</div>
+    </div>
+  ` : "");
 }
 
 // Palavras-chave para as formas de pagamento sem cartão (Pix, Débito,
@@ -3170,9 +3194,9 @@ function atualizarResumoRecorrencias(){
   if(recorrenciasIndisponiveis){ bar.hidden = true; return; }
   bar.hidden = false;
   const ativas = db.recurrences.filter(recorrenciaAtivaHoje);
-  const netMensal = ativas.reduce((s,r)=> s + (r.type==="receita" ? valorMensalEquivalente(r) : -valorMensalEquivalente(r)), 0);
+  const totalMensal = ativas.reduce((s,r)=> s + valorMensalEquivalente(r), 0);
   document.getElementById("dash-recorrencias-texto").textContent =
-    `${ativas.length} recorrência${ativas.length===1?"":"s"} · ${brl(netMensal)}/mês`;
+    `${ativas.length} recorrência${ativas.length===1?"":"s"} · ${brl(totalMensal)}/mês`;
 }
 
 function contaLabelRecorrencia(r){
@@ -3195,13 +3219,12 @@ function renderRecorrencias(){
   }
   // Soma dos valores — só das recorrências ativas hoje, convertendo tudo pro
   // equivalente mensal pra dar pra somar semanal + mensal + anual juntos.
+  // Recorrências são só pra despesas (contas fixas, assinaturas etc.).
   const ativas = db.recurrences.filter(recorrenciaAtivaHoje);
-  const totalDespesas = ativas.filter(r=>r.type==="despesa").reduce((s,r)=>s+valorMensalEquivalente(r),0);
-  const totalReceitas = ativas.filter(r=>r.type==="receita").reduce((s,r)=>s+valorMensalEquivalente(r),0);
+  const totalMensal = ativas.reduce((s,r)=>s+valorMensalEquivalente(r),0);
   totaisWrap.innerHTML = `
-    <div class="detail-stat"><span class="ledger-label">Despesas recorrentes</span><strong style="color:var(--red);">${brl(totalDespesas)}/mês</strong></div>
-    <div class="detail-stat"><span class="ledger-label">Receitas recorrentes</span><strong style="color:var(--green);">${brl(totalReceitas)}/mês</strong></div>
-    <div class="detail-stat"><span class="ledger-label">Saldo recorrente</span><strong>${brl(totalReceitas-totalDespesas)}/mês</strong></div>
+    <div class="detail-stat"><span class="ledger-label">Recorrências ativas</span><strong>${ativas.length}</strong></div>
+    <div class="detail-stat"><span class="ledger-label">Total recorrente</span><strong style="color:var(--red);">${brl(totalMensal)}/mês</strong></div>
   `;
   const ordenadas = [...db.recurrences].sort((a,b)=> Number(b.active)-Number(a.active) || a.description.localeCompare(b.description));
   document.getElementById("recorrencias-empty").hidden = ordenadas.length>0;
@@ -3214,7 +3237,7 @@ function renderRecorrencias(){
         <strong>${escapeHtml(r.description)}</strong>
         <div class="recurrence-meta">${escapeHtml(r.category||"—")} · ${FREQUENCIAS_RECORRENCIA[r.frequency]||r.frequency} · ${escapeHtml(contaLabelRecorrencia(r))} · ${periodo}${r.active?"":" · pausada"}</div>
       </div>
-      <span class="recurrence-amount ${r.type==='receita'?'amount--pos':'amount--neg'}">${r.type==='receita'?'+':'−'} ${brl(r.amount)}</span>
+      <span class="recurrence-amount amount--neg">− ${brl(r.amount)}</span>
       <div class="recurrence-actions">
         <button data-toggle>${r.active?"pausar":"reativar"}</button>
         <button data-editar>editar</button>
@@ -3243,28 +3266,21 @@ function openRecorrenciaModal(r, prefill){
   const isEdit = !!r;
   const cardOptions = db.cards.map(c=>`<option value="card:${c.id}">Cartão · ${escapeHtml(c.name)}</option>`).join("");
   openModal(isEdit ? "Editar recorrência" : "Nova recorrência", `
+    <div class="field">
+      <label>Descrição</label>
+      <input type="text" name="description" placeholder="Ex.: Netflix, Aluguel, Academia" required>
+    </div>
     <div class="field-row">
-      <div class="field">
-        <label>Tipo</label>
-        <select name="type" id="rf-type">
-          <option value="despesa">Despesa</option>
-          <option value="receita">Receita</option>
-        </select>
-      </div>
       <div class="field">
         <label>Valor (R$)</label>
         <input type="number" step="0.01" min="0" name="amount" required>
       </div>
-    </div>
-    <div class="field">
-      <label>Descrição</label>
-      <input type="text" name="description" placeholder="Ex.: Netflix, Salário, Aluguel" required>
-    </div>
-    <div class="field-row">
       <div class="field">
         <label>Categoria</label>
         <select name="category" id="rf-category"></select>
       </div>
+    </div>
+    <div class="field-row">
       <div class="field">
         <label>Frequência</label>
         <select name="frequency">
@@ -3273,13 +3289,13 @@ function openRecorrenciaModal(r, prefill){
           <option value="anual">Anual</option>
         </select>
       </div>
-    </div>
-    <div class="field">
-      <label>Conta ou cartão</label>
-      <select name="conta" id="rf-conta">
-        ${FORMAS_PAGAMENTO.map(p=>`<option value="pag:${p}">${p}</option>`).join("")}
-        ${cardOptions}
-      </select>
+      <div class="field">
+        <label>Conta ou cartão</label>
+        <select name="conta" id="rf-conta">
+          ${FORMAS_PAGAMENTO.filter(p=>p!=="Crédito").map(p=>`<option value="pag:${p}">${p}</option>`).join("")}
+          ${cardOptions}
+        </select>
+      </div>
     </div>
     <div class="field-row">
       <div class="field">
@@ -3298,12 +3314,12 @@ function openRecorrenciaModal(r, prefill){
     if(data.end_date && data.end_date < data.start_date) return alert("A data de fim não pode ser antes da data de início.");
     const isCard = data.conta.startsWith("card:");
     const payload = {
-      type: data.type,
+      type: "despesa", // Recorrências são só pra despesas — contas fixas, assinaturas etc.
       description: data.description.trim(),
       amount,
       category: data.category,
       frequency: data.frequency,
-      payment_method: isCard ? null : data.conta.replace("pag:",""),
+      payment_method: isCard ? "Crédito" : data.conta.replace("pag:",""),
       card_id: isCard ? data.conta.replace("card:","") : null,
       start_date: data.start_date,
       end_date: data.end_date || null,
@@ -3321,20 +3337,17 @@ function openRecorrenciaModal(r, prefill){
     closeModal(); renderAll();
   });
 
-  const typeSel = document.getElementById("rf-type");
   const catSel = document.getElementById("rf-category");
   function refreshCats(){
-    const list = getCategorias(typeSel.value==="receita" ? "receita" : "despesa");
+    const list = getCategorias("despesa");
     catSel.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join("");
     if(r) catSel.value = r.category;
   }
-  typeSel.addEventListener("change", refreshCats);
 
   if(isEdit){
     const form = document.getElementById("modal-form");
     form.description.value = r.description;
     form.amount.value = r.amount;
-    typeSel.value = r.type;
     form.frequency.value = r.frequency;
     form.conta.value = r.card_id ? `card:${r.card_id}` : `pag:${r.payment_method}`;
     form.start_date.value = r.start_date;
@@ -3345,7 +3358,6 @@ function openRecorrenciaModal(r, prefill){
     const form = document.getElementById("modal-form");
     form.description.value = prefill.description || "";
     form.amount.value = prefill.amount || "";
-    typeSel.value = prefill.type || "despesa";
     if(prefill.frequency) form.frequency.value = prefill.frequency;
     form.conta.value = prefill.card_id ? `card:${prefill.card_id}` : `pag:${prefill.payment_method||"Pix"}`;
     form.start_date.value = prefill.start_date || new Date().toISOString().slice(0,10);
