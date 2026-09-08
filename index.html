@@ -61,7 +61,7 @@
 *{ box-sizing: border-box; }
 [hidden]{ display:none !important; }
 .app{ transition: opacity 0.25s ease; }
-html{ -webkit-font-smoothing: antialiased; overscroll-behavior-y: contain; }
+html{ -webkit-font-smoothing: antialiased; }
 body{
   margin:0;
   background:
@@ -73,7 +73,6 @@ body{
   font-family: var(--sans);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  overscroll-behavior-y: contain;
   /* Respeita a área segura do aparelho (notch, barra de status, home indicator)
      quando o site é aberto como app, adicionado à tela de início. */
   padding-left: env(safe-area-inset-left);
@@ -238,6 +237,8 @@ button, .nav-item, a{ touch-action: manipulation; }
   width: 22px; height: 22px; line-height: 1;
 }
 .icon-btn:hover{ color: var(--pink-dark); }
+#btn-refresh.is-spinning{ animation: girar 0.7s linear infinite; }
+@keyframes girar{ to{ transform: rotate(360deg); } }
 
 .view[hidden]{ display:none; }
 
@@ -717,20 +718,32 @@ select{ cursor:pointer; }
 }
 
 @media (max-width: 600px){
-  .sidebar{ padding: calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 14px calc(16px + env(safe-area-inset-left)); }
-  .nav-item{ padding:9px 11px; font-size:.82rem; }
+  html{ font-size: 15px; } /* deixa o layout todo um pouco mais compacto (a maioria dos tamanhos usa rem) */
+  .sidebar{ padding: calc(12px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 12px calc(14px + env(safe-area-inset-left)); }
+  .brand-mark{ width:30px; height:30px; font-size:1rem; }
+  .brand-name{ font-size:0.92rem; }
+  .brand-sub{ font-size:0.68rem; }
+  .nav-item{ padding:7px 10px; font-size:.78rem; }
   .nav-num{ display:none; }
-  .main{ padding:20px calc(14px + env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)); }
-  .panel{ padding:19px 18px; overflow-x:auto; }
+  .main{ padding:16px calc(12px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
+  .topbar h1{ font-size: 1.4rem; }
+  .topbar{ gap: 4px; }
+  .panel{ padding:15px 14px; overflow-x:auto; margin-bottom:14px; }
   .ledger-table{ min-width:540px; font-size:.84rem; }
-  .ledger-figure{ padding:16px; }
-  .ledger-value{ font-size:1.28rem; }
+  .ledger-figure{ padding:12px; }
+  .ledger-value{ font-size:1.15rem; }
+  .ledger-strip{ margin-bottom:14px; }
+  .btn{ padding:8px 14px; font-size:.82rem; }
+  .btn-primary, .btn:not(.btn-primary){ padding:8px 14px; }
+  .credit-card{ padding:16px; }
+  .card-grid{ gap:12px; }
   .topbar-month{ width:100%; justify-content:space-between; }
   .goal-form, .field-row{ flex-direction:column; }
   .goal-form .btn{ width:100%; }
   .detail-grid{ grid-template-columns: 1fr; }
   .import-step{ font-size:0.68rem; }
   .recurrence-row{ flex-direction:column; align-items:stretch; }
+  .modal{ padding:18px 18px 20px; }
 }
 
 </style>
@@ -865,6 +878,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <button id="month-prev" class="icon-btn" aria-label="Mês anterior">‹</button>
         <span id="month-label">—</span>
         <button id="month-next" class="icon-btn" aria-label="Próximo mês">›</button>
+        <button id="btn-refresh" class="icon-btn" aria-label="Atualizar dados" title="Atualizar dados" style="margin-left:6px;">↻</button>
       </div>
     </header>
 
@@ -1837,6 +1851,28 @@ const VIEW_META = {
 document.querySelectorAll("[data-view]").forEach(el=>{
   el.addEventListener("click", ()=> goTo(el.dataset.view));
 });
+
+// Atualizar dados — sem recarregar a página inteira, só busca tudo de novo no
+// Supabase. Funciona junto com o "puxar pra baixo" nativo do navegador/PWA.
+let atualizandoDados = false;
+async function refreshData(){
+  if(atualizandoDados) return;
+  atualizandoDados = true;
+  const btn = document.getElementById("btn-refresh");
+  btn.classList.add("is-spinning");
+  try{
+    await loadAllData(bootGeneration);
+    renderAll();
+  } catch(error){
+    console.error("[LeFinance] Falha ao atualizar dados", { message: error?.message });
+    showAppNotice("Não foi possível atualizar agora. Verifique a conexão.", "error");
+    setTimeout(clearAppNotice, 3000);
+  } finally {
+    atualizandoDados = false;
+    btn.classList.remove("is-spinning");
+  }
+}
+document.getElementById("btn-refresh").addEventListener("click", refreshData);
 
 // Esconder/mostrar o menu lateral — lembra a preferência entre sessões.
 (function(){
