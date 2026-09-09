@@ -164,6 +164,7 @@ button, .nav-item, a{ touch-action: manipulation; }
   box-shadow: var(--shadow-sm); font-size: 1.1rem;
   display:flex; align-items:center; justify-content:center;
 }
+#btn-show-sidebar[hidden]{ display:none; }
 .brand-mark{
   font-family: var(--serif);
   font-size: 1.15rem;
@@ -695,17 +696,29 @@ select{ cursor:pointer; }
 /* ============ RESPONSIVE ============ */
 @media (max-width: 880px){
   .app{ flex-direction: column; }
+  /* No celular o menu vira uma gaveta que desliza por cima do conteúdo,
+     em vez de empurrar tudo pra baixo. */
   .sidebar{
-    width: 100%; height: auto; position: relative;
-    flex-direction: row; align-items:center; flex-wrap: wrap;
-    padding: calc(16px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) 16px calc(20px + env(safe-area-inset-left));
-    gap: 10px;
+    position: fixed; top:0; left:0; bottom:0; z-index: 95;
+    width: min(280px, 82vw); height: 100vh;
+    flex-direction: column; align-items: stretch; flex-wrap: nowrap;
+    padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+    gap: 0;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    overflow-y: auto;
   }
-  .brand{ margin-bottom: 0; margin-right: auto; }
-  .nav{ flex-direction: row; flex-wrap: wrap; }
-  .sidebar-footer{ border-top: none; padding-top:0; margin-left:auto; }
-  .sidebar-note{ display:none; }
-  .main{ padding: 24px calc(18px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left)); }
+  .sidebar.is-hidden{ display:flex; transform: translateX(-100%); }
+  .sidebar:not(.is-hidden){ transform: translateX(0); box-shadow: 10px 0 30px rgba(30,10,20,0.35); }
+  .sidebar-backdrop{
+    position: fixed; inset:0; z-index: 90; background: rgba(20,8,15,0.4);
+    opacity:0; pointer-events:none; transition: opacity .22s ease;
+  }
+  .sidebar-backdrop.is-visible{ opacity:1; pointer-events:auto; }
+  .brand{ margin-bottom: 30px; }
+  .nav{ flex-direction: column; }
+  .sidebar-footer{ margin-top:auto; }
+  .main{ padding: calc(20px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left)); }
   .grid-2{ grid-template-columns: 1fr; }
   .ledger-strip{ grid-template-columns: repeat(2,1fr); }
   .ledger-figure:nth-child(2n){ border-right:none; }
@@ -861,6 +874,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
   </aside>
 
   <button type="button" id="btn-show-sidebar" class="icon-btn" aria-label="Mostrar menu" title="Mostrar menu" hidden>☰</button>
+  <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
 
   <!-- MAIN -->
   <main class="main">
@@ -1874,27 +1888,45 @@ async function refreshData(){
 }
 document.getElementById("btn-refresh").addEventListener("click", refreshData);
 
-// Esconder/mostrar o menu lateral — lembra a preferência entre sessões.
+// Esconder/mostrar o menu lateral — no celular vira uma gaveta com fundo
+// escurecido atrás; no computador só encolhe/expande como antes. Lembra a
+// preferência entre sessões (mas no celular começa fechado por padrão).
 (function(){
   const sidebarEl = document.querySelector(".sidebar");
   const btnHide = document.getElementById("btn-toggle-sidebar");
   const btnShow = document.getElementById("btn-show-sidebar");
-  let hidden = false;
-  try{ hidden = localStorage.getItem("lefinance_sidebar_hidden") === "1"; }catch(e){}
+  const backdrop = document.getElementById("sidebar-backdrop");
+  const ehMobile = ()=> window.matchMedia("(max-width: 880px)").matches;
+
+  let hidden = ehMobile(); // no celular já começa fechado, a não ser que haja preferência salva
+  try{
+    const salvo = localStorage.getItem("lefinance_sidebar_hidden");
+    if(salvo !== null) hidden = salvo === "1";
+  }catch(e){}
+
   function aplicar(){
     sidebarEl.classList.toggle("is-hidden", hidden);
     btnShow.hidden = !hidden;
+    if(ehMobile()){
+      backdrop.hidden = hidden;
+      requestAnimationFrame(()=> backdrop.classList.toggle("is-visible", !hidden));
+    } else {
+      backdrop.hidden = true;
+      backdrop.classList.remove("is-visible");
+    }
+  }
+  function definir(valor){
+    hidden = valor;
+    aplicar();
+    try{ localStorage.setItem("lefinance_sidebar_hidden", hidden ? "1" : "0"); }catch(e){}
   }
   aplicar();
-  btnHide.addEventListener("click", ()=>{
-    hidden = true;
-    aplicar();
-    try{ localStorage.setItem("lefinance_sidebar_hidden", "1"); }catch(e){}
-  });
-  btnShow.addEventListener("click", ()=>{
-    hidden = false;
-    aplicar();
-    try{ localStorage.setItem("lefinance_sidebar_hidden", "0"); }catch(e){}
+  btnHide.addEventListener("click", ()=> definir(true));
+  btnShow.addEventListener("click", ()=> definir(false));
+  backdrop.addEventListener("click", ()=> definir(true));
+  // No celular, escolher uma página no menu já fecha a gaveta.
+  document.querySelectorAll(".nav-item[data-view]").forEach(item=>{
+    item.addEventListener("click", ()=>{ if(ehMobile()) definir(true); });
   });
 })();
 
