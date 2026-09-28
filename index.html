@@ -1042,8 +1042,9 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <p class="muted" style="margin:10px 0 14px;">
           Para o Pix, Débito, Dinheiro e Boleto — sem cartão vinculado. Cada
           cartão tem suas próprias palavras-chave em "Ver detalhes". Ao
-          importar um extrato (sem escolher um cartão fixo), essas palavras
-          sugerem a forma de pagamento de cada lançamento automaticamente.
+          importar um extrato, essas palavras sugerem a forma de pagamento de
+          cada lançamento automaticamente. Numa fatura com o cartão escolhido,
+          só valem as palavras-chave dos cartões (compra na fatura é sempre crédito).
         </p>
         <p class="muted" id="pagamento-keywords-indisponivel" hidden>
           Essa função ainda não está disponível na sua conta — rode o script <code>add-payment-keywords.sql</code> no SQL Editor do Supabase (veja o README) e recarregue a página.
@@ -1331,7 +1332,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>O resumo do cartão mostra o <strong>limite disponível</strong> e o vencimento; clique em <strong>"Ver detalhes"</strong> para a próxima fatura, o limite comprometido, as parcelas em aberto, uma projeção de até 6 faturas, as palavras-chave desse cartão e as transações de cada fatura — use as setas pra navegar entre faturas anteriores e clique numa linha pra editar, inclusive a forma de pagamento.</li>
             <li>Em <strong>"Parcelas futuras"</strong>, cada compra parcelada aparece <strong>uma vez só</strong>, mesmo que você importe várias faturas seguidas — o site usa sempre a parcela mais recente. <span class="tutorial-badge-new">novo</span></li>
             <li>Logo abaixo dos cartões, o painel <strong>"Resumo de faturas futuras"</strong> já mostra, sem precisar clicar em nada, a soma de todos os cartões mês a mês.</li>
-            <li>Palavras-chave do cartão (em "Ver detalhes") e das formas de pagamento sem cartão (Pix, Débito, Dinheiro, Boleto — logo abaixo da lista de cartões) ajudam a sugerir automaticamente a forma de pagamento de cada lançamento ao importar um extrato.</li>
+            <li>Palavras-chave do cartão (em "Ver detalhes") e das formas de pagamento sem cartão (Pix, Débito, Dinheiro, Boleto — logo abaixo da lista de cartões) ajudam a sugerir automaticamente a forma de pagamento de cada lançamento ao importar um extrato; numa fatura, valem as palavras-chave dos cartões. <span class="tutorial-badge-new">novo</span></li>
             <li>Ao adicionar uma palavra-chave nova, o site também confere lançamentos já existentes que combinam com ela — mesmo que já tenham outra forma de pagamento — e pergunta se quer atualizar eles também.</li>
           </ol>
         </details>
@@ -1391,7 +1392,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Escolha o <strong>cartão</strong> desta fatura (se for de crédito) e suba o arquivo <strong>.ofx, .csv ou .pdf</strong> — primeira etapa do indicador no topo da tela.</li>
             <li>Fatura em <strong>PDF</strong>: o site lê o texto do arquivo aqui mesmo, no navegador — nada é enviado. Se o PDF tiver senha, ele pede (nas faturas costuma ser os primeiros dígitos do CPF). Na revisão, compare a <strong>soma dos selecionados</strong> com o total da fatura.</li>
             <li>O site já <strong>sugere uma categoria</strong> para cada lançamento, comparando a descrição com as palavras-chave cadastradas em Categorias.</li>
-            <li>Se você não escolher um cartão fixo (por exemplo, ao importar um extrato com Pix, débito e dinheiro misturados), o site também sugere a <strong>forma de pagamento</strong> de cada linha, usando as palavras-chave cadastradas em Cartões.</li>
+            <li>O site também sugere a <strong>forma de pagamento</strong> de cada linha, usando as palavras-chave cadastradas em Cartões — num extrato com Pix, débito e dinheiro misturados, e também numa fatura (nela, só as palavras-chave dos cartões).</li>
+            <li>Ao importar uma <strong>fatura</strong> com o cartão escolhido, todas as linhas vão para esse cartão, <strong>exceto</strong> as que combinarem com a palavra-chave de <strong>outro cartão</strong> (em "Ver detalhes"): essas já vêm com o outro cartão sugerido (marcada com 🔎) e você pode ajustar linha a linha. Trocar o cartão com a revisão aberta refaz a revisão. <span class="tutorial-badge-new">novo</span></li>
             <li>Na revisão, veja o resumo com total, categorizadas, pendentes e possíveis duplicadas antes de continuar.</li>
             <li>Se a descrição tiver um padrão como "3/12", o site já entende como <strong>parcela</strong> e preenche sozinho — clique em "não é parcela" se ele tiver interpretado uma data errada.</li>
             <li>Importando o <strong>extrato da conta</strong>: o <strong>pagamento da fatura</strong> vem marcado, com a categoria "Pagamento de fatura" — ele sai do saldo da conta, mas não conta como gasto. <span class="tutorial-badge-new">novo</span></li>
@@ -3060,7 +3062,7 @@ function openCartaoDetalhesModal(c, cicloVisualizado){
 
     <div class="detail-section">
       <h4>Palavras-chave deste cartão</h4>
-      <p class="muted" style="margin:0 0 10px;">Ao importar um extrato (sem escolher um cartão fixo), uma descrição que contenha uma dessas palavras já vem com "Crédito · ${escapeHtml(c.name)}" sugerido.</p>
+      <p class="muted" style="margin:0 0 10px;">Ao importar um extrato ou uma fatura, uma descrição que contenha uma dessas palavras já vem com "Crédito · ${escapeHtml(c.name)}" — inclusive numa fatura de outro cartão (a palavra-chave tem prioridade sobre o cartão escolhido na importação).</p>
       <div class="keyword-chips" id="card-keyword-chips">
         ${(Array.isArray(c.keywords)?c.keywords:[]).map(k=>`<span class="keyword-chip">${escapeHtml(k)}<button type="button" data-del-card-kw="${escapeHtml(k)}" aria-label="remover palavra-chave">×</button></span>`).join("")}
         <span class="keyword-add-form">
@@ -3739,6 +3741,8 @@ document.getElementById("form-categoria-receita").addEventListener("submit", (e)
 let importRows = [];
 let importRawCSV = null;
 let importOrigemPDF = false;
+let importRowsBrutas = [];
+let importCartaoAtual = "";
 
 function renderImportar(){
   const sel = document.getElementById("import-card");
@@ -4144,23 +4148,32 @@ async function importarFaturaPDF(file){
   montarPreviaImportacao(rows);
 }
 
+// Forma de pagamento de cada linha importada.
+// As palavras-chave (dos cartões e das formas de pagamento) valem em extrato E em fatura.
+// Com um cartão escolhido na importação, ele é o padrão da fatura, mas uma palavra-chave
+// de OUTRO cartão tem prioridade (ex.: compra de um cartão adicional na mesma fatura).
+// Palavras-chave de Pix/Débito/Dinheiro/Boleto não valem em fatura: compra na fatura é sempre crédito.
+function definirPagamentoDaLinha(descricao, tipo, cardIdFixo){
+  if(!cardIdFixo || tipo==="despesa"){
+    const sug = sugerirPagamentoPorPalavraChave(descricao, tipo);
+    if(sug && (!cardIdFixo || sug.payment_method==="Crédito")){
+      const igualAoPadrao = !!cardIdFixo && sug.payment_method==="Crédito" && sug.card_id===cardIdFixo;
+      return { payment_method: sug.payment_method, card_id: sug.card_id, pagamentoSugerido: !igualAoPadrao };
+    }
+  }
+  if(cardIdFixo) return { payment_method:"Crédito", card_id:cardIdFixo, pagamentoSugerido:false };
+  return { payment_method:null, card_id:null, pagamentoSugerido:false };
+}
+
 function montarPreviaImportacao(rows){
   setImportStep("revisao");
   const cardIdFixo = document.getElementById("import-card").value || null;
+  importCartaoAtual = cardIdFixo || "";
+  importRowsBrutas = rows;
   importRows = rows.map(r=>{
     const tipo = r.amount < 0 ? "despesa" : "receita";
     const sugestaoCategoria = sugerirCategoriaPorPalavraChave(r.description, tipo);
-    let payment_method = cardIdFixo ? "Crédito" : null;
-    let card_id = cardIdFixo;
-    let pagamentoSugerido = false;
-    if(!cardIdFixo){
-      const sugestaoPag = sugerirPagamentoPorPalavraChave(r.description, tipo);
-      if(sugestaoPag){
-        payment_method = sugestaoPag.payment_method;
-        card_id = sugestaoPag.card_id;
-        pagamentoSugerido = true;
-      }
-    }
+    const { payment_method, card_id, pagamentoSugerido } = definirPagamentoDaLinha(r.description, tipo, cardIdFixo);
     const parcela = tipo==="despesa" ? extrairParcelaDaDescricao(r.description) : null;
     const pagFatura = classificarPagamentoFatura(tipo, r.description, cardIdFixo, !!r.ehPagamentoFatura);
     let categoriaFinal = sugestaoCategoria || "Outros";
@@ -4245,9 +4258,7 @@ function renderPreviaImportacao(){
     if(r.duplicateInfo) tr.style.background = "var(--red-bg)";
     else if(r.pagFatura==="fatura") tr.style.background = "var(--pink-bg)";
     const cats = getCategorias(r.type);
-    const pagCell = cardIdFixo
-      ? `<span class="muted" style="font-size:0.78rem;">Crédito · ${escapeHtml(nomeCartao(cardIdFixo))}</span>`
-      : `
+    const pagCell = `
         <select data-i="${i}" data-f="payment_method" style="width:100%;">
           <option value="">—</option>
           ${FORMAS_PAGAMENTO.map(p=>`<option value="${p}" ${p===r.payment_method?"selected":""}>${p}</option>`).join("")}
@@ -4328,8 +4339,19 @@ function renderPreviaImportacao(){
   });
 }
 
+document.getElementById("import-card").addEventListener("change", (e)=>{
+  const sel = e.target;
+  if(importRows.length && importRowsBrutas.length){
+    if(!confirm("Trocar o cartão refaz a revisão e descarta as edições que você fez nas linhas. Continuar?")){
+      sel.value = importCartaoAtual;
+      return;
+    }
+    montarPreviaImportacao(importRowsBrutas);
+  }
+  importCartaoAtual = sel.value || "";
+});
+
 document.getElementById("btn-confirmar-importacao").addEventListener("click", async ()=>{
-  const cardIdFixo = document.getElementById("import-card").value || null;
   const selecionados = importRows.filter(r=>r.include);
   if(!selecionados.length) return alert("Nenhum lançamento selecionado.");
   const payload = selecionados.map(r=>({
@@ -4338,8 +4360,8 @@ document.getElementById("btn-confirmar-importacao").addEventListener("click", as
     description: r.description || "Lançamento importado",
     category: r.category,
     amount: r.amount,
-    payment_method: r.pagFatura==="extrato" ? (r.payment_method==="Crédito" ? null : (r.payment_method || null)) : (cardIdFixo ? "Crédito" : (r.payment_method || null)),
-    card_id: r.pagFatura==="extrato" ? null : (cardIdFixo || (r.payment_method==="Crédito" ? (r.card_id || null) : null)),
+    payment_method: r.pagFatura==="extrato" && r.payment_method==="Crédito" ? null : (r.payment_method || null),
+    card_id: r.pagFatura!=="extrato" && r.payment_method==="Crédito" ? (r.card_id || null) : null,
     installment_current: r.parcela ? r.parcela.current : null,
     installment_total: r.parcela ? r.parcela.total : null,
     fixed: false,
