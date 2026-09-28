@@ -737,6 +737,23 @@ select{ cursor:pointer; }
   .detail-grid{ grid-template-columns: 1fr 1fr; }
 }
 
+@media (max-width: 700px){
+  #tabela-import thead{ display:none; }
+  #tabela-import, #tabela-import tbody, #tabela-import tr, #tabela-import td{ display:block; width:100%; }
+  #tabela-import{ border:none; }
+  #tabela-import tr{
+    border:1px solid var(--line); border-radius: var(--radius-sm);
+    padding:12px; margin-bottom:12px; background:var(--card, #fff);
+  }
+  #tabela-import td{ border-bottom:none; padding:6px 0; }
+  #tabela-import td[data-label]:before{
+    content: attr(data-label); display:block; margin-bottom:4px;
+    font-size:0.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft);
+  }
+  #tabela-import td.num{ text-align:left; }
+  #tabela-import td.num input{ width:100% !important; }
+  #tabela-import .panel{ overflow-x:visible; }
+}
 @media (max-width: 600px){
   html{ font-size: 15px; }
   .sidebar{ padding: calc(12px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 12px calc(14px + env(safe-area-inset-left)); }
@@ -750,6 +767,7 @@ select{ cursor:pointer; }
   .topbar{ gap: 6px; margin-bottom: 16px; }
   .search-wrap{ flex:none; margin-top: 4px; }
   .panel{ padding:15px 14px; overflow-x:auto; margin-bottom:14px; }
+  .panel:has(#tabela-import){ overflow-x:visible; }
   .ledger-table{ min-width:540px; font-size:.84rem; }
   .ledger-strip{ gap:0; margin-bottom:14px; }
   .ledger-figure{ padding:10px 12px; gap:2px; }
@@ -1316,6 +1334,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Clique em <strong>"Novo lançamento"</strong> e preencha data, descrição, categoria e valor.</li>
             <li>Escolha <strong>"Crédito"</strong> na forma de pagamento para liberar os campos de cartão e parcelas.</li>
             <li>Para lançar o <strong>pagamento da fatura</strong> à mão, use a categoria <strong>"Pagamento de fatura"</strong> e uma forma de pagamento que não seja Crédito (Débito ou Pix, por exemplo). <span class="tutorial-badge-new">novo</span></li>
+            <li>Ao escolher <strong>Pix, Débito ou Boleto</strong>, aparece um campo opcional para dizer de qual <strong>cartão ou conta</strong> saiu o dinheiro — útil se você usa mais de um banco. <span class="tutorial-badge-new">novo</span></li>
             <li>Marque <strong>"despesa fixa"</strong> para contas recorrentes — é só uma etiqueta, você ainda lança (ou importa) todo mês.</li>
             <li>Use os <strong>filtros</strong> no topo da tabela para achar lançamentos específicos.</li>
             <li>A tela agora é mais ampla e cada lançamento ocupa <strong>uma linha só</strong>; descrições muito longas terminam com "…" — passe o mouse para ler completa, ou clique em <strong>"editar"</strong>. <span class="tutorial-badge-new">novo</span></li>
@@ -1399,6 +1418,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Importando o <strong>extrato da conta</strong>: o <strong>pagamento da fatura</strong> vem marcado, com a categoria "Pagamento de fatura" — ele sai do saldo da conta, mas não conta como gasto. <span class="tutorial-badge-new">novo</span></li>
             <li>Importando a <strong>fatura do cartão</strong> (escolha o cartão): as compras contam como gasto, e o <strong>"pagamento recebido"</strong> da fatura vem desmarcado, porque já entra pelo extrato. <span class="tutorial-badge-new">novo</span></li>
             <li>Ordem sugerida: importe o extrato e as faturas do mesmo período e, depois, confira o <strong>Saldo da conta</strong> na Visão geral com o saldo do seu banco.</li>
+            <li>Cada linha da revisão mostra se é <strong style="color:var(--green);">receita</strong> ou <strong style="color:var(--red);">despesa</strong> em verde ou vermelho — troque no seletor "Tipo" se algo vier errado. <span class="tutorial-badge-new">novo</span></li>
+            <li>Qualquer forma de pagamento (Pix, Débito, Boleto, não só Crédito) agora pode dizer <strong>de qual cartão ou conta</strong> ela é, útil se você usa mais de um banco. É opcional e não afeta faturas nem limites — isso continua só para Crédito. <span class="tutorial-badge-new">novo</span></li></li>
             <li>Linhas parecidas com algo que já existe aparecem destacadas e desmarcadas — revise antes de continuar.</li>
             <li>Ajuste o que for preciso e clique em <strong>"Importar selecionados"</strong> — nada é salvo antes disso.</li>
           </ol>
@@ -2580,7 +2601,7 @@ function openTransacaoModal(t){
       </select>
     </div>
     <div class="field" id="field-cartao" hidden>
-      <label>Cartão</label>
+      <label id="field-cartao-label">Cartão</label>
       <select name="card_id">
         <option value="">— selecione —</option>
         ${cardOptions}
@@ -2611,7 +2632,7 @@ function openTransacaoModal(t){
       category: data.category,
       amount,
       payment_method: data.payment_method || null,
-      card_id: data.payment_method === "Crédito" ? (data.card_id || null) : null,
+      card_id: (data.payment_method && data.payment_method !== "Dinheiro") ? (data.card_id || null) : null,
       installment_current: data.installment_current ? parseInt(data.installment_current) : null,
       installment_total: data.installment_total ? parseInt(data.installment_total) : null,
       fixed: data.type === "despesa" ? !!form.fixed.checked : false,
@@ -2656,9 +2677,10 @@ function openTransacaoModal(t){
     refreshDicaAssinatura();
   }
   function refreshPagamento(){
-    const show = paySel.value === "Crédito";
-    fieldCartao.hidden = !show;
-    fieldParcelas.hidden = !show;
+    const isCredito = paySel.value === "Crédito";
+    fieldCartao.hidden = !paySel.value || paySel.value === "Dinheiro";
+    fieldParcelas.hidden = !isCredito;
+    document.getElementById("field-cartao-label").textContent = isCredito ? "Cartão" : "Cartão/conta (opcional)";
   }
   function refreshDicaAssinatura(){
     document.getElementById("f-assinatura-hint").hidden = typeSel.value!=="despesa" || !ehCategoriaRecorrente(catSel.value) || recorrenciasIndisponiveis;
@@ -4058,6 +4080,12 @@ function montarLancamentoPDF(dataStr, descStr, valorStr, ref, modoFatura){
   if(!date) return null;
   let descricao = descStr.replace(/\s+/g, " ").trim();
   descricao = descricao.replace(/^(?:[•·●*]{2,}|\.{2,})\s*\d{4}\s+/, "");
+  // Alguns bancos (ex.: Itaú) colam a própria data do lançamento no fim da descrição, sem espaço
+  // (ex.: "PIX QRS Esther Carn15/09"). Sem isso, "15/09" é lido como parcela 15/9 por engano.
+  const sufixoData = descricao.match(/(\d{2})\/(\d{2})\s*$/);
+  if(sufixoData && sufixoData[1]===date.slice(8,10) && sufixoData[2]===date.slice(5,7)){
+    descricao = descricao.slice(0, sufixoData.index).trim();
+  }
   const letras = (descricao.replace(/R\$/gi, "").match(/[a-zA-ZÀ-ÿ]/g) || []).length;
   if(letras < 2) return null;   // "10/10/2026 R$ 1.234,56" sem descrição não é lançamento
   const norm = normalizeTexto(descricao);
@@ -4079,7 +4107,12 @@ function montarLancamentoPDF(dataStr, descStr, valorStr, ref, modoFatura){
 
 function parsearFaturaPDF(linhas, cartaoEscolhido){
   const cabecalho = normalizeTexto(linhas.slice(0, 40).join(" "));
-  const modoFatura = !!cartaoEscolhido || /fatura|pagamento minimo|limite de credito/.test(cabecalho);
+  // Um extrato de conta às vezes menciona "fatura" (ex.: "FATURA PAGA ..." como um lançamento) —
+  // por isso a palavra sozinha não basta. Só conta como fatura de cartão com um sinal mais forte,
+  // e um sinal claro de extrato de conta sempre vence.
+  const indicaExtratoConta = /(extrato (de )?conta|conta corrente|conta universitaria|saldo em conta|agencia:.{0,20}conta:)/.test(cabecalho);
+  const indicaFaturaCartao = /(fatura do (seu |cart)|melhor dia (de|pra) compr|pagamento minimo|limite de credito|limite total|limite disponivel|proxima fatura|fatura fechada|fatura atual|resumo da fatura)/.test(cabecalho);
+  const modoFatura = !!cartaoEscolhido || (indicaFaturaCartao && !indicaExtratoConta);
   const ref = descobrirReferenciaPDF(linhas);
   const rows = [];
   let secaoFutura = false;
@@ -4263,37 +4296,37 @@ function renderPreviaImportacao(){
           <option value="">—</option>
           ${FORMAS_PAGAMENTO.map(p=>`<option value="${p}" ${p===r.payment_method?"selected":""}>${p}</option>`).join("")}
         </select>
-        ${r.payment_method==="Crédito" ? `
+        ${(r.payment_method && r.payment_method!=="Dinheiro") ? `
           <select data-i="${i}" data-f="card_id" style="width:100%;margin-top:4px;">
-            <option value="">Qual cartão?</option>
+            <option value="">${r.payment_method==="Crédito" ? "Qual cartão?" : "Qual cartão/conta? (opcional)"}</option>
             ${db.cards.map(c=>`<option value="${c.id}" ${c.id===r.card_id?"selected":""}>${escapeHtml(c.name)}</option>`).join("")}
           </select>` : ""}
         ${r.pagamentoSugerido ? `<div style="font-size:0.68rem;color:var(--green);margin-top:4px;">🔎 sugerida por palavra-chave</div>` : ""}
       `;
     tr.innerHTML = `
-      <td><input type="checkbox" ${r.include?"checked":""} data-i="${i}" data-f="include"></td>
-      <td><input type="date" value="${r.date}" data-i="${i}" data-f="date" style="width:130px;"></td>
-      <td>
+      <td data-label="Importar"><input type="checkbox" ${r.include?"checked":""} data-i="${i}" data-f="include"></td>
+      <td data-label="Data"><input type="date" value="${r.date}" data-i="${i}" data-f="date" style="width:130px;"></td>
+      <td data-label="Descrição">
         <input type="text" value="${escapeHtml(r.description)}" data-i="${i}" data-f="description" style="width:100%;">
         ${r.duplicateInfo ? `<div style="font-size:0.72rem;color:var(--pink-dark);margin-top:4px;">⚠ ${escapeHtml(r.duplicateInfo)}</div>` : ""}
         ${r.parcela ? `<div style="font-size:0.68rem;color:var(--pink-dark);margin-top:4px;">🔎 parcela ${r.parcela.current}/${r.parcela.total} detectada · <button type="button" data-cancelar-parcela="${i}" style="background:none;border:none;color:var(--ink-soft);text-decoration:underline;cursor:pointer;font-size:0.68rem;padding:0;">não é parcela</button></div>` : ""}
         ${r.pagFatura==="extrato" ? `<div style="font-size:0.68rem;color:var(--green);margin-top:4px;">💳 pagamento de fatura: sai do saldo da conta, mas não conta como gasto (as compras já vêm da fatura).</div>` : ""}
         ${r.pagFatura==="fatura" ? `<div style="font-size:0.68rem;color:var(--pink-dark);margin-top:4px;">⚠ pagamento recebido: esse dinheiro já entra pelo extrato da conta — deixamos desmarcado pra não contar duas vezes.</div>` : ""}
       </td>
-      <td>
+      <td data-label="Categoria">
         <select data-i="${i}" data-f="category">
           ${cats.map(c=>`<option value="${c}" ${c===r.category?"selected":""}>${c}</option>`).join("")}
         </select>
         ${r.sugerida ? `<div style="font-size:0.68rem;color:var(--green);margin-top:4px;">🔎 sugerida por palavra-chave</div>` : ""}
       </td>
-      <td>${pagCell}</td>
-      <td>
-        <select data-i="${i}" data-f="type">
+      <td data-label="Pagamento">${pagCell}</td>
+      <td data-label="Tipo">
+        <select data-i="${i}" data-f="type" class="${r.type==='receita'?'amount--pos':'amount--neg'}" style="font-weight:600;">
           <option value="despesa" ${r.type==="despesa"?"selected":""}>Despesa</option>
           <option value="receita" ${r.type==="receita"?"selected":""}>Receita</option>
         </select>
       </td>
-      <td class="num"><input type="number" step="0.01" value="${r.amount}" data-i="${i}" data-f="amount" style="width:100px;text-align:right;"></td>
+      <td class="num" data-label="Valor"><input type="number" step="0.01" value="${r.amount}" data-i="${i}" data-f="amount" class="${r.type==='receita'?'amount--pos':'amount--neg'}" style="width:100px;text-align:right;font-weight:600;"></td>
     `;
     tbody.appendChild(tr);
   });
@@ -4307,7 +4340,7 @@ function renderPreviaImportacao(){
       if(f==="category") importRows[i].sugerida = false;
       if(f==="payment_method"){
         importRows[i].pagamentoSugerido = false;
-        if(v!=="Crédito") importRows[i].card_id = null;
+        if(!v || v==="Dinheiro") importRows[i].card_id = null;
         renderPreviaImportacao();
       } else if(f==="card_id"){
         atualizarContadorImportacao();
@@ -4361,7 +4394,7 @@ document.getElementById("btn-confirmar-importacao").addEventListener("click", as
     category: r.category,
     amount: r.amount,
     payment_method: r.pagFatura==="extrato" && r.payment_method==="Crédito" ? null : (r.payment_method || null),
-    card_id: r.pagFatura!=="extrato" && r.payment_method==="Crédito" ? (r.card_id || null) : null,
+    card_id: r.pagFatura!=="extrato" && r.payment_method && r.payment_method!=="Dinheiro" ? (r.card_id || null) : null,
     installment_current: r.parcela ? r.parcela.current : null,
     installment_total: r.parcela ? r.parcela.total : null,
     fixed: false,
