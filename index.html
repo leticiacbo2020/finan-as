@@ -1151,10 +1151,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <div class="panel">
         <h2>Importar fatura ou extrato</h2>
         <p class="muted">
-          Aceita arquivos <strong>.OFX</strong> (o mais confiável) ou <strong>.CSV</strong>
+          Aceita arquivos <strong>.OFX</strong> (o mais confiável), <strong>.CSV</strong> ou <strong>.PDF</strong> (fatura do cartão)
           exportados do app do seu banco ou cartão — a maioria libera isso depois que a
           fatura fecha, em "compartilhar fatura" ou "exportar extrato". Nada é salvo
           automaticamente: você revisa e confirma cada lançamento antes.
+          O PDF é lido aqui no seu navegador, sem sair do seu computador, e precisa ter texto
+          selecionável — foto ou PDF escaneado não funciona.
         </p>
         <p class="muted" style="background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;">
           Dá pra importar tanto o <strong>extrato da conta</strong> quanto a
@@ -1173,11 +1175,17 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <select id="import-card"><option value="">— não é cartão —</option></select>
           </div>
           <div class="field">
-            <label>Arquivo (.ofx ou .csv)</label>
-            <input type="file" id="import-file" accept=".ofx,.qfx,.csv,.txt">
+            <label>Arquivo (.ofx, .csv ou .pdf)</label>
+            <input type="file" id="import-file" accept=".ofx,.qfx,.csv,.txt,.pdf,application/pdf">
           </div>
         </div>
         <p class="auth-error" id="import-error" hidden></p>
+        <p class="muted" id="import-status" hidden></p>
+        <details id="import-pdf-debug" hidden style="margin-top:10px;">
+          <summary>Ver o texto que li do PDF</summary>
+          <p class="muted">Se algum lançamento não veio certo, olhe aqui como o banco escreveu a linha. Ao me mandar um trecho, apague nomes e números de conta.</p>
+          <pre id="import-pdf-texto" style="max-height:260px;overflow:auto;font-size:0.72rem;white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;"></pre>
+        </details>
 
         <div id="import-mapping" hidden style="margin-top:10px;">
           <p class="muted">Não consegui adivinhar as colunas do CSV — me diga qual é qual:</p>
@@ -1368,7 +1376,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <details class="tutorial-item">
           <summary>Importar <span class="tutorial-badge-new">novo</span></summary>
           <ol class="tutorial-steps">
-            <li>Escolha o <strong>cartão</strong> desta fatura (se for de crédito) e suba o arquivo <strong>.ofx ou .csv</strong> — primeira etapa do indicador no topo da tela.</li>
+            <li>Escolha o <strong>cartão</strong> desta fatura (se for de crédito) e suba o arquivo <strong>.ofx, .csv ou .pdf</strong> — primeira etapa do indicador no topo da tela.</li>
+            <li>Fatura em <strong>PDF</strong>: o site lê o texto do arquivo aqui mesmo, no navegador — nada é enviado. Se o PDF tiver senha, ele pede (nas faturas costuma ser os primeiros dígitos do CPF). Na revisão, compare a <strong>soma dos selecionados</strong> com o total da fatura.</li>
             <li>O site já <strong>sugere uma categoria</strong> para cada lançamento, comparando a descrição com as palavras-chave cadastradas em Categorias.</li>
             <li>Se você não escolher um cartão fixo (por exemplo, ao importar um extrato com Pix, débito e dinheiro misturados), o site também sugere a <strong>forma de pagamento</strong> de cada linha, usando as palavras-chave cadastradas em Cartões.</li>
             <li>Na revisão, veja o resumo com total, categorizadas, pendentes e possíveis duplicadas antes de continuar.</li>
@@ -1857,7 +1866,7 @@ const VIEW_META = {
   "recorrencias": ["Recorrências", "Receitas e despesas que se repetem todo período"],
   "metas": ["Metas", "O que você quer alcançar"],
   "categorias": ["Categorias", "Adicione, renomeie ou remova categorias de receita e despesa"],
-  "importar": ["Importar", "Suba uma fatura ou extrato (.ofx ou .csv) e revise antes de lançar"],
+  "importar": ["Importar", "Suba uma fatura ou extrato (.ofx, .csv ou .pdf) e revise antes de lançar"],
   "tutoriais": ["Tutoriais", "Um passo a passo rápido de cada parte do site"],
   "backup": ["Backup", "Exportar ou apagar seus dados"],
 };
@@ -3568,6 +3577,7 @@ document.getElementById("form-categoria-receita").addEventListener("submit", (e)
 
 let importRows = [];
 let importRawCSV = null;
+let importOrigemPDF = false;
 
 function renderImportar(){
   const sel = document.getElementById("import-card");
@@ -3661,6 +3671,13 @@ document.getElementById("import-file").addEventListener("change", (e)=>{
   errEl.hidden = true;
   document.getElementById("import-mapping").hidden = true;
   document.getElementById("import-preview").hidden = true;
+  importOrigemPDF = false;
+  document.getElementById("import-status").hidden = true;
+  document.getElementById("import-pdf-debug").hidden = true;
+  if(/\.pdf$/i.test(file.name) || file.type === "application/pdf"){
+    importarFaturaPDF(file);
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = ()=>{
@@ -3727,6 +3744,242 @@ function aplicarMapeamentoCSV(idxData, idxDesc, idxValor){
   montarPreviaImportacao(rows);
 }
 
+// ============ IMPORTAR FATURA EM PDF ============
+// O PDF é lido no próprio navegador (pdf.js) — nada é enviado para fora.
+// A biblioteca só é baixada quando alguém escolhe um PDF.
+const PDFJS_VERSAO = "3.11.174";
+const PDFJS_LIB_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSAO}/build/pdf.min.js`;
+const PDFJS_WORKER_URL = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSAO}/build/pdf.worker.min.js`;
+const PDF_QUEBRA_PAGINA = "\f";
+let pdfjsPromise = null;
+
+function carregarPdfJs(){
+  if(pdfjsPromise) return pdfjsPromise;
+  pdfjsPromise = new Promise((resolve, reject)=>{
+    const s = document.createElement("script");
+    s.src = PDFJS_LIB_URL;
+    s.onload = async ()=>{
+      const lib = window.pdfjsLib || window["pdfjs-dist/build/pdf"];
+      if(!lib) return reject(new Error("Não consegui carregar o leitor de PDF. Tente de novo."));
+      try{
+        // O worker vem de outro domínio; via blob o navegador aceita sem reclamar.
+        const resp = await fetch(PDFJS_WORKER_URL);
+        const codigo = await resp.text();
+        lib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([codigo], { type:"text/javascript" }));
+      }catch(_){
+        lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+      }
+      resolve(lib);
+    };
+    s.onerror = ()=> reject(new Error("Não consegui carregar o leitor de PDF. Confira sua conexão com a internet e tente de novo."));
+    document.head.appendChild(s);
+  });
+  pdfjsPromise.catch(()=>{ pdfjsPromise = null; });
+  return pdfjsPromise;
+}
+
+// Devolve o texto do PDF como uma lista de linhas (itens com o mesmo "y" viram uma linha).
+async function extrairLinhasPDF(file){
+  const lib = await carregarPdfJs();
+  const dados = new Uint8Array(await file.arrayBuffer());
+  const tarefa = lib.getDocument({ data: dados });
+  let cancelada = false;
+  tarefa.onPassword = (atualizar, motivo)=>{
+    const msg = motivo === 2
+      ? "Senha incorreta. Tente de novo:"
+      : "Esse PDF tem senha. Digite a senha (nas faturas costuma ser os primeiros dígitos do CPF — confira no e-mail da fatura):";
+    const senha = prompt(msg);
+    if(senha === null){ cancelada = true; tarefa.destroy(); }
+    else atualizar(senha);
+  };
+  let pdf;
+  try{
+    pdf = await tarefa.promise;
+  }catch(err){
+    if(cancelada) throw new Error("Leitura cancelada: o PDF tem senha e ela não foi informada.");
+    throw err;
+  }
+  const linhas = [];
+  for(let p = 1; p <= pdf.numPages; p++){
+    const pagina = await pdf.getPage(p);
+    const conteudo = await pagina.getTextContent();
+    const itens = conteudo.items
+      .filter(it=> it.str && it.str.trim())
+      .map(it=>({ x: it.transform[4], y: it.transform[5], w: it.width || 0, s: it.str }));
+    itens.sort((a,b)=> (b.y - a.y) || (a.x - b.x));
+    const grupos = [];
+    let atual = null;
+    for(const it of itens){
+      if(atual && Math.abs(atual.y - it.y) <= 3) atual.itens.push(it);
+      else { atual = { y: it.y, itens: [it] }; grupos.push(atual); }
+    }
+    grupos.forEach(g=>{
+      g.itens.sort((a,b)=> a.x - b.x);
+      let txt = "";
+      let fimAnterior = null;
+      g.itens.forEach(it=>{
+        if(fimAnterior !== null && (it.x - fimAnterior) > 1.5) txt += " ";
+        txt += it.s;
+        fimAnterior = it.x + it.w;
+      });
+      const limpo = txt.replace(/\s+/g, " ").trim();
+      if(limpo) linhas.push(limpo);
+    });
+    linhas.push(PDF_QUEBRA_PAGINA);
+  }
+  try{ pdf.destroy(); }catch(_){}
+  return linhas;
+}
+
+const MESES_PDF = { jan:1, fev:2, mar:3, abr:4, mai:5, jun:6, jul:7, ago:8, set:9, out:10, nov:11, dez:12 };
+const PDF_MES_NOME = "(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-zç]*";
+// Data no começo do lançamento: 15/09, 15/09/2026, "15 SET", "15 de set. 2026"
+const PDF_DATA = `\\d{2}\\/\\d{2}(?:\\/\\d{2,4})?|\\d{1,2}(?:\\s+de)?\\s+${PDF_MES_NOME}\\.?(?:\\s+(?:de\\s+)?\\d{4})?`;
+// Valor: 1.234,56 | R$ 1.234,56 | -R$ 50,00 | R$ -50,00 | 50,00 CR
+const PDF_VALOR = "-?\\s?(?:R\\$\\s?)?-?\\d+(?:\\.\\d{3})*,\\d{2}(?:\\s?(?:CR|C|D)\\b)?";
+const PDF_RE_LANCAMENTO = `\\s*(${PDF_DATA})\\s+(.+?)\\s+(${PDF_VALOR})(?=\\s|$)`;
+const PDF_RE_VALOR_FINAL = new RegExp(`^\\s+(${PDF_VALOR})\\s*$`, "i");
+
+// Linhas de resumo que têm data e valor mas não são compras.
+const PDF_IGNORAR = [
+  "total da fatura","total desta fatura","total a pagar","total para pagamento","valor total","subtotal",
+  "saldo anterior","saldo da fatura anterior","saldo fatura anterior","saldo restante","pagamento minimo",
+  "limite de credito","limite disponivel","limite total","total de compras","total de pagamentos",
+  "saldo do dia","saldo final","saldo inicial","saldo disponivel","saldo parcial",
+];
+// Crédito que é o pagamento da fatura anterior — não é receita, então já vem desmarcado.
+const PDF_PAGAMENTO_RECEBIDO = [
+  "pagamento recebido","pagamento efetuado","pagamento em ","pagamento on","pagamento via","pagamento da fatura",
+  "pagamento de fatura","pagamento fatura","pgto recebido","pagto recebido","obrigado pelo pagamento",
+];
+// Seção "próximas faturas / parcelas futuras": as linhas dela não são desta fatura.
+const PDF_SECAO_FUTURA = /(proximas? faturas?|parcelas? (?:futuras?|a vencer)|lancamentos futuros|compras parceladas.*proxim|simulacao|opcoes de pagamento|parcelamento da fatura)/;
+const PDF_SECAO_LANCAMENTOS = /^(lancamentos|transacoes|compras e saques|compras e despesas|despesas do periodo|detalhamento)/;
+
+function descobrirReferenciaPDF(linhas){
+  const texto = normalizeTexto(linhas.filter(l=> l !== PDF_QUEBRA_PAGINA).join(" "));
+  let m = texto.match(/(?:vencimento|vence em)\D{0,40}?(\d{2})\/(\d{2})\/(\d{4})/);
+  if(m) return { mes: +m[2], ano: +m[3] };
+  m = texto.match(/(?:vencimento|vence em)\D{0,40}?(\d{1,2})\s*(?:de\s+)?([a-z]{3})[a-z]*\.?\s*(?:de\s+)?(\d{4})/);
+  if(m && MESES_PDF[m[2]]) return { mes: MESES_PDF[m[2]], ano: +m[3] };
+  m = texto.match(/(?:fechamento|fecha em)\D{0,40}?(\d{2})\/(\d{2})\/(\d{4})/);
+  if(m) return { mes: +m[2], ano: +m[3] };
+  const hoje = new Date();
+  return { mes: hoje.getMonth() + 1, ano: hoje.getFullYear() };
+}
+
+function dataPDFparaISO(str, ref){
+  str = String(str || "").trim();
+  let d, mo, a = null;
+  let m = str.match(/^(\d{2})\/(\d{2})(?:\/(\d{2,4}))?$/);
+  if(m){
+    d = +m[1]; mo = +m[2];
+    if(m[3]) a = m[3].length === 2 ? 2000 + (+m[3]) : +m[3];
+  } else {
+    m = normalizeTexto(str).match(/^(\d{1,2})(?:\s+de)?\s+([a-z]{3})[a-z]*\.?(?:\s+(?:de\s+)?(\d{4}))?$/);
+    if(!m || !MESES_PDF[m[2]]) return "";
+    d = +m[1]; mo = MESES_PDF[m[2]];
+    if(m[3]) a = +m[3];
+  }
+  if(!mo || mo < 1 || mo > 12 || d < 1) return "";
+  // Sem ano na fatura: compras de meses "depois" do vencimento são do ano anterior (ex.: compra de dez na fatura de jan).
+  if(!a) a = mo > ref.mes ? ref.ano - 1 : ref.ano;
+  if(d > new Date(a, mo, 0).getDate()) return "";
+  return `${a}-${pad2(mo)}-${pad2(d)}`;
+}
+
+function montarLancamentoPDF(dataStr, descStr, valorStr, ref, modoFatura){
+  const date = dataPDFparaISO(dataStr, ref);
+  if(!date) return null;
+  let descricao = descStr.replace(/\s+/g, " ").trim();
+  descricao = descricao.replace(/^(?:[•·●*]{2,}|\.{2,})\s*\d{4}\s+/, "");
+  const letras = (descricao.replace(/R\$/gi, "").match(/[a-zA-ZÀ-ÿ]/g) || []).length;
+  if(letras < 2) return null;   // "10/10/2026 R$ 1.234,56" sem descrição não é lançamento
+  const norm = normalizeTexto(descricao);
+  if(PDF_IGNORAR.some(t=> norm.includes(t))) return null;
+  const s = valorStr.trim();
+  const sufixo = ((s.match(/\d\s?(CR|C|D)$/i) || [])[1] || "").toUpperCase();
+  const numero = Math.abs(normalizeValor(s.replace(/[^\d.,]/g, "")));
+  if(isNaN(numero) || numero === 0) return null;
+  const negativo = s.includes("-");
+  let receita;
+  if(sufixo === "CR" || sufixo === "C") receita = true;
+  else if(sufixo === "D") receita = false;
+  else if(negativo) receita = modoFatura;   // fatura: valor negativo = crédito/estorno
+  else receita = !modoFatura;               // extrato: valor positivo = entrada
+  const ehPagamentoFatura = modoFatura && receita && PDF_PAGAMENTO_RECEBIDO.some(t=> norm.includes(t));
+  // Convenção do resto da importação: valor negativo = despesa.
+  return { date, description: descricao, amount: receita ? numero : -numero, ehPagamentoFatura };
+}
+
+function parsearFaturaPDF(linhas, cartaoEscolhido){
+  const cabecalho = normalizeTexto(linhas.slice(0, 40).join(" "));
+  const modoFatura = !!cartaoEscolhido || /fatura|pagamento minimo|limite de credito/.test(cabecalho);
+  const ref = descobrirReferenciaPDF(linhas);
+  const rows = [];
+  let secaoFutura = false;
+  for(const linha of linhas){
+    if(linha === PDF_QUEBRA_PAGINA){ secaoFutura = false; continue; }
+    const norm = normalizeTexto(linha);
+    if(PDF_SECAO_FUTURA.test(norm)) secaoFutura = true;
+    else if(PDF_SECAO_LANCAMENTOS.test(norm)) secaoFutura = false;
+    if(secaoFutura) continue;
+    const re = new RegExp(PDF_RE_LANCAMENTO, "iy");
+    let pos = 0;
+    // Uma linha pode trazer dois lançamentos lado a lado (faturas em duas colunas).
+    while(pos < linha.length){
+      re.lastIndex = pos;
+      const m = re.exec(linha);
+      if(!m) break;
+      pos = re.lastIndex;
+      let valorStr = m[3];
+      // "15/09 LOJA 10,00 53,00": quando sobra outro valor no fim, o último é o em reais.
+      const extra = linha.slice(pos).match(PDF_RE_VALOR_FINAL);
+      if(extra){ valorStr = extra[1]; pos = linha.length; }
+      const item = montarLancamentoPDF(m[1], m[2], valorStr, ref, modoFatura);
+      if(item) rows.push(item);
+    }
+  }
+  return { rows, modoFatura };
+}
+
+async function importarFaturaPDF(file){
+  const errEl = document.getElementById("import-error");
+  const statusEl = document.getElementById("import-status");
+  const debugEl = document.getElementById("import-pdf-debug");
+  const setErro = (msg)=>{ statusEl.hidden = true; errEl.textContent = msg; errEl.hidden = false; };
+  statusEl.textContent = "Lendo o PDF…";
+  statusEl.hidden = false;
+
+  let linhas;
+  try{
+    linhas = await extrairLinhasPDF(file);
+  }catch(err){
+    console.error("Erro ao ler o PDF", err);
+    if(err && /Leitura cancelada|Não consegui carregar/.test(err.message || "")) return setErro(err.message);
+    return setErro("Não consegui abrir esse PDF. Se ele tem senha, confira se digitou certo. Se é uma foto ou arquivo escaneado, use o OFX ou o CSV do app do banco.");
+  }
+
+  const comTexto = linhas.filter(l=> l !== PDF_QUEBRA_PAGINA);
+  document.getElementById("import-pdf-texto").textContent =
+    linhas.map(l=> l === PDF_QUEBRA_PAGINA ? "──────── fim da página ────────" : l).join("\n");
+  debugEl.hidden = false;
+  if(!comTexto.length){
+    return setErro("Esse PDF não tem texto selecionável — parece ser uma imagem. Baixe a fatura de novo pelo app do banco ou use o OFX ou o CSV.");
+  }
+
+  const cardIdFixo = document.getElementById("import-card").value || null;
+  const { rows, modoFatura } = parsearFaturaPDF(linhas, !!cardIdFixo);
+  if(!rows.length){
+    return setErro("Li o PDF, mas não encontrei lançamentos (data, descrição e valor na mesma linha). Abra \"Ver o texto que li do PDF\" para conferir o que veio, ou use o OFX ou o CSV.");
+  }
+  statusEl.textContent = modoFatura
+    ? `PDF lido como fatura de cartão (valor positivo = compra). ${rows.length} lançamento(s) encontrados — revise abaixo.`
+    : `PDF lido como extrato (valor negativo = saída). ${rows.length} lançamento(s) encontrados — revise abaixo.`;
+  importOrigemPDF = true;
+  montarPreviaImportacao(rows);
+}
+
 function montarPreviaImportacao(rows){
   setImportStep("revisao");
   const cardIdFixo = document.getElementById("import-card").value || null;
@@ -3745,7 +3998,7 @@ function montarPreviaImportacao(rows){
       }
     }
     const parcela = tipo==="despesa" ? extrairParcelaDaDescricao(r.description) : null;
-    const pareceFatura = tipo==="despesa" && pareceSerPagamentoDeFatura(r.description);
+    const pareceFatura = !!r.ehPagamentoFatura || (tipo==="despesa" && pareceSerPagamentoDeFatura(r.description));
     return {
       date: r.date,
       description: r.description,
@@ -3804,6 +4057,10 @@ function atualizarContadorImportacao(){
   let texto = `${importRows.filter(r=>r.include).length} de ${total} selecionados para importar`;
   if(dupCount) texto += ` — ${dupCount} possível${dupCount>1?"is":""} duplicata${dupCount>1?"s":""} já desmarcada${dupCount>1?"s":""}`;
   if(faturaCount) texto += ` — ${faturaCount} pagamento${faturaCount>1?"s":""} de fatura já desmarcado${faturaCount>1?"s":""}`;
+  if(importOrigemPDF){
+    const soma = importRows.filter(r=>r.include).reduce((t,r)=> t + (r.type==="despesa" ? r.amount : -r.amount), 0);
+    texto += ` — soma dos selecionados: ${brl(soma)} (compras menos créditos). Compare com o total da fatura.`;
+  }
   document.getElementById("import-preview-count").textContent = texto;
 }
 
