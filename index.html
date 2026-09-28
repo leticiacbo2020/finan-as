@@ -199,7 +199,7 @@ button, .nav-item, a{ touch-action: manipulation; }
 .main{
   flex: 1;
   padding: calc(38px + env(safe-area-inset-top)) calc(46px + env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) 46px;
-  max-width: 1480px;
+  max-width: 1760px;
 }
 
 .topbar{
@@ -627,7 +627,7 @@ select{ cursor:pointer; }
 }
 
 /* ============ MODAL VARIANTES / DETALHES ============ */
-.modal--wide{ max-width: min(1180px, 96vw); }
+.modal--wide{ max-width: min(1400px, 96vw); }
 .detail-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-bottom:14px; }
 .detail-stat{ background: var(--bg); border:1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; }
 .detail-stat strong{ display:block; font-family:var(--serif); font-size:1.15rem; margin-top:4px; }
@@ -637,8 +637,7 @@ select{ cursor:pointer; }
 .installment-row:last-child{ border-bottom:none; }
 .ledger-table tbody tr[data-editar-transacao]:hover{ background: var(--pink-bg); }
 .tabela-lancamentos td{ white-space:nowrap; }
-.tabela-lancamentos td.desc-cell{ max-width: clamp(220px, 32vw, 520px); overflow:hidden; text-overflow:ellipsis; }
-.modal--wide .tabela-lancamentos td.desc-cell{ max-width: clamp(220px, 38vw, 560px); }
+.tabela-lancamentos td.desc-cell{ width:100%; max-width:0; min-width:180px; overflow:hidden; text-overflow:ellipsis; }
 .installment-tag{ font-size:0.68rem; font-weight:700; color:var(--pink-dark); background:var(--pink-bg); border-radius:999px; padding:2px 8px; margin-left:8px; }
 .projection-strip{ display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
 .projection-item{ flex: 0 0 auto; min-width: 92px; text-align:center; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 8px; }
