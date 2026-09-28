@@ -985,6 +985,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <div class="panel-head">
           <h2>Lançamentos do mês</h2>
           <div style="display:flex;gap:10px;">
+            <button class="btn" id="btn-apagar-mes" style="color:var(--red);border-color:var(--red);">Apagar mês</button>
             <button class="btn" id="btn-verificar-duplicados">Verificar duplicados</button>
             <button class="btn btn-primary" id="btn-nova-transacao">Novo lançamento</button>
           </div>
@@ -1318,6 +1319,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Use os <strong>filtros</strong> no topo da tabela para achar lançamentos específicos.</li>
             <li>A tela agora é mais ampla e cada lançamento ocupa <strong>uma linha só</strong>; descrições muito longas terminam com "…" — passe o mouse para ler completa, ou clique em <strong>"editar"</strong>. <span class="tutorial-badge-new">novo</span></li>
             <li>Clique em <strong>"Verificar duplicados"</strong> para encontrar lançamentos repetidos por engano.</li>
+            <li>Quer recomeçar um mês? Clique em <strong>"Apagar mês"</strong>, escolha o mês e digite <strong>APAGAR</strong> para confirmar. Só os lançamentos daquele mês são apagados — cartões, categorias, investimentos e metas ficam. Antes, dá para <strong>baixar um backup</strong> na própria janela. <span class="tutorial-badge-new">novo</span></li>
           </ol>
         </details>
         <details class="tutorial-item">
@@ -2481,6 +2483,57 @@ function abrirModalDuplicados(){
   document.getElementById("modal-fechar-dup").addEventListener("click", closeModal);
 }
 document.getElementById("btn-verificar-duplicados").addEventListener("click", abrirModalDuplicados);
+
+// ===== Apagar todos os lançamentos de um mês =====
+function openApagarMesModal(){
+  openModal("Apagar lançamentos de um mês", `
+    <p class="muted" style="margin-top:0;">Apaga <strong>todos os lançamentos</strong> do mês escolhido: receitas, despesas, compras no cartão, pagamentos de fatura e o saldo inicial, se ele estiver nesse mês. Cartões, categorias, investimentos, orçamentos e metas <strong>não</strong> são afetados. <strong>Não dá para desfazer.</strong></p>
+    <div class="field">
+      <label>Mês</label>
+      <input type="month" name="mes" required>
+    </div>
+    <p id="apagar-mes-resumo" style="font-weight:600;margin:0;"></p>
+    <div class="field">
+      <label>Para confirmar, digite APAGAR</label>
+      <input type="text" name="confirmacao" autocomplete="off" placeholder="APAGAR">
+    </div>
+    <button type="button" class="btn" id="apagar-mes-backup" style="align-self:flex-start;">Baixar backup antes (.json)</button>
+  `, async (form)=>{
+    const mes = form.mes.value;
+    if(!/^\d{4}-\d{2}$/.test(mes)) return alert("Escolha o mês.");
+    if(form.confirmacao.value.trim().toUpperCase() !== "APAGAR") return alert("Digite APAGAR para confirmar.");
+    if(!transacoesDoMes(mes).length) return alert("Não há lançamentos nesse mês.");
+    const [ano, m] = mes.split("-").map(Number);
+    const proximo = m === 12 ? `${ano+1}-01-01` : `${ano}-${pad2(m+1)}-01`;
+    const { data, error } = await sbClient.from("transactions").delete()
+      .eq("user_id", currentUser.id)
+      .gte("date", `${mes}-01`).lt("date", proximo)
+      .select("id");
+    if(error) return alert("Não foi possível apagar: " + error.message);
+    const ids = new Set((data || []).map(x=>x.id));
+    db.transactions = db.transactions.filter(t=> !ids.has(t.id));
+    closeModal(); renderAll();
+    alert(`${ids.size} lançamento${ids.size===1?"":"s"} de ${monthLabel(mes)} apagado${ids.size===1?"":"s"}.`);
+  });
+  const form = document.getElementById("modal-form");
+  const enviar = form.querySelector('button[type="submit"]');
+  enviar.textContent = "Apagar";
+  enviar.classList.remove("btn-primary");
+  enviar.classList.add("btn-danger");
+  const resumo = document.getElementById("apagar-mes-resumo");
+  function atualizarResumo(){
+    if(!/^\d{4}-\d{2}$/.test(form.mes.value)){ resumo.textContent = ""; return; }
+    const n = transacoesDoMes(form.mes.value).length;
+    resumo.textContent = n
+      ? `${n} lançamento${n===1?"":"s"} em ${monthLabel(form.mes.value)} ${n===1?"será apagado":"serão apagados"}.`
+      : `Não há lançamentos em ${monthLabel(form.mes.value)}.`;
+  }
+  form.mes.value = currentMonth;
+  form.mes.addEventListener("input", atualizarResumo);
+  atualizarResumo();
+  document.getElementById("apagar-mes-backup").addEventListener("click", ()=> document.getElementById("btn-exportar").click());
+}
+document.getElementById("btn-apagar-mes").addEventListener("click", openApagarMesModal);
 
 function openTransacaoModal(t){
   const isEdit = !!t;
