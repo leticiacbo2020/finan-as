@@ -2131,7 +2131,9 @@ function periodoFatura(closingDay, ym){
 }
 
 function despesasFaturaCartao(card, ym = currentMonth){
-  const todas = db.transactions.filter(t=> t.card_id===card.id && t.type==="despesa");
+  // "de qual cartão ou conta" é só uma referência opcional em Pix/Débito/Boleto — só
+  // conta pra fatura, limite e projeção quando o lançamento é realmente no Crédito.
+  const todas = db.transactions.filter(t=> t.card_id===card.id && t.type==="despesa" && t.payment_method==="Crédito");
   if(!card.closing_day) return todas.filter(t=> t.date.startsWith(ym));
   const { start, end } = periodoFatura(card.closing_day, ym);
   return todas.filter(t=> t.date > start && t.date <= end || t.date === start);
@@ -2180,7 +2182,7 @@ function baseDescricaoParcelada(desc){
 function agruparComprasParceladas(card){
   const grupos = [];
   db.transactions
-    .filter(t=> t.card_id===card.id && t.type==="despesa" && Number(t.installment_total)>1)
+    .filter(t=> t.card_id===card.id && t.type==="despesa" && t.payment_method==="Crédito" && Number(t.installment_total)>1)
     .sort((a,b)=> a.date.localeCompare(b.date))
     .forEach(t=>{
       const base = baseDescricaoParcelada(t.description);
