@@ -2185,7 +2185,31 @@ function despesasFaturaCartao(card, ym = currentMonth){
   const todas = db.transactions.filter(t=> t.card_id===card.id && t.type==="despesa" && t.payment_method==="Crédito");
   if(!card.closing_day) return todas.filter(t=> t.date.startsWith(ym));
   const { start, end } = periodoFatura(card.closing_day, ym);
-  return todas.filter(t=> t.date > start && t.date <= end || t.date === start);
+  return todas.filter(t=>{
+    const d = dataParaCiclo(t);
+    return d > start && d <= end || d === start;
+  });
+}
+
+// O Nubank (e alguns outros) datam as PARCELAS no dia do fechamento anterior (ex.: 26/09 numa
+// fatura que fecha 26/10) — o que as jogaria na fatura passada. Por isso, para decidir em que
+// ciclo uma parcela cai, usamos o dia seguinte à data dela. Compras comuns seguem a data real.
+function dataParaCiclo(t){
+  if(!(Number(t.installment_total) > 1)) return t.date;
+  const [y,m,d] = t.date.split("-").map(Number);
+  const nd = new Date(y, m-1, d+1);
+  return `${nd.getFullYear()}-${pad2(nd.getMonth()+1)}-${pad2(nd.getDate())}`;
+}
+// Mês (AAAA-MM) da fatura em que o lançamento cai.
+function cicloYmDoLancamento(card, t){
+  if(!card.closing_day) return t.date.slice(0,7);
+  const d = dataParaCiclo(t);
+  const ym = d.slice(0,7);
+  for(const cand of [ym, ymAdd(ym,1)]){
+    const { start, end } = periodoFatura(card.closing_day, cand);
+    if(d >= start && d <= end) return cand;
+  }
+  return ym;
 }
 
 function ymAdd(ym, delta){
@@ -2203,7 +2227,7 @@ function parcelaContribuiEm(card, t, ym){
   if(!(Number(t.installment_total) > 1)) return 0;
   const restantes = Number(t.installment_total) - Number(t.installment_current||1);
   if(restantes <= 0) return 0;
-  const diff = monthDiff(t.date.slice(0,7), ym);
+  const diff = monthDiff(cicloYmDoLancamento(card, t), ym);
   if(diff < 1 || diff > restantes) return 0;
   const baseT = baseDescricaoParcelada(t.description);
   const jaLancadoManualmente = despesasFaturaCartao(card, ym).some(x=> x.id!==t.id && (
@@ -2273,9 +2297,12 @@ function recorrenciaContribuiEmCiclo(r, ym){
 }
 
 function projecaoFaturaCartao(card, ym){
-  const jaLancado = despesasFaturaCartao(card, ym).reduce((s,t)=>s+Number(t.amount),0);
+  const lancadas = despesasFaturaCartao(card, ym);
+  const jaLancado = lancadas.reduce((s,t)=>s+Number(t.amount),0);
   const parcelas = parcelasFuturasCartao(card).reduce((s,p)=> s + parcelaContribuiEm(card, p.t, ym), 0);
-  const recorrentes = db.recurrences.filter(r=>r.card_id===card.id).reduce((s,r)=> s + recorrenciaContribuiEmCiclo(r, ym), 0);
+  // Recorrência é só estimativa: se a fatura já foi importada/lançada, ela já está nos lançamentos
+  // (Netflix, Spotify...) e somar de novo duplicaria. Só entra em faturas ainda sem lançamentos.
+  const recorrentes = lancadas.length ? 0 : db.recurrences.filter(r=>r.card_id===card.id).reduce((s,r)=> s + recorrenciaContribuiEmCiclo(r, ym), 0);
   return jaLancado + parcelas + recorrentes;
 }
 
