@@ -431,3 +431,21 @@ página inteira.
 HTML, CSS e JavaScript num arquivo só — sem framework, sem etapa de
 build. Duas bibliotecas externas, carregadas via CDN: **Chart.js**
 (gráficos) e **Supabase JS** (login e banco de dados).
+
+
+## Investimentos editáveis (caixinha, ações e FIIs)
+
+Antes de usar, rode o `add-investments-details.sql` no SQL Editor do
+Supabase (uma vez só) e recarregue o site.
+
+- **Novo investimento**: escolha o tipo e os campos mudam.
+  - *Renda fixa (% do CDI)*: nome (ex.: Caixinha Turbo), onde está, % do CDI,
+    saldo atual e, se quiser, quanto já aplicou.
+  - *Ação / FII*: empresa, código (ex.: PETR4), quantidade, preço médio pago
+    e cotação atual.
+  - *Outro*: nome, categoria, saldo e valor aplicado (opcional).
+- **editar**: botão em cada linha; serve para atualizar saldo e cotação.
+- **CDI atual**: campo na tela de investimentos (fica salvo no navegador). Com ele
+  o site estima o rendimento mensal das posições em % do CDI.
+- Resultado = valor atual − valor aplicado, em R$ e %.
+- Se aparecer erro de coluna ao salvar, falta rodar o script acima.
