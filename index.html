@@ -640,7 +640,7 @@ select{ cursor:pointer; }
 .tabela-lancamentos td.desc-cell{ width:100%; max-width:0; min-width:180px; overflow:hidden; text-overflow:ellipsis; }
 .installment-tag{ font-size:0.68rem; font-weight:700; color:var(--pink-dark); background:var(--pink-bg); border-radius:999px; padding:2px 8px; margin-left:8px; }
 .projection-strip{ display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
-.projection-item{ flex: 0 0 auto; min-width: 92px; text-align:center; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 8px; }
+.projection-item{ flex: 0 0 auto; min-width: 112px; text-align:center; background:var(--bg); border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 8px; }
 .projection-item .ledger-label{ font-size:0.62rem; }
 .projection-item strong{ display:block; margin-top:4px; font-family:var(--serif); font-size:0.92rem; }
 .fatura-futura-cartao{ padding:12px 0; border-bottom:1px solid var(--line); }
@@ -648,6 +648,7 @@ select{ cursor:pointer; }
 .fatura-futura-cartao-nome{ display:flex; align-items:center; gap:8px; font-size:0.86rem; font-weight:700; margin-bottom:10px; }
 .fatura-futura-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; flex-shrink:0; }
 .fatura-futura-total{ padding-top:16px; }
+.fatura-sem-parcela{ display:block; font-size:0.68rem; opacity:0.7; font-weight:400; margin-top:2px; }
 .cc-more-btn{
   background: rgba(255,255,255,0.25); border:none; color:#fff; width:100%;
   margin-top:10px; padding:7px 0; border-radius:999px; font-size:0.72rem; font-weight:700;
@@ -1393,6 +1394,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <li>Sem o dia de fechamento, a fatura continua somando pelo mês do calendário, como sempre foi.</li>
             <li>O resumo do cartão mostra o <strong>limite disponível</strong> e o vencimento; clique em <strong>"Ver detalhes"</strong> para a próxima fatura, o limite comprometido, as parcelas em aberto, uma projeção de até 6 faturas, as palavras-chave desse cartão e as transações de cada fatura — use as setas pra navegar entre faturas anteriores e clique numa linha pra editar, inclusive a forma de pagamento.</li>
             <li>Em <strong>"Parcelas futuras"</strong>, cada compra parcelada aparece <strong>uma vez só</strong>, mesmo que você importe várias faturas seguidas — o site usa sempre a parcela mais recente. <span class="tutorial-badge-new">novo</span></li>
+            <li>A fatura de cada cartão agora mostra <strong>dois valores</strong>: o <strong>total</strong> (com as parcelas) e, logo abaixo, <strong>"sem parcelas"</strong> — o gasto do mês que não é parcelado. <span class="tutorial-badge-new">novo</span></li>
             <li>Logo abaixo dos cartões, o painel <strong>"Resumo de faturas futuras"</strong> já mostra, sem precisar clicar em nada, a soma de todos os cartões mês a mês.</li>
             <li>Palavras-chave do cartão (em "Ver detalhes") e das formas de pagamento sem cartão (Pix, Débito, Dinheiro, Boleto — logo abaixo da lista de cartões) ajudam a sugerir automaticamente a forma de pagamento de cada lançamento ao importar um extrato; numa fatura, valem as palavras-chave dos cartões. <span class="tutorial-badge-new">novo</span></li>
             <li>Ao adicionar uma palavra-chave nova, o site também confere lançamentos já existentes que combinam com ela — mesmo que já tenham outra forma de pagamento — e pergunta se quer atualizar eles também.</li>
@@ -2277,6 +2279,18 @@ function projecaoFaturaCartao(card, ym){
   return jaLancado + parcelas + recorrentes;
 }
 
+// Fatura de um mês com os DOIS valores: total (com parcelas, lançadas ou projetadas) e
+// "não parcelado" (o gasto do mês sem as parcelas). total = naoParcelado + parcelado.
+function resumoFaturaCartao(card, ym = currentMonth){
+  const total = projecaoFaturaCartao(card, ym);
+  const parceladoLancado = despesasFaturaCartao(card, ym)
+    .filter(t=> Number(t.installment_total) > 1)
+    .reduce((s,t)=>s+Number(t.amount),0);
+  const parceladoProjetado = parcelasFuturasCartao(card).reduce((s,p)=> s + parcelaContribuiEm(card, p.t, ym), 0);
+  const parcelado = parceladoLancado + parceladoProjetado;
+  return { total, parcelado, naoParcelado: total - parcelado };
+}
+
 function renderVisaoGeral(){
   atualizarResumoRecorrencias();
   const txs = transacoesDoMes();
@@ -2339,7 +2353,7 @@ function renderVisaoGeral(){
   wrap.innerHTML = "";
   document.getElementById("resumo-cartoes-empty").hidden = db.cards.length>0;
   db.cards.forEach(c=>{
-    const fatura = despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0);
+    const { total: fatura, naoParcelado } = resumoFaturaCartao(c);
     const row = document.createElement("div");
     row.className = "budget-row";
     const pct = c.card_limit ? Math.min(100, (fatura/c.card_limit)*100) : 0;
@@ -2347,6 +2361,7 @@ function renderVisaoGeral(){
       <div class="budget-row-head"><strong>${escapeHtml(c.name)}</strong><span>${brl(fatura)}</span></div>
       <div class="budget-bar-track"><div class="budget-bar-fill ${pct>=100?'over':''}" style="width:${pct}%;background:${c.color}"></div></div>
       <div class="budget-row-foot"><span>${c.card_limit? 'limite '+brl(c.card_limit) : 'sem limite definido'}</span><span>${c.card_limit? Math.round(pct)+'%':''}</span></div>
+      <div class="budget-row-foot"><span>não parcelado</span><span>${brl(naoParcelado)}</span></div>
     `;
     wrap.appendChild(row);
   });
@@ -2914,7 +2929,7 @@ function renderCartoes(){
   wrap.innerHTML = "";
   document.getElementById("cartoes-empty").hidden = db.cards.length>0;
   db.cards.forEach(c=>{
-    const fatura = despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0);
+    const { total: fatura, naoParcelado } = resumoFaturaCartao(c);
     const disponivel = c.card_limit ? Math.max(0, c.card_limit - fatura) : null;
     const el = document.createElement("div");
     el.className = "credit-card";
@@ -2940,6 +2955,7 @@ function renderCartoes(){
       <div>
         <div class="cc-fatura-label">${faturaLabel}</div>
         <div class="cc-fatura-valor">${brl(fatura)}</div>
+        <div class="cc-fatura-label">sem parcelas: ${brl(naoParcelado)}</div>
         <div class="cc-limite">${rodape}</div>
         <button type="button" class="cc-more-btn" data-detalhes>Ver detalhes</button>
       </div>
@@ -2971,8 +2987,8 @@ function renderProjecaoFaturasTodosCartoes(){
   const meses = Array.from({length:6}, (_,i)=> ymAdd(currentMonth, i));
   wrap.innerHTML = db.cards.map(c=>{
     const linha = meses.map((ym,i)=>{
-      const valor = i===0 ? despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0) : projecaoFaturaCartao(c, ym);
-      return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(valor)}</strong></div>`;
+      const r = resumoFaturaCartao(c, ym);
+      return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(r.total)}</strong><small class="fatura-sem-parcela">sem parcelas ${brl(r.naoParcelado)}</small></div>`;
     }).join("");
     return `
       <div class="fatura-futura-cartao">
@@ -2984,8 +3000,9 @@ function renderProjecaoFaturasTodosCartoes(){
     <div class="fatura-futura-cartao fatura-futura-total">
       <div class="fatura-futura-cartao-nome"><strong>Total de todos os cartões</strong></div>
       <div class="projection-strip">${meses.map((ym,i)=>{
-        const total = db.cards.reduce((s,c)=> s + (i===0 ? despesasFaturaCartao(c).reduce((s2,t)=>s2+Number(t.amount),0) : projecaoFaturaCartao(c, ym)), 0);
-        return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(total)}</strong></div>`;
+        const rs = db.cards.map(c=> resumoFaturaCartao(c, ym));
+        const total = rs.reduce((s,r)=>s+r.total,0), semParc = rs.reduce((s,r)=>s+r.naoParcelado,0);
+        return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(total)}</strong><small class="fatura-sem-parcela">sem parcelas ${brl(semParc)}</small></div>`;
       }).join("")}</div>
     </div>
   ` : "");
@@ -3065,7 +3082,7 @@ function renderPagamentoKeywords(){
 
 function openCartaoDetalhesModal(c, cicloVisualizado){
   cicloVisualizado = cicloVisualizado || currentMonth;
-  const cicloAtual = despesasFaturaCartao(c).reduce((s,t)=>s+Number(t.amount),0);
+  const { total: cicloAtual, naoParcelado: cicloNaoParcelado } = resumoFaturaCartao(c);
   const proximoYm = ymAdd(currentMonth, 1);
   const proximaFatura = projecaoFaturaCartao(c, proximoYm);
   const pendentes = totalParcelasPendentes(c);
@@ -3073,8 +3090,8 @@ function openCartaoDetalhesModal(c, cicloVisualizado){
   const parcelas = parcelasFuturasCartao(c);
 
   const projecaoHtml = Array.from({length:6}, (_,i)=> ymAdd(currentMonth, i)).map((ym,i)=>{
-    const valor = i===0 ? cicloAtual : projecaoFaturaCartao(c, ym);
-    return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(valor)}</strong></div>`;
+    const r = resumoFaturaCartao(c, ym);
+    return `<div class="projection-item"><span class="ledger-label">${monthLabel(ym).split(" de ")[0].slice(0,3)}</span><strong>${brl(r.total)}</strong><small class="fatura-sem-parcela">sem parcelas ${brl(r.naoParcelado)}</small></div>`;
   }).join("");
 
   const parcelasHtml = parcelas.length ? parcelas.map(p=>`
@@ -3102,6 +3119,8 @@ function openCartaoDetalhesModal(c, cicloVisualizado){
 
   openReadOnlyModal(`Detalhes — ${c.name}`, `
     <div class="detail-grid">
+      <div class="detail-stat"><span class="ledger-label">Fatura atual (com parcelas)</span><strong>${brl(cicloAtual)}</strong></div>
+      <div class="detail-stat"><span class="ledger-label">Fatura atual (sem parcelas)</span><strong>${brl(cicloNaoParcelado)}</strong></div>
       <div class="detail-stat"><span class="ledger-label">Próxima fatura</span><strong>${brl(proximaFatura)}</strong></div>
       <div class="detail-stat"><span class="ledger-label">Limite comprometido</span><strong>${brl(limiteComprometido)}</strong></div>
       <div class="detail-stat"><span class="ledger-label">Parcelas em aberto</span><strong>${parcelas.length}</strong></div>
