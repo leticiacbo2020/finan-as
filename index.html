@@ -1082,8 +1082,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <span class="ledger-value" id="stat-invest-aplicado">R$ 0,00</span>
         </div>
         <div class="ledger-figure">
-          <span class="ledger-label">Resultado</span>
+          <span class="ledger-label">Resultado bruto</span>
           <span class="ledger-value" id="stat-invest-resultado">R$ 0,00</span>
+        </div>
+        <div class="ledger-figure">
+          <span class="ledger-label">Resultado líquido</span>
+          <span class="ledger-value" id="stat-invest-resultado-liq">—</span>
         </div>
         <div class="ledger-figure">
           <span class="ledger-label">Posições</span>
@@ -1111,6 +1115,17 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <canvas id="chart-acoes" height="220"></canvas>
           <p class="empty-hint" id="chart-acoes-empty" hidden>Cadastre uma ação ou FII para ver o gráfico.</p>
           </div>
+        </div>
+      </div>
+
+      <div class="panel chart-panel" data-chart-panel style="margin-top:18px;">
+        <div class="panel-head">
+          <h2>Renda fixa e caixinhas: aplicado × líquido × bruto</h2>
+          <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
+        </div>
+        <div class="panel-chart-content">
+          <canvas id="chart-rendafixa" height="200"></canvas>
+          <p class="empty-hint" id="chart-rendafixa-empty" hidden>Cadastre uma caixinha ou renda fixa com o valor aplicado para ver o gráfico.</p>
         </div>
       </div>
 
@@ -1387,7 +1402,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <summary>Investimentos</summary>
           <ol class="tutorial-steps">
             <li>Clique em <strong>"Novo investimento"</strong> e escolha o tipo: <strong>Renda fixa (% do CDI)</strong> para caixinhas, <strong>Ação</strong>, <strong>FII</strong> ou <strong>Outro</strong>. Os campos mudam conforme o tipo.</li>
-            <li>Em caixinhas, informe o saldo e quantos % do CDI ela rende — o site estima o rendimento mensal (ajuste o <strong>CDI atual</strong> na tela de investimentos).</li>
+            <li>Em caixinhas, informe o saldo <strong>bruto</strong> e o <strong>líquido</strong> (os dois aparecem no app do banco), o quanto você já aplicou e quantos % do CDI ela rende — o site estima o rendimento mensal (ajuste o <strong>CDI atual</strong> na tela de investimentos).</li>
             <li>Em ações e FIIs, informe empresa, código, quantidade, preço médio pago e a cotação atual.</li>
             <li>Para atualizar um valor ou cotação, clique em <strong>"editar"</strong> na linha do investimento.</li>
             <li>Diferente das outras telas, aqui aparece o <strong>total acumulado</strong> — não filtra por mês.</li>
@@ -1690,6 +1705,7 @@ let authMode = "signin";
 let chartCategorias = null;
 let chartInvestimentos = null;
 let chartAcoes = null;
+let chartRendaFixa = null;
 let chartPlanejado = null;
 let chartPagamento = null;
 
@@ -2022,7 +2038,7 @@ document.querySelectorAll("[data-chart-panel]").forEach(panel=>{
     button.setAttribute("aria-label", collapsed ? "Expandir painel" : "Recolher painel");
     button.setAttribute("aria-expanded", String(!collapsed));
     if(!collapsed){
-      requestAnimationFrame(()=>[chartCategorias, chartPlanejado, chartPagamento, chartInvestimentos, chartAcoes].forEach(chart=>chart?.resize()));
+      requestAnimationFrame(()=>[chartCategorias, chartPlanejado, chartPagamento, chartInvestimentos, chartAcoes, chartRendaFixa].forEach(chart=>chart?.resize()));
     }
   });
 });
@@ -3274,6 +3290,9 @@ function investKind(i){ return i.kind || "outro"; }
 function investAplicado(i){
   return (i.invested_amount===null || i.invested_amount===undefined || i.invested_amount==="") ? null : Number(i.invested_amount);
 }
+function investLiquido(i){
+  return (i.net_amount===null || i.net_amount===undefined || i.net_amount==="") ? null : Number(i.net_amount);
+}
 function rendimentoMensalCdi(i){
   const taxaAnual = (getCdiAnual()/100) * ((Number(i.cdi_percent)||0)/100);
   return Number(i.amount) * (Math.pow(1+taxaAnual, 1/12) - 1);
@@ -3306,6 +3325,13 @@ function renderInvestimentos(){
   const elRes = document.getElementById("stat-invest-resultado");
   elRes.textContent = comAplicado.length ? brl(resultado) : "—";
   elRes.style.color = !comAplicado.length ? "" : (resultado>=0 ? "#6F8878" : "var(--pink-dark)");
+  const comLiquido = lista.filter(i=>investAplicado(i)!==null && investLiquido(i)!==null);
+  const elLiq = document.getElementById("stat-invest-resultado-liq");
+  if(comLiquido.length){
+    const resLiq = comLiquido.reduce((s,i)=>s+investLiquido(i)-investAplicado(i),0);
+    elLiq.textContent = brl(resLiq);
+    elLiq.style.color = resLiq>=0 ? "#6F8878" : "var(--pink-dark)";
+  } else { elLiq.textContent = "—"; elLiq.style.color = ""; }
   document.getElementById("stat-invest-count").textContent = lista.length;
 
   // CDI atual + estimativa mensal das posições em % do CDI
@@ -3313,8 +3339,9 @@ function renderInvestimentos(){
   if(document.activeElement!==inputCdi) inputCdi.value = getCdiAnual();
   const cdiItens = lista.filter(i=>investKind(i)==="cdi");
   const rendMes = cdiItens.reduce((s,i)=>s+rendimentoMensalCdi(i),0);
+  const impostoTotal = lista.filter(i=>investLiquido(i)!==null).reduce((s,i)=>s+(Number(i.amount)-investLiquido(i)),0);
   document.getElementById("cdi-resumo").textContent = cdiItens.length
-    ? `Estimativa de rendimento das posições em % do CDI: ${brl(rendMes)} por mês (valor aproximado, antes de impostos).`
+    ? `Estimativa de rendimento das posições em % do CDI: ${brl(rendMes)} por mês (valor aproximado, antes de impostos).` + (comLiquido.length ? ` Diferença entre bruto e líquido (imposto a pagar no resgate): ${brl(impostoTotal)}.` : "")
     : "Informe o CDI atual para estimar o rendimento de caixinhas e renda fixa.";
 
   // Distribuição por tipo
@@ -3374,6 +3401,35 @@ function renderInvestimentos(){
     }catch(e){ console.error("[LeFinance] gráfico de ações", e); }
   }
 
+  // Renda fixa e caixinhas: aplicado x líquido x bruto
+  const rf = lista.filter(i=>(investKind(i)==="cdi" || investKind(i)==="outro") && investAplicado(i)!==null);
+  const canvasRF = document.getElementById("chart-rendafixa");
+  document.getElementById("chart-rendafixa-empty").hidden = rf.length>0 && okInvest;
+  if(!okInvest) document.getElementById("chart-rendafixa-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
+  canvasRF.hidden = rf.length===0 || !okInvest;
+  if(chartRendaFixa) chartRendaFixa.destroy();
+  if(rf.length && okInvest){
+    try{
+      const c3 = paleta(3);
+      chartRendaFixa = new Chart(canvasRF, {
+        type: "bar",
+        data: {
+          labels: rf.map(i=>i.name),
+          datasets: [
+            { label:"Aplicado", data: rf.map(i=>investAplicado(i)), backgroundColor: c3[0], borderRadius:4 },
+            { label:"Líquido",  data: rf.map(i=>investLiquido(i)),   backgroundColor: c3[1], borderRadius:4 },
+            { label:"Bruto",    data: rf.map(i=>Number(i.amount)),   backgroundColor: c3[2], borderRadius:4 }
+          ]
+        },
+        options: {
+          plugins:{ legend:{ labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } },
+                    tooltip:{ callbacks:{ label: ctx=> `${ctx.dataset.label}: ${brl(ctx.parsed.y)}` } } },
+          scales:{ y:{ beginAtZero:true, ticks:{ callback: v=>brl(v) } } }
+        }
+      });
+    }catch(e){ console.error("[LeFinance] gráfico de renda fixa", e); }
+  }
+
   // Tabela
   const tbody = document.querySelector("#tabela-investimentos tbody");
   tbody.innerHTML = "";
@@ -3381,11 +3437,17 @@ function renderInvestimentos(){
   [...lista].sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(i=>{
     const k = investKind(i);
     const ap = investAplicado(i);
+    const liq = investLiquido(i);
     let resHtml = "—";
     if(ap!==null && ap>0){
       const diff = Number(i.amount) - ap;
       const cor = diff>=0 ? "#6F8878" : "var(--pink-dark)";
-      resHtml = `<span style="color:${cor}">${brl(diff)}<br><small>${fmtPct(diff/ap*100)}</small></span>`;
+      resHtml = `<span style="color:${cor}">${brl(diff)}<br><small>${fmtPct(diff/ap*100)} bruto</small></span>`;
+      if(liq!==null){
+        const dl = liq - ap;
+        const corL = dl>=0 ? "#6F8878" : "var(--pink-dark)";
+        resHtml += `<br><span style="color:${corL}">${brl(dl)}<br><small>${fmtPct(dl/ap*100)} líquido</small></span>`;
+      }
     }
     const sub = (k==="acao"||k==="fii") ? (i.ticker||"") : (i.institution||"");
     const tr = document.createElement("tr");
@@ -3394,7 +3456,7 @@ function renderInvestimentos(){
       <td>${escapeHtml(i.type)}</td>
       <td>${detalhesInvestimento(i)}</td>
       <td class="num">${ap!==null ? brl(ap) : "—"}</td>
-      <td class="num">${brl(i.amount)}</td>
+      <td class="num">${brl(i.amount)}${liq!==null ? `<br><small class="muted">líquido ${brl(liq)}</small>` : ""}</td>
       <td class="num">${resHtml}</td>
       <td class="row-actions-cell"><div class="row-actions"><button data-edit>editar</button><button data-del>excluir</button></div></td>
     `;
@@ -3448,13 +3510,17 @@ function openInvestimentoModal(inv){
     </div>
     <div class="field-row" data-kinds="cdi outro">
       <div class="field">
-        <label>Saldo atual (R$)</label>
+        <label>Saldo bruto (R$)</label>
         <input type="number" step="0.01" min="0" name="amount">
       </div>
       <div class="field">
-        <label>Total já aplicado (R$, opcional)</label>
-        <input type="number" step="0.01" min="0" name="invested_amount">
+        <label>Saldo líquido (R$, opcional)</label>
+        <input type="number" step="0.01" min="0" name="net_amount">
       </div>
+    </div>
+    <div class="field" data-kinds="cdi outro">
+      <label>Total já aplicado (R$) — o que você depositou do seu bolso</label>
+      <input type="number" step="0.01" min="0" name="invested_amount">
     </div>
     <div class="field-row" data-kinds="acao fii">
       <div class="field">
@@ -3489,7 +3555,7 @@ function openInvestimentoModal(inv){
       kind, name: (d.name||"").trim(), type: meta.tipo || d.type || "Outros",
       date: d.date, notes: (d.notes||"").trim(),
       ticker:null, quantity:null, unit_price:null, current_price:null,
-      cdi_percent:null, institution:null, invested_amount:null, amount:0
+      cdi_percent:null, institution:null, invested_amount:null, net_amount:null, amount:0
     };
     if(bolsa){
       const ticker = (d.ticker||"").trim().toUpperCase();
@@ -3504,13 +3570,16 @@ function openInvestimentoModal(inv){
       payload.invested_amount = r2(q * pm);
     } else {
       const saldo = num(d.amount);
-      if(!payload.name || saldo===null || saldo<0) return alert("Preencha nome e saldo.");
+      if(!payload.name || saldo===null || saldo<0) return alert("Preencha nome e saldo bruto.");
       if(kind==="cdi"){
         const pct = num(d.cdi_percent);
         if(pct===null || pct<=0) return alert("Informe quantos % do CDI o investimento rende.");
         payload.cdi_percent = pct;
       }
+      const liqv = num(d.net_amount);
+      if(liqv!==null && liqv>saldo) return alert("O saldo líquido não pode ser maior que o bruto.");
       payload.amount = saldo;
+      payload.net_amount = liqv;
       payload.invested_amount = num(d.invested_amount);
       payload.institution = (d.institution||"").trim() || null;
     }
@@ -3548,7 +3617,7 @@ function openInvestimentoModal(inv){
 
   form.kind.value = kind0;
   if(editando){
-    ["name","ticker","institution","type","cdi_percent","amount","invested_amount","quantity","unit_price","current_price","date","notes"].forEach(f=>{
+    ["name","ticker","institution","type","cdi_percent","amount","net_amount","invested_amount","quantity","unit_price","current_price","date","notes"].forEach(f=>{
       if(form[f] && inv[f]!==null && inv[f]!==undefined) form[f].value = inv[f];
     });
     // posições de ação/FII: o saldo é calculado, então não reaparece como campo
