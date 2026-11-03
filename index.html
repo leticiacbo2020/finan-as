@@ -1074,8 +1074,16 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
     <section class="view" id="view-investimentos" hidden>
       <div class="ledger-strip ledger-strip--tight">
         <div class="ledger-figure">
-          <span class="ledger-label">Total investido</span>
+          <span class="ledger-label">Total atual</span>
           <span class="ledger-value" id="stat-invest-total">R$ 0,00</span>
+        </div>
+        <div class="ledger-figure">
+          <span class="ledger-label">Total aplicado</span>
+          <span class="ledger-value" id="stat-invest-aplicado">R$ 0,00</span>
+        </div>
+        <div class="ledger-figure">
+          <span class="ledger-label">Resultado</span>
+          <span class="ledger-value" id="stat-invest-resultado">R$ 0,00</span>
         </div>
         <div class="ledger-figure">
           <span class="ledger-label">Posições</span>
@@ -1094,19 +1102,39 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <p class="empty-hint" id="chart-investimentos-empty" hidden>Cadastre um investimento para ver o gráfico.</p>
           </div>
         </div>
-        <div class="panel">
+        <div class="panel chart-panel" data-chart-panel>
           <div class="panel-head">
-            <h2>Posições</h2>
-            <button class="btn btn-primary" id="btn-novo-investimento">Novo investimento</button>
+            <h2>Ações e FIIs: preço médio × cotação</h2>
+            <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
           </div>
+          <div class="panel-chart-content">
+          <canvas id="chart-acoes" height="220"></canvas>
+          <p class="empty-hint" id="chart-acoes-empty" hidden>Cadastre uma ação ou FII para ver o gráfico.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:18px;">
+        <div class="panel-head">
+          <h2>Posições</h2>
+          <button class="btn btn-primary" id="btn-novo-investimento">Novo investimento</button>
+        </div>
+        <div class="field-row" style="align-items:flex-end; margin-bottom:12px;">
+          <div class="field" style="max-width:190px;">
+            <label for="input-cdi">CDI atual (% ao ano)</label>
+            <input type="number" step="0.01" min="0" id="input-cdi">
+          </div>
+          <p class="muted" id="cdi-resumo" style="margin:0 0 10px; flex:2;"></p>
+        </div>
+        <div style="overflow-x:auto;">
           <table class="ledger-table" id="tabela-investimentos">
             <thead>
-              <tr><th>Nome</th><th>Tipo</th><th>Data</th><th class="num">Valor</th><th></th></tr>
+              <tr><th>Investimento</th><th>Tipo</th><th>Detalhes</th><th class="num">Aplicado</th><th class="num">Atual</th><th class="num">Resultado</th><th></th></tr>
             </thead>
             <tbody></tbody>
           </table>
-          <p class="empty-hint" id="investimentos-empty" hidden>Nenhum investimento cadastrado.</p>
         </div>
+        <p class="empty-hint" id="investimentos-empty" hidden>Nenhum investimento cadastrado.</p>
       </div>
     </section>
 
@@ -1358,8 +1386,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <details class="tutorial-item">
           <summary>Investimentos</summary>
           <ol class="tutorial-steps">
-            <li>Clique em <strong>"Novo investimento"</strong> e informe nome, tipo e valor atual.</li>
-            <li>Acompanhe a <strong>distribuição por tipo</strong> no gráfico.</li>
+            <li>Clique em <strong>"Novo investimento"</strong> e escolha o tipo: <strong>Renda fixa (% do CDI)</strong> para caixinhas, <strong>Ação</strong>, <strong>FII</strong> ou <strong>Outro</strong>. Os campos mudam conforme o tipo.</li>
+            <li>Em caixinhas, informe o saldo e quantos % do CDI ela rende — o site estima o rendimento mensal (ajuste o <strong>CDI atual</strong> na tela de investimentos).</li>
+            <li>Em ações e FIIs, informe empresa, código, quantidade, preço médio pago e a cotação atual.</li>
+            <li>Para atualizar um valor ou cotação, clique em <strong>"editar"</strong> na linha do investimento.</li>
             <li>Diferente das outras telas, aqui aparece o <strong>total acumulado</strong> — não filtra por mês.</li>
           </ol>
         </details>
@@ -1659,6 +1689,7 @@ let currentMonth = todayMonth();
 let authMode = "signin";
 let chartCategorias = null;
 let chartInvestimentos = null;
+let chartAcoes = null;
 let chartPlanejado = null;
 let chartPagamento = null;
 
@@ -1991,7 +2022,7 @@ document.querySelectorAll("[data-chart-panel]").forEach(panel=>{
     button.setAttribute("aria-label", collapsed ? "Expandir painel" : "Recolher painel");
     button.setAttribute("aria-expanded", String(!collapsed));
     if(!collapsed){
-      requestAnimationFrame(()=>[chartCategorias, chartPlanejado, chartPagamento, chartInvestimentos].forEach(chart=>chart?.resize()));
+      requestAnimationFrame(()=>[chartCategorias, chartPlanejado, chartPagamento, chartInvestimentos, chartAcoes].forEach(chart=>chart?.resize()));
     }
   });
 });
@@ -3222,13 +3253,73 @@ function openCartaoModal(c){
   }
 }
 
-function renderInvestimentos(){
-  const total = db.investments.reduce((s,i)=>s+Number(i.amount),0);
-  document.getElementById("stat-invest-total").textContent = brl(total);
-  document.getElementById("stat-invest-count").textContent = db.investments.length;
+const TIPOS_INVEST_KIND = [
+  { id:"cdi",   label:"Renda fixa (% do CDI)", tipo:"Renda fixa" },
+  { id:"acao",  label:"Ação (B3)",             tipo:"Ações" },
+  { id:"fii",   label:"Fundo imobiliário (FII)", tipo:"FIIs" },
+  { id:"outro", label:"Outro",                 tipo:null }
+];
+const CDI_PADRAO = 14.5;
 
+function getCdiAnual(){
+  try{
+    const v = parseFloat(localStorage.getItem("lf_cdi_anual"));
+    return isNaN(v) ? CDI_PADRAO : v;
+  }catch(e){ return CDI_PADRAO; }
+}
+function setCdiAnual(v){
+  try{ localStorage.setItem("lf_cdi_anual", String(v)); }catch(e){}
+}
+function investKind(i){ return i.kind || "outro"; }
+function investAplicado(i){
+  return (i.invested_amount===null || i.invested_amount===undefined || i.invested_amount==="") ? null : Number(i.invested_amount);
+}
+function rendimentoMensalCdi(i){
+  const taxaAnual = (getCdiAnual()/100) * ((Number(i.cdi_percent)||0)/100);
+  return Number(i.amount) * (Math.pow(1+taxaAnual, 1/12) - 1);
+}
+function fmtQtd(n){ return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 6 }); }
+function fmtPct(n){ return (n>0?"+":"") + n.toLocaleString("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + "%"; }
+
+function detalhesInvestimento(i){
+  const k = investKind(i);
+  if(k==="cdi"){
+    const pct = Number(i.cdi_percent)||0;
+    return `${fmtQtd(pct)}% do CDI<br><span class="muted">≈ ${brl(rendimentoMensalCdi(i))}/mês</span>`;
+  }
+  if(k==="acao" || k==="fii"){
+    const cur = (i.current_price===null || i.current_price===undefined) ? null : Number(i.current_price);
+    return `${fmtQtd(i.quantity)} × ${brl(i.unit_price)}` + (cur!==null ? `<br><span class="muted">cotação ${brl(cur)}</span>` : "");
+  }
+  return i.notes ? escapeHtml(i.notes) : "—";
+}
+
+function renderInvestimentos(){
+  const lista = db.investments;
+  const total = lista.reduce((s,i)=>s+Number(i.amount),0);
+  const comAplicado = lista.filter(i=>investAplicado(i)!==null);
+  const aplicado = comAplicado.reduce((s,i)=>s+investAplicado(i),0);
+  const atualDosComAplicado = comAplicado.reduce((s,i)=>s+Number(i.amount),0);
+  const resultado = atualDosComAplicado - aplicado;
+  document.getElementById("stat-invest-total").textContent = brl(total);
+  document.getElementById("stat-invest-aplicado").textContent = comAplicado.length ? brl(aplicado) : "—";
+  const elRes = document.getElementById("stat-invest-resultado");
+  elRes.textContent = comAplicado.length ? brl(resultado) : "—";
+  elRes.style.color = !comAplicado.length ? "" : (resultado>=0 ? "#6F8878" : "var(--pink-dark)");
+  document.getElementById("stat-invest-count").textContent = lista.length;
+
+  // CDI atual + estimativa mensal das posições em % do CDI
+  const inputCdi = document.getElementById("input-cdi");
+  if(document.activeElement!==inputCdi) inputCdi.value = getCdiAnual();
+  const cdiItens = lista.filter(i=>investKind(i)==="cdi");
+  const rendMes = cdiItens.reduce((s,i)=>s+rendimentoMensalCdi(i),0);
+  document.getElementById("cdi-resumo").textContent = cdiItens.length
+    ? `Estimativa de rendimento das posições em % do CDI: ${brl(rendMes)} por mês (valor aproximado, antes de impostos).`
+    : "Informe o CDI atual para estimar o rendimento de caixinhas e renda fixa.";
+
+  // Distribuição por tipo
   const porTipo = {};
-  db.investments.forEach(i=> porTipo[i.type] = (porTipo[i.type]||0) + Number(i.amount));
+  lista.forEach(i=> porTipo[i.type] = (porTipo[i.type]||0) + Number(i.amount));
   const labels = Object.keys(porTipo);
   const canvas = document.getElementById("chart-investimentos");
   const okInvest = typeof Chart !== "undefined";
@@ -3237,25 +3328,77 @@ function renderInvestimentos(){
   canvas.hidden = labels.length===0 || !okInvest;
   if(chartInvestimentos) chartInvestimentos.destroy();
   if(labels.length && okInvest){
-    chartInvestimentos = new Chart(canvas, {
-      type: "doughnut",
-      data: { labels, datasets: [{ data: labels.map(l=>porTipo[l]), backgroundColor: paleta(labels.length), borderWidth: 0 }] },
-      options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } } }, cutout:"62%" }
-    });
+    try{
+      chartInvestimentos = new Chart(canvas, {
+        type: "doughnut",
+        data: { labels, datasets: [{ data: labels.map(l=>porTipo[l]), backgroundColor: paleta(labels.length), borderWidth: 0 }] },
+        options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } } }, cutout:"62%" }
+      });
+    }catch(e){ console.error("[LeFinance] gráfico de investimentos", e); }
   }
 
+  // Ações e FIIs: preço médio x cotação atual, agrupado por código
+  const porAtivo = {};
+  lista.filter(i=>investKind(i)==="acao" || investKind(i)==="fii").forEach(i=>{
+    const cod = (i.ticker || i.name || "?").toUpperCase();
+    const q = Number(i.quantity)||0;
+    const o = porAtivo[cod] || (porAtivo[cod] = { qtd:0, custo:0, valor:0 });
+    o.qtd += q;
+    o.custo += q*(Number(i.unit_price)||0);
+    o.valor += Number(i.amount);
+  });
+  const ativos = Object.keys(porAtivo).filter(c=>porAtivo[c].qtd>0);
+  const canvasA = document.getElementById("chart-acoes");
+  document.getElementById("chart-acoes-empty").hidden = ativos.length>0 && okInvest;
+  if(!okInvest) document.getElementById("chart-acoes-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
+  canvasA.hidden = ativos.length===0 || !okInvest;
+  if(chartAcoes) chartAcoes.destroy();
+  if(ativos.length && okInvest){
+    try{
+      const cores = paleta(2);
+      chartAcoes = new Chart(canvasA, {
+        type: "bar",
+        data: {
+          labels: ativos,
+          datasets: [
+            { label:"Preço médio", data: ativos.map(c=>+(porAtivo[c].custo/porAtivo[c].qtd).toFixed(2)), backgroundColor: cores[0], borderRadius:4 },
+            { label:"Cotação atual", data: ativos.map(c=>+(porAtivo[c].valor/porAtivo[c].qtd).toFixed(2)), backgroundColor: cores[1], borderRadius:4 }
+          ]
+        },
+        options: {
+          plugins:{ legend:{ labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } },
+                    tooltip:{ callbacks:{ label: ctx=> `${ctx.dataset.label}: ${brl(ctx.parsed.y)}` } } },
+          scales:{ y:{ beginAtZero:true, ticks:{ callback: v=>brl(v) } } }
+        }
+      });
+    }catch(e){ console.error("[LeFinance] gráfico de ações", e); }
+  }
+
+  // Tabela
   const tbody = document.querySelector("#tabela-investimentos tbody");
   tbody.innerHTML = "";
-  document.getElementById("investimentos-empty").hidden = db.investments.length>0;
-  [...db.investments].sort((a,b)=>b.date.localeCompare(a.date)).forEach(i=>{
+  document.getElementById("investimentos-empty").hidden = lista.length>0;
+  [...lista].sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(i=>{
+    const k = investKind(i);
+    const ap = investAplicado(i);
+    let resHtml = "—";
+    if(ap!==null && ap>0){
+      const diff = Number(i.amount) - ap;
+      const cor = diff>=0 ? "#6F8878" : "var(--pink-dark)";
+      resHtml = `<span style="color:${cor}">${brl(diff)}<br><small>${fmtPct(diff/ap*100)}</small></span>`;
+    }
+    const sub = (k==="acao"||k==="fii") ? (i.ticker||"") : (i.institution||"");
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${escapeHtml(i.name)}</td>
+      <td>${escapeHtml(i.name)}${sub ? `<br><span class="muted">${escapeHtml(sub)}</span>` : ""}</td>
       <td>${escapeHtml(i.type)}</td>
-      <td>${fmtDate(i.date)}</td>
+      <td>${detalhesInvestimento(i)}</td>
+      <td class="num">${ap!==null ? brl(ap) : "—"}</td>
       <td class="num">${brl(i.amount)}</td>
-      <td class="row-actions-cell"><div class="row-actions"><button data-del>excluir</button></div></td>
+      <td class="num">${resHtml}</td>
+      <td class="row-actions-cell"><div class="row-actions"><button data-edit>editar</button><button data-del>excluir</button></div></td>
     `;
+    tr.querySelector("[data-edit]").addEventListener("click", ()=> openInvestimentoModal(i));
     tr.querySelector("[data-del]").addEventListener("click", async ()=>{
       if(confirm("Excluir este investimento?")){
         const { error } = await sbClient.from("investments").delete().eq("id", i.id);
@@ -3268,24 +3411,67 @@ function renderInvestimentos(){
   });
 }
 
-document.getElementById("btn-novo-investimento").addEventListener("click", ()=>{
-  openModal("Novo investimento", `
+document.getElementById("input-cdi").addEventListener("change", (e)=>{
+  const v = parseFloat(e.target.value);
+  if(isNaN(v) || v<0) { e.target.value = getCdiAnual(); return; }
+  setCdiAnual(v);
+  renderInvestimentos();
+});
+
+function openInvestimentoModal(inv){
+  const editando = !!inv;
+  const kind0 = editando ? investKind(inv) : "cdi";
+  openModal(editando ? "Editar investimento" : "Novo investimento", `
     <div class="field">
-      <label>Nome</label>
-      <input type="text" name="name" placeholder="Ex.: Tesouro Selic 2029" required>
+      <label>Tipo de investimento</label>
+      <select name="kind">${TIPOS_INVEST_KIND.map(k=>`<option value="${k.id}">${k.label}</option>`).join("")}</select>
     </div>
-    <div class="field-row">
+    <div class="field">
+      <label data-inv-label="name">Nome</label>
+      <input type="text" name="name" required>
+    </div>
+    <div class="field" data-kinds="acao fii">
+      <label>Código na bolsa (ex.: PETR4, MXRF11)</label>
+      <input type="text" name="ticker" style="text-transform:uppercase;">
+    </div>
+    <div class="field" data-kinds="cdi outro">
+      <label>Onde está (opcional)</label>
+      <input type="text" name="institution" placeholder="Ex.: Nubank, Tesouro Direto, corretora">
+    </div>
+    <div class="field" data-kinds="outro">
+      <label>Categoria</label>
+      <select name="type">${TIPOS_INVESTIMENTO.map(t=>`<option>${t}</option>`).join("")}</select>
+    </div>
+    <div class="field" data-kinds="cdi">
+      <label>Rende quantos % do CDI?</label>
+      <input type="number" step="0.01" min="0" name="cdi_percent" placeholder="Ex.: 115">
+    </div>
+    <div class="field-row" data-kinds="cdi outro">
       <div class="field">
-        <label>Tipo</label>
-        <select name="type">${TIPOS_INVESTIMENTO.map(t=>`<option>${t}</option>`).join("")}</select>
+        <label>Saldo atual (R$)</label>
+        <input type="number" step="0.01" min="0" name="amount">
       </div>
       <div class="field">
-        <label>Valor atual (R$)</label>
-        <input type="number" step="0.01" min="0" name="amount" required>
+        <label>Total já aplicado (R$, opcional)</label>
+        <input type="number" step="0.01" min="0" name="invested_amount">
       </div>
     </div>
+    <div class="field-row" data-kinds="acao fii">
+      <div class="field">
+        <label>Quantidade</label>
+        <input type="number" step="any" min="0" name="quantity">
+      </div>
+      <div class="field">
+        <label>Preço médio pago (R$)</label>
+        <input type="number" step="0.01" min="0" name="unit_price">
+      </div>
+    </div>
+    <div class="field" data-kinds="acao fii">
+      <label>Cotação atual (R$) — se deixar vazio, usa o preço pago</label>
+      <input type="number" step="0.01" min="0" name="current_price">
+    </div>
     <div class="field">
-      <label>Data</label>
+      <label data-inv-label="date">Data</label>
       <input type="date" name="date" required>
     </div>
     <div class="field">
@@ -3293,16 +3479,86 @@ document.getElementById("btn-novo-investimento").addEventListener("click", ()=>{
       <input type="text" name="notes" placeholder="Ex.: aporte mensal automático">
     </div>
   `, async (form)=>{
-    const data = Object.fromEntries(new FormData(form));
-    if(!data.name.trim() || isNaN(parseFloat(data.amount))) return alert("Preencha nome e valor.");
-    const payload = { name: data.name.trim(), type: data.type, amount: parseFloat(data.amount), date: data.date, notes: data.notes.trim() };
-    const { data: created, error } = await sbClient.from("investments").insert(payload).select().single();
-    if(error) return alert("Não foi possível salvar: " + error.message);
-    db.investments.push(created);
+    const d = Object.fromEntries(new FormData(form));
+    const kind = d.kind;
+    const num = v => (v===undefined || v==="" || v===null) ? null : parseFloat(v);
+    const r2 = v => Math.round(v*100)/100;
+    const meta = TIPOS_INVEST_KIND.find(k=>k.id===kind);
+    const bolsa = kind==="acao" || kind==="fii";
+    const payload = {
+      kind, name: (d.name||"").trim(), type: meta.tipo || d.type || "Outros",
+      date: d.date, notes: (d.notes||"").trim(),
+      ticker:null, quantity:null, unit_price:null, current_price:null,
+      cdi_percent:null, institution:null, invested_amount:null, amount:0
+    };
+    if(bolsa){
+      const ticker = (d.ticker||"").trim().toUpperCase();
+      const q = num(d.quantity), pm = num(d.unit_price);
+      if(!ticker) return alert("Informe o código (ex.: PETR4).");
+      if(q===null || q<=0 || pm===null || pm<0) return alert("Informe a quantidade e o preço médio pago.");
+      const cur = num(d.current_price);
+      if(!payload.name) payload.name = ticker;
+      payload.ticker = ticker; payload.quantity = q; payload.unit_price = pm;
+      payload.current_price = cur;
+      payload.amount = r2(q * (cur!==null ? cur : pm));
+      payload.invested_amount = r2(q * pm);
+    } else {
+      const saldo = num(d.amount);
+      if(!payload.name || saldo===null || saldo<0) return alert("Preencha nome e saldo.");
+      if(kind==="cdi"){
+        const pct = num(d.cdi_percent);
+        if(pct===null || pct<=0) return alert("Informe quantos % do CDI o investimento rende.");
+        payload.cdi_percent = pct;
+      }
+      payload.amount = saldo;
+      payload.invested_amount = num(d.invested_amount);
+      payload.institution = (d.institution||"").trim() || null;
+    }
+    const q = editando
+      ? sbClient.from("investments").update(payload).eq("id", inv.id).select().single()
+      : sbClient.from("investments").insert(payload).select().single();
+    const { data: saved, error } = await q;
+    if(error){
+      const faltaColuna = /column|schema cache/i.test(error.message||"");
+      return alert("Não foi possível salvar: " + error.message + (faltaColuna ? " — rode o script add-investments-details.sql no SQL Editor do Supabase (veja o README) e recarregue a página." : ""));
+    }
+    if(editando) db.investments = db.investments.map(x=> x.id===inv.id ? saved : x);
+    else db.investments.push(saved);
     closeModal(); renderAll();
   });
-  document.getElementById("modal-form").date.value = new Date().toISOString().slice(0,10);
-});
+
+  const form = document.getElementById("modal-form");
+  const rotulos = {
+    cdi:   { name:"Nome (ex.: Caixinha Turbo)", date:"Data da primeira aplicação" },
+    acao:  { name:"Empresa (ex.: Petrobras)",  date:"Data da compra" },
+    fii:   { name:"Nome do fundo (ex.: Maxi Renda)", date:"Data da compra" },
+    outro: { name:"Nome (ex.: Tesouro Selic 2029)", date:"Data" }
+  };
+  const aplicarTipo = ()=>{
+    const k = form.kind.value;
+    form.querySelectorAll("[data-kinds]").forEach(el=>{
+      const mostrar = el.dataset.kinds.split(" ").includes(k);
+      el.hidden = !mostrar;
+      el.querySelectorAll("input,select").forEach(x=> x.disabled = !mostrar);
+    });
+    form.querySelector('[data-inv-label="name"]').textContent = rotulos[k].name;
+    form.querySelector('[data-inv-label="date"]').textContent = rotulos[k].date;
+  };
+  form.kind.addEventListener("change", aplicarTipo);
+
+  form.kind.value = kind0;
+  if(editando){
+    ["name","ticker","institution","type","cdi_percent","amount","invested_amount","quantity","unit_price","current_price","date","notes"].forEach(f=>{
+      if(form[f] && inv[f]!==null && inv[f]!==undefined) form[f].value = inv[f];
+    });
+    // posições de ação/FII: o saldo é calculado, então não reaparece como campo
+  } else {
+    form.date.value = new Date().toISOString().slice(0,10);
+  }
+  aplicarTipo();
+}
+
+document.getElementById("btn-novo-investimento").addEventListener("click", ()=> openInvestimentoModal());
 
 function renderOrcamento(){
   const wrap = document.getElementById("lista-orcamento");
