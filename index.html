@@ -787,6 +787,22 @@ select{ cursor:pointer; }
   .modal{ padding:18px 18px 20px; }
 }
 
+
+/* ===== entradas separadas, contas e gráfico de investimentos ===== */
+.entrada-row{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:9px 0; border-bottom:1px solid var(--line); }
+.entrada-row:last-child{ border-bottom:0; }
+.entrada-row small{ display:block; color:var(--ink-soft); font-size:0.78rem; }
+.entrada-total{ font-weight:700; font-size:1.15rem; }
+.conta-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+.conta-row:last-child{ border-bottom:0; }
+.conta-row .conta-nome{ display:flex; align-items:center; gap:9px; font-weight:700; }
+.conta-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.conta-row small{ display:block; color:var(--ink-soft); font-size:0.78rem; font-weight:400; }
+.conta-saldo{ font-weight:700; font-size:1.05rem; text-align:right; }
+.invest-bar{ display:flex; height:14px; border-radius:999px; overflow:hidden; background:var(--bg); margin:2px 0 10px; }
+.invest-bar span{ display:block; height:100%; }
+.invest-bar-legend{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:0.8rem; margin-bottom:14px; color:var(--ink-soft); }
+.invest-bar-legend i{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
 </style>
 </head>
 <body>
@@ -921,7 +937,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <span class="ledger-value" id="stat-saldo">R$ 0,00</span>
         </div>
         <div class="ledger-figure">
-          <span class="ledger-label">Receitas</span>
+          <span class="ledger-label">Total recebido</span>
           <span class="ledger-value ledger-value--pos" id="stat-receitas">R$ 0,00</span>
         </div>
         <div class="ledger-figure">
@@ -932,6 +948,35 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <span class="ledger-label">Em investimentos</span>
           <span class="ledger-value" id="stat-invest">R$ 0,00</span>
         </div>
+      </div>
+
+      <div class="grid-2" id="dash-entradas">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Salário do mês</h2>
+            <span class="entrada-total ledger-value--pos" id="entradas-salario-total">R$ 0,00</span>
+          </div>
+          <div id="entradas-salario-lista"></div>
+          <p class="empty-hint" id="entradas-salario-empty" hidden>Nenhum salário lançado neste mês (categoria "Salário").</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Outras receitas</h2>
+            <span class="entrada-total ledger-value--pos" id="entradas-outras-total">R$ 0,00</span>
+          </div>
+          <div id="entradas-outras-lista"></div>
+          <p class="empty-hint" id="entradas-outras-empty" hidden>Nenhuma outra receita neste mês.</p>
+        </div>
+      </div>
+
+      <div class="panel" id="dash-contas">
+        <div class="panel-head">
+          <h2>Saldo por conta</h2>
+          <button type="button" class="link-btn" id="btn-gerenciar-contas">gerenciar contas →</button>
+        </div>
+        <p class="muted" id="contas-aviso" hidden></p>
+        <div id="contas-lista"></div>
+        <p class="empty-hint" id="contas-empty" hidden>Cadastre suas contas (Nubank, Itaú…) para ver quanto sobrou em cada uma.</p>
       </div>
 
       <button type="button" class="dash-recurrence-bar" id="dash-recorrencias" data-view="recorrencias">
@@ -1099,11 +1144,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <div class="grid-2">
         <div class="panel chart-panel" data-chart-panel>
           <div class="panel-head">
-            <h2>Distribuição por tipo</h2>
+            <h2>Onde está seu dinheiro</h2>
             <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
           </div>
           <div class="panel-chart-content">
-          <canvas id="chart-investimentos" height="220"></canvas>
+          <div id="invest-tipos-bar"></div>
+          <div style="position:relative;" id="chart-investimentos-wrap"><canvas id="chart-investimentos" height="220"></canvas></div>
           <p class="empty-hint" id="chart-investimentos-empty" hidden>Cadastre um investimento para ver o gráfico.</p>
           </div>
         </div>
@@ -1141,6 +1187,13 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <input type="number" step="0.01" min="0" id="input-cdi">
           </div>
           <p class="muted" id="cdi-resumo" style="margin:0 0 10px; flex:2;"></p>
+        </div>
+        <p class="muted" id="invest-auto-status" style="margin:0 0 6px;"></p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <button type="button" class="btn" id="btn-ativar-auto" hidden>Ativar rendimento automático</button>
+          <button type="button" class="btn" id="btn-atualizar-cotacoes">Atualizar CDI e cotações</button>
+          <button type="button" class="link-btn" id="btn-token-brapi">token de cotações (brapi)</button>
+          <button type="button" class="link-btn" id="btn-cdi-auto" hidden>voltar ao CDI automático</button>
         </div>
         <div style="overflow-x:auto;">
           <table class="ledger-table" id="tabela-investimentos">
@@ -1243,6 +1296,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <div class="field">
             <label>Cartão desta fatura (se for de crédito)</label>
             <select id="import-card"><option value="">— não é cartão —</option></select>
+          </div>
+          <div class="field">
+            <label>Conta bancária deste extrato (opcional)</label>
+            <select id="import-conta"><option value="">— sem conta definida —</option></select>
           </div>
           <div class="field">
             <label>Arquivo (.ofx, .csv ou .pdf)</label>
@@ -1695,8 +1752,10 @@ async function seedCategoriasPadrao(){
   if(data) db.categories.push(...data);
 }
 
-let db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [], recurrences: [], paymentKeywords: [] };
+let db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [], recurrences: [], paymentKeywords: [], accounts: [] };
 let recorrenciasIndisponiveis = false;
+let contasIndisponiveis = false;
+let cotacoesAuto = {};
 let palavrasChavePagamentoIndisponivel = false;
 let currentUser = null;
 let bootUserId = null;
@@ -1871,7 +1930,7 @@ async function activateSession(session){
     bootGeneration++;
     bootUserId = null;
     currentUser = null;
-    db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [], recurrences: [], paymentKeywords: [] };
+    db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: [], recurrences: [], paymentKeywords: [], accounts: [] };
     clearAppNotice();
     appEl.hidden = true;
     authScreen.hidden = false;
@@ -1901,6 +1960,7 @@ async function boot(generation){
   await seedCategoriasPadrao();
   if(generation !== bootGeneration) return;
   goTo("visao-geral");
+  atualizarAutomaticos(false);
 }
 
 function isTransientSupabaseError(error){
@@ -1928,7 +1988,7 @@ async function queryWithRetry(label, query){
 }
 
 async function loadAllData(generation){
-  const [tx, cards, invest, budgets, goals, categories, recurrences, paymentKeywords] = await Promise.all([
+  const [tx, cards, invest, budgets, goals, categories, recurrences, paymentKeywords, accounts] = await Promise.all([
     queryWithRetry("transactions", ()=>sbClient.from("transactions").select("*").order("date", { ascending:false })),
     queryWithRetry("cards", ()=>sbClient.from("cards").select("*").order("created_at")),
     queryWithRetry("investments", ()=>sbClient.from("investments").select("*").order("date", { ascending:false })),
@@ -1937,7 +1997,12 @@ async function loadAllData(generation){
     queryWithRetry("categories", ()=>sbClient.from("categories").select("*").order("created_at")),
     queryWithRetry("recurrences", ()=>sbClient.from("recurrences").select("*").order("created_at")),
     queryWithRetry("payment_keywords", ()=>sbClient.from("payment_keywords").select("*")),
+    queryWithRetry("accounts", ()=>sbClient.from("accounts").select("*").order("created_at")),
   ]);
+  contasIndisponiveis = !!(accounts.error && /relation .* does not exist|schema cache/i.test(accounts.error?.message||""));
+  if(accounts.error && !contasIndisponiveis){
+    console.error("[LeFinance] Falha ao carregar contas", { message:accounts.error.message, code:accounts.error.code });
+  }
   recorrenciasIndisponiveis = !!(recurrences.error && /relation .* does not exist|schema cache/i.test(recurrences.error?.message||""));
   if(recurrences.error && !recorrenciasIndisponiveis){
     console.error("[LeFinance] Falha ao carregar recorrências", { message:recurrences.error.message, code:recurrences.error.code });
@@ -1953,6 +2018,7 @@ async function loadAllData(generation){
     transactions:tx.data||[], cards:cards.data||[], investments:invest.data||[], budgets:budgets.data||[],
     goals:goals.data||[], categories:categories.data||[], recurrences: recurrences.error ? [] : (recurrences.data||[]),
     paymentKeywords: paymentKeywords.error ? [] : (paymentKeywords.data||[]),
+    accounts: accounts.error ? [] : (accounts.data||[]),
   };
 }
 
@@ -2115,10 +2181,12 @@ function saldoDaContaAte(ym){
     .reduce((soma, t)=> soma + efeitoNaConta(t), 0);
 }
 
-function openSaldoInicialModal(){
-  const atual = db.transactions.find(ehSaldoInicial);
+function openSaldoInicialModal(conta){
+  if(conta && conta.target) conta = null;   // veio de um clique: é o saldo inicial "geral"
+  const contaId = conta ? conta.id : null;
+  const atual = db.transactions.find(t=> ehSaldoInicial(t) && (t.account_id||null)===contaId);
   const valorAtual = atual ? (atual.type==="despesa" ? -Number(atual.amount) : Number(atual.amount)) : "";
-  openModal("Saldo inicial da conta", `
+  openModal(conta ? `Saldo inicial — ${conta.name}` : "Saldo inicial da conta", `
     <p class="muted" style="margin-top:0;">Quanto você tinha na conta <strong>antes do primeiro lançamento</strong> que você registrou aqui. Esse valor é o ponto de partida do <strong>Saldo da conta</strong> — ele não conta como receita nem como gasto. Conta no vermelho? Use um valor negativo.</p>
     <div class="field-row">
       <div class="field">
@@ -2145,6 +2213,7 @@ function openSaldoInicialModal(){
       installment_total: null,
       fixed: false,
     };
+    if(conta) payload.account_id = conta.id;
     if(atual){
       const { data: updated, error } = await sbClient.from("transactions").update(payload).eq("id", atual.id).select().single();
       if(error) return alert("Não foi possível salvar: " + error.message);
@@ -2318,22 +2387,187 @@ function resumoFaturaCartao(card, ym = currentMonth){
   return { total, parcelado, naoParcelado: total - parcelado };
 }
 
+// ===== Entradas do mês separadas: salário x outras receitas =====
+function agruparEntradas(lista){
+  const m = new Map();
+  lista.forEach(t=>{
+    const chave = normalizeTexto(t.description).trim() || "sem-descricao";
+    const g = m.get(chave) || { desc:t.description, cat:t.category, total:0, qtd:0, data:t.date };
+    g.total += Number(t.amount) || 0;
+    g.qtd++;
+    if(t.date > g.data) g.data = t.date;
+    m.set(chave, g);
+  });
+  return [...m.values()].sort((a,b)=> b.total - a.total);
+}
+function preencherEntradas(lista, chave, mostrarCategoria){
+  const wrap = document.getElementById(`entradas-${chave}-lista`);
+  wrap.innerHTML = "";
+  const total = lista.reduce((s,t)=>s+(Number(t.amount)||0),0);
+  document.getElementById(`entradas-${chave}-total`).textContent = brl(total);
+  document.getElementById(`entradas-${chave}-empty`).hidden = lista.length>0;
+  agruparEntradas(lista).forEach(g=>{
+    const row = document.createElement("div");
+    row.className = "entrada-row";
+    const sub = [ mostrarCategoria ? g.cat : null, g.qtd>1 ? `${g.qtd} lançamentos` : fmtDate(g.data) ].filter(Boolean).map(escapeHtml).join(" · ");
+    row.innerHTML = `<div>${escapeHtml(g.desc)}<small>${sub}</small></div><strong class="amount--pos">${brl(g.total)}</strong>`;
+    wrap.appendChild(row);
+  });
+}
+function renderEntradasDoMes(txs){
+  const recebidas = txs.filter(t=> t.type==="receita" && !ehSaldoInicial(t) && !ehPagamentoDeFatura(t) && !ehNoCartao(t));
+  const ehSalario = t=> normalizeTexto(t.category) === "salario";
+  preencherEntradas(recebidas.filter(ehSalario), "salario", false);
+  preencherEntradas(recebidas.filter(t=>!ehSalario(t)), "outras", true);
+}
+
+// ===== Contas de banco =====
+const CORES_CONTA = ["#671D43","#6F8878","#B77B56","#8758A7","#D34D7D","#4F6D8F"];
+function resumoContas(ym){
+  const mapa = new Map(db.accounts.map(a=>[a.id, { conta:a, saldo:0, entrou:0, saiu:0 }]));
+  const sem = { saldo:0, entrou:0, saiu:0, qtd:0 };
+  db.transactions.forEach(t=>{
+    const ymT = t.date.slice(0,7);
+    if(ymT > ym) return;
+    const ef = efeitoNaConta(t);
+    if(!ef) return;
+    const alvo = (t.account_id && mapa.get(t.account_id)) || sem;
+    alvo.saldo += ef;
+    if(alvo===sem) sem.qtd++;
+    if(ymT===ym && !ehSaldoInicial(t)){ if(ef>0) alvo.entrou += ef; else alvo.saiu += -ef; }
+  });
+  return { linhas:[...mapa.values()], sem };
+}
+function linhaConta(cor, nome, saldo, sub){
+  const d = document.createElement("div");
+  d.className = "conta-row";
+  d.innerHTML = `<div class="conta-nome"><span class="conta-dot" style="background:${escapeHtml(cor)}"></span><div>${escapeHtml(nome)}<small>${sub}</small></div></div><div class="conta-saldo ${saldo<0?"amount--neg":""}">${brl(saldo)}</div>`;
+  return d;
+}
+function renderContasVisaoGeral(){
+  const lista = document.getElementById("contas-lista");
+  const aviso = document.getElementById("contas-aviso");
+  const vazio = document.getElementById("contas-empty");
+  const btn = document.getElementById("btn-gerenciar-contas");
+  lista.innerHTML = "";
+  if(contasIndisponiveis){
+    aviso.hidden = false;
+    aviso.innerHTML = 'Para separar o saldo por conta de banco, rode o script <strong>add-accounts.sql</strong> no SQL Editor do Supabase (veja o README) e recarregue a página.';
+    vazio.hidden = true; btn.hidden = true;
+    return;
+  }
+  aviso.hidden = true; btn.hidden = false;
+  vazio.hidden = db.accounts.length>0;
+  if(!db.accounts.length) return;
+  const { linhas, sem } = resumoContas(currentMonth);
+  linhas.forEach(l=>{
+    lista.appendChild(linhaConta(l.conta.color || CORES_CONTA[0], l.conta.name, l.saldo,
+      `no mês: entrou ${brl(l.entrou)} · saiu ${brl(l.saiu)}`));
+  });
+  if(sem.qtd){
+    lista.appendChild(linhaConta("#B8B0B4", "Sem conta definida", sem.saldo,
+      `${sem.qtd} lançamento${sem.qtd>1?"s":""} ainda sem conta — use "gerenciar contas" para atribuir`));
+  }
+  const tot = document.createElement("div");
+  tot.className = "conta-row";
+  tot.innerHTML = `<div class="conta-nome"><span class="muted" style="margin:0;">Total (igual ao Saldo da conta)</span></div><div class="conta-saldo">${brl(saldoDaContaAte(currentMonth))}</div>`;
+  lista.appendChild(tot);
+}
+
+function openContasModal(){
+  const semCount = db.transactions.filter(t=> !t.account_id && efeitoNaConta(t)!==0).length;
+  const itens = db.accounts.map(a=>`
+    <div class="conta-row" data-conta="${a.id}">
+      <div class="conta-nome"><span class="conta-dot" style="background:${escapeHtml(a.color||CORES_CONTA[0])}"></span>${escapeHtml(a.name)}</div>
+      <div class="row-actions"><button type="button" data-ini>saldo inicial</button><button type="button" data-ren>renomear</button><button type="button" data-del>excluir</button></div>
+    </div>`).join("") || '<p class="empty-hint">Nenhuma conta ainda.</p>';
+  const opcoes = db.accounts.map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join("");
+  openReadOnlyModal("Contas de banco", `
+    <p class="muted" style="margin-top:0;">Cadastre cada conta e use "saldo inicial" para dizer quanto havia nela antes do primeiro lançamento. Ao lançar ou importar, escolha a conta.</p>
+    <div>${itens}</div>
+    <div class="field-row" style="margin-top:14px;align-items:flex-end;">
+      <div class="field"><label>Nova conta</label><input type="text" id="nova-conta-nome" placeholder="Ex.: Nubank, Itaú, Caixa"></div>
+      <div class="field" style="max-width:130px;"><button type="button" class="btn btn-primary" id="btn-add-conta">Adicionar</button></div>
+    </div>
+    ${db.accounts.length && semCount ? `
+    <hr style="border:0;border-top:1px solid var(--line);margin:16px 0;">
+    <p class="muted" style="margin-top:0;"><strong>${semCount}</strong> lançamento${semCount>1?"s":""} ainda sem conta. Atribua de uma vez a uma conta:</p>
+    <div class="field-row" style="align-items:flex-end;">
+      <div class="field"><label>Conta</label><select id="atrib-conta">${opcoes}</select></div>
+      <div class="field"><label>Quais</label><select id="atrib-escopo"><option value="mes">só do mês exibido</option><option value="todos">todos</option></select></div>
+      <div class="field" style="max-width:130px;"><button type="button" class="btn" id="btn-atribuir">Atribuir</button></div>
+    </div>` : ""}
+  `);
+  const reabrir = ()=>{ renderAll(); openContasModal(); };
+  const addConta = async ()=>{
+    const nome = document.getElementById("nova-conta-nome").value.trim();
+    if(!nome) return;
+    const color = CORES_CONTA[db.accounts.length % CORES_CONTA.length];
+    const { data, error } = await sbClient.from("accounts").insert({ name:nome, color }).select().single();
+    if(error) return alert("Não foi possível criar a conta: " + error.message);
+    db.accounts.push(data);
+    reabrir();
+  };
+  document.getElementById("btn-add-conta").addEventListener("click", addConta);
+  document.getElementById("nova-conta-nome").addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ e.preventDefault(); addConta(); } });
+  document.querySelectorAll("[data-conta]").forEach(row=>{
+    const a = db.accounts.find(x=>x.id===row.dataset.conta);
+    row.querySelector("[data-ini]").addEventListener("click", ()=>{ closeModal(); openSaldoInicialModal(a); });
+    row.querySelector("[data-ren]").addEventListener("click", async ()=>{
+      const nome = prompt("Novo nome da conta:", a.name);
+      if(!nome || !nome.trim()) return;
+      const { data, error } = await sbClient.from("accounts").update({ name:nome.trim() }).eq("id", a.id).select().single();
+      if(error) return alert("Não foi possível renomear: " + error.message);
+      db.accounts = db.accounts.map(x=> x.id===a.id ? data : x);
+      reabrir();
+    });
+    row.querySelector("[data-del]").addEventListener("click", async ()=>{
+      if(!confirm(`Excluir a conta "${a.name}"? Os lançamentos dela não são apagados, apenas ficam "sem conta".`)) return;
+      const { error } = await sbClient.from("accounts").delete().eq("id", a.id);
+      if(error) return alert("Não foi possível excluir: " + error.message);
+      db.accounts = db.accounts.filter(x=>x.id!==a.id);
+      db.transactions = db.transactions.map(t=> t.account_id===a.id ? { ...t, account_id:null } : t);
+      reabrir();
+    });
+  });
+  const btnAtr = document.getElementById("btn-atribuir");
+  if(btnAtr) btnAtr.addEventListener("click", async ()=>{
+    const contaId = document.getElementById("atrib-conta").value;
+    const escopo = document.getElementById("atrib-escopo").value;
+    const conta = db.accounts.find(x=>x.id===contaId);
+    const alvos = db.transactions.filter(t=> !t.account_id && efeitoNaConta(t)!==0 && (escopo==="todos" || t.date.startsWith(currentMonth)));
+    if(!alvos.length) return alert("Nenhum lançamento sem conta nesse filtro.");
+    if(!confirm(`Atribuir ${alvos.length} lançamento(s) à conta "${conta.name}"?`)) return;
+    const ids = alvos.map(t=>t.id);
+    for(let k=0; k<ids.length; k+=80){
+      const { error } = await sbClient.from("transactions").update({ account_id:contaId }).in("id", ids.slice(k,k+80));
+      if(error) return alert("Não foi possível atribuir: " + error.message);
+    }
+    const set = new Set(ids);
+    db.transactions = db.transactions.map(t=> set.has(t.id) ? { ...t, account_id:contaId } : t);
+    reabrir();
+  });
+}
+document.getElementById("btn-gerenciar-contas").addEventListener("click", openContasModal);
+
 function renderVisaoGeral(){
   atualizarResumoRecorrencias();
   const txs = transacoesDoMes();
   const { receitas, gastos: despesas, resultado } = resumoDoPeriodo(txs);
-  const totalInvest = db.investments.reduce((s,i)=>s+Number(i.amount),0);
+  const totalInvest = db.investments.reduce((s,i)=>s+investBruto(i),0);
 
   const saldoConta = saldoDaContaAte(currentMonth);
   const elSaldoConta = document.getElementById("stat-saldo-conta");
   elSaldoConta.textContent = brl(saldoConta);
   elSaldoConta.classList.toggle("ledger-value--neg", saldoConta < 0);
   const btnSaldoIni = document.getElementById("btn-saldo-inicial");
-  btnSaldoIni.textContent = db.transactions.some(ehSaldoInicial) ? "alterar saldo inicial" : "definir saldo inicial";
+  btnSaldoIni.textContent = db.transactions.some(t=>ehSaldoInicial(t) && !t.account_id) ? "alterar saldo inicial" : "definir saldo inicial";
   document.getElementById("stat-saldo").textContent = brl(resultado);
   document.getElementById("stat-receitas").textContent = brl(receitas);
   document.getElementById("stat-despesas").textContent = brl(despesas);
   document.getElementById("stat-invest").textContent = brl(totalInvest);
+  renderEntradasDoMes(txs);
+  renderContasVisaoGeral();
 
   const porCategoria = {};
   txs.filter(t=>t.type==="despesa" && !ehPagamentoDeFatura(t) && !ehSaldoInicial(t)).forEach(t=>{
@@ -2652,6 +2886,7 @@ document.getElementById("btn-apagar-mes").addEventListener("click", openApagarMe
 function openTransacaoModal(t){
   const isEdit = !!t;
   const cardOptions = db.cards.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+  const contaOptions = db.accounts.map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join("");
   openModal(isEdit ? "Editar lançamento" : "Novo lançamento", `
     <div class="field-row">
       <div class="field">
@@ -2698,6 +2933,13 @@ function openTransacaoModal(t){
         ${cardOptions}
       </select>
     </div>
+    <div class="field" id="field-conta" hidden>
+      <label>Conta bancária</label>
+      <select name="account_id">
+        <option value="">— sem conta definida —</option>
+        ${contaOptions}
+      </select>
+    </div>
     <div class="field-row" id="field-parcelas" hidden>
       <div class="field">
         <label>Parcela atual</label>
@@ -2728,6 +2970,9 @@ function openTransacaoModal(t){
       installment_total: data.installment_total ? parseInt(data.installment_total) : null,
       fixed: data.type === "despesa" ? !!form.fixed.checked : false,
     };
+    if(!contasIndisponiveis && db.accounts.length){
+      payload.account_id = data.payment_method === "Crédito" ? null : (data.account_id || null);
+    }
     if(t){
       const { data: updated, error } = await sbClient.from("transactions").update(payload).eq("id", t.id).select().single();
       if(error) return alert("Não foi possível salvar: " + error.message);
@@ -2771,6 +3016,7 @@ function openTransacaoModal(t){
     const isCredito = paySel.value === "Crédito";
     fieldCartao.hidden = !paySel.value || paySel.value === "Dinheiro";
     fieldParcelas.hidden = !isCredito;
+    document.getElementById("field-conta").hidden = contasIndisponiveis || !db.accounts.length || isCredito;
     document.getElementById("field-cartao-label").textContent = isCredito ? "Cartão" : "Cartão/conta (opcional)";
   }
   function refreshDicaAssinatura(){
@@ -2787,6 +3033,7 @@ function openTransacaoModal(t){
     typeSel.value = t.type;
     paySel.value = t.payment_method || "";
     if(t.card_id) document.getElementById("modal-form").card_id.value = t.card_id;
+    if(t.account_id) document.getElementById("modal-form").account_id.value = t.account_id;
     if(t.installment_current) document.getElementById("modal-form").installment_current.value = t.installment_current;
     if(t.installment_total) document.getElementById("modal-form").installment_total.value = t.installment_total;
     if(t.fixed) document.getElementById("modal-form").fixed.checked = true;
@@ -3323,14 +3570,133 @@ const TIPOS_INVEST_KIND = [
 ];
 const CDI_PADRAO = 14.5;
 
+function cdiAutoInfo(){
+  try{ return JSON.parse(localStorage.getItem("lf_cdi_auto") || "null"); }catch(e){ return null; }
+}
+function cdiEhManual(){
+  try{ return localStorage.getItem("lf_cdi_manual")==="1"; }catch(e){ return false; }
+}
 function getCdiAnual(){
+  const auto = cdiAutoInfo();
+  if(!cdiEhManual() && auto && !isNaN(auto.valor)) return auto.valor;
   try{
     const v = parseFloat(localStorage.getItem("lf_cdi_anual"));
-    return isNaN(v) ? CDI_PADRAO : v;
-  }catch(e){ return CDI_PADRAO; }
+    if(!isNaN(v)) return v;
+  }catch(e){}
+  return (auto && !isNaN(auto.valor)) ? auto.valor : CDI_PADRAO;
 }
 function setCdiAnual(v){
-  try{ localStorage.setItem("lf_cdi_anual", String(v)); }catch(e){}
+  try{ localStorage.setItem("lf_cdi_anual", String(v)); localStorage.setItem("lf_cdi_manual","1"); }catch(e){}
+}
+function hojeISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+function colunaBalanceDateExiste(){
+  return db.investments.length===0 || db.investments.some(i=>"balance_date" in i);
+}
+// dias úteis (seg–sex) completos desde a data do saldo até ontem — feriados não são descontados
+function diasUteisDesde(iso){
+  const [y,m,d] = iso.split("-").map(Number);
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  let n = 0;
+  for(let dt = new Date(y, m-1, d); dt < hoje; dt = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()+1)){
+    const w = dt.getDay();
+    if(w!==0 && w!==6) n++;
+  }
+  return n;
+}
+function precoAcaoAuto(i){
+  const v = cotacoesAuto[(i.ticker||"").toUpperCase()];
+  return (v===undefined || v===null) ? null : v;
+}
+function rendimentoAutomaticoAtivo(i){
+  return investKind(i)==="cdi" && !!i.balance_date;
+}
+// valor bruto ATUAL: renda fixa em % do CDI cresce dia útil a dia útil desde a data do saldo;
+// ações/FIIs usam a cotação buscada automaticamente (quando disponível)
+function investBruto(i){
+  const k = investKind(i);
+  const base = Number(i.amount) || 0;
+  if(rendimentoAutomaticoAtivo(i)){
+    const pct = (Number(i.cdi_percent)||0)/100;
+    const diario = (Math.pow(1 + getCdiAnual()/100, 1/252) - 1) * pct;
+    return Math.round(base * Math.pow(1+diario, diasUteisDesde(i.balance_date)) * 100) / 100;
+  }
+  if(k==="acao" || k==="fii"){
+    const p = precoAcaoAuto(i);
+    if(p!==null) return Math.round((Number(i.quantity)||0) * p * 100) / 100;
+  }
+  return base;
+}
+// líquido estimado: repete a proporção de imposto do último saldo informado sobre o ganho novo
+function investLiquidoAtual(i){
+  const liq = investLiquido(i);
+  if(liq===null) return null;
+  const bruto0 = Number(i.amount) || 0;
+  const bruto = investBruto(i);
+  if(bruto === bruto0) return liq;
+  const ap = investAplicado(i);
+  let ratio = 1;
+  if(ap!==null && bruto0>ap) ratio = Math.min(1, Math.max(0, (liq-ap)/(bruto0-ap)));
+  else if(bruto0>0) ratio = Math.min(1, liq/bruto0);
+  return Math.round((liq + (bruto-bruto0)*ratio) * 100) / 100;
+}
+
+let ultimoAuto = { cdiOk:null, cot:null };
+async function buscarCdiAutomatico(){
+  try{
+    const r = await fetch("https://api.bcb.gov.br/dados/serie/bcdata.sgs.4389/dados/ultimos/1?formato=json", { cache:"no-store" });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    const v = parseFloat(String(j?.[0]?.valor).replace(",","."));
+    if(isNaN(v)) throw new Error("valor inválido");
+    const info = { valor:v, data:j[0].data, buscadoEm:Date.now() };
+    try{ localStorage.setItem("lf_cdi_auto", JSON.stringify(info)); }catch(e){}
+    return info;
+  }catch(e){
+    console.warn("[LeFinance] CDI automático indisponível", e?.message);
+    return null;
+  }
+}
+function tokenBrapi(){
+  try{ return localStorage.getItem("lf_brapi_token") || ""; }catch(e){ return ""; }
+}
+async function buscarCotacoes(){
+  const tickers = [...new Set(db.investments
+    .filter(i=>{ const k=investKind(i); return (k==="acao"||k==="fii") && i.ticker; })
+    .map(i=>i.ticker.toUpperCase()))];
+  const token = tokenBrapi();
+  const novo = {};
+  await Promise.all(tickers.map(async tk=>{
+    try{
+      const url = `https://brapi.dev/api/quote/${encodeURIComponent(tk)}` + (token ? `?token=${encodeURIComponent(token)}` : "");
+      const r = await fetch(url);
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      const j = await r.json();
+      const preco = Number(j?.results?.[0]?.regularMarketPrice);
+      if(!(preco>0)) throw new Error("sem preço");
+      novo[tk] = preco;
+    }catch(e){ console.warn("[LeFinance] cotação indisponível", tk, e?.message); }
+  }));
+  cotacoesAuto = { ...cotacoesAuto, ...novo };
+  return { total:tickers.length, ok:Object.keys(novo).length };
+}
+async function atualizarAutomaticos(forcar){
+  let mudou = false;
+  const info = cdiAutoInfo();
+  const velho = !info || (Date.now() - (info.buscadoEm||0) > 6*3600*1000);
+  if(forcar || velho){
+    const novo = await buscarCdiAutomatico();
+    ultimoAuto.cdiOk = !!novo;
+    if(novo) mudou = true;
+  }
+  if(forcar || !Object.keys(cotacoesAuto).length){
+    const r = await buscarCotacoes();
+    ultimoAuto.cot = r;
+    if(r.ok) mudou = true;
+  }
+  if(mudou || forcar) renderAll();
 }
 function investKind(i){ return i.kind || "outro"; }
 function investAplicado(i){
@@ -3341,7 +3707,7 @@ function investLiquido(i){
 }
 function rendimentoMensalCdi(i){
   const taxaAnual = (getCdiAnual()/100) * ((Number(i.cdi_percent)||0)/100);
-  return Number(i.amount) * (Math.pow(1+taxaAnual, 1/12) - 1);
+  return investBruto(i) * (Math.pow(1+taxaAnual, 1/12) - 1);
 }
 function fmtQtd(n){ return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 6 }); }
 function fmtPct(n){ return (n>0?"+":"") + n.toLocaleString("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + "%"; }
@@ -3353,28 +3719,95 @@ function detalhesInvestimento(i){
     return `${fmtQtd(pct)}% do CDI<br><span class="muted">≈ ${brl(rendimentoMensalCdi(i))}/mês</span>`;
   }
   if(k==="acao" || k==="fii"){
-    const cur = (i.current_price===null || i.current_price===undefined) ? null : Number(i.current_price);
+    const auto = precoAcaoAuto(i);
+    const cur = auto!==null ? auto : ((i.current_price===null || i.current_price===undefined) ? null : Number(i.current_price));
     return `${fmtQtd(i.quantity)} × ${brl(i.unit_price)}` + (cur!==null ? `<br><span class="muted">cotação ${brl(cur)}</span>` : "");
   }
   return i.notes ? escapeHtml(i.notes) : "—";
 }
 
+function renderGraficoPosicoes(lista){
+  const barra = document.getElementById("invest-tipos-bar");
+  const canvas = document.getElementById("chart-investimentos");
+  const wrap = document.getElementById("chart-investimentos-wrap");
+  const okInvest = typeof Chart !== "undefined";
+
+  // composição por tipo: uma barra única, com legenda
+  const porTipo = {};
+  lista.forEach(i=> porTipo[i.type] = (porTipo[i.type]||0) + investBruto(i));
+  const tipos = Object.keys(porTipo).sort((a,b)=>porTipo[b]-porTipo[a]);
+  const total = tipos.reduce((s,t)=>s+porTipo[t],0);
+  const cores = paleta(tipos.length);
+  barra.innerHTML = (tipos.length && total>0) ? `
+    <div class="invest-bar">${tipos.map((t,k)=>`<span style="width:${porTipo[t]/total*100}%;background:${cores[k]}" title="${escapeHtml(t)}: ${brl(porTipo[t])}"></span>`).join("")}</div>
+    <div class="invest-bar-legend">${tipos.map((t,k)=>`<span><i style="background:${cores[k]}"></i>${escapeHtml(t)} <strong>${(porTipo[t]/total*100).toLocaleString("pt-BR",{maximumFractionDigits:0})}%</strong> · ${brl(porTipo[t])}</span>`).join("")}</div>` : "";
+
+  // por posição: quanto é aplicado e quanto é rendimento (ou queda)
+  const itens = [...lista].sort((a,b)=>investBruto(b)-investBruto(a));
+  document.getElementById("chart-investimentos-empty").hidden = itens.length>0 && okInvest;
+  if(!okInvest) document.getElementById("chart-investimentos-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
+  wrap.hidden = itens.length===0 || !okInvest;
+  if(chartInvestimentos) chartInvestimentos.destroy();
+  if(!itens.length || !okInvest) return;
+  const nomes = itens.map(i=>{ const n = i.ticker || i.name || "?"; return n.length>22 ? n.slice(0,21)+"…" : n; });
+  const atuais = itens.map(i=>investBruto(i));
+  const aplicados = itens.map(i=>investAplicado(i));
+  const base  = itens.map((i,k)=> aplicados[k]===null ? atuais[k] : Math.min(atuais[k], aplicados[k]));
+  const ganho = itens.map((i,k)=> aplicados[k]===null ? 0 : Math.max(atuais[k]-aplicados[k], 0));
+  const queda = itens.map((i,k)=> aplicados[k]===null ? 0 : Math.max(aplicados[k]-atuais[k], 0));
+  wrap.style.height = Math.max(190, itens.length*38 + 70) + "px";
+  try{
+    chartInvestimentos = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: nomes,
+        datasets: [
+          { label:"Aplicado", data:base,  backgroundColor:"#E7C5D6", borderRadius:3 },
+          { label:"Rendimento", data:ganho, backgroundColor:"#7EA88A", borderRadius:3 },
+          { label:"Queda", data:queda, backgroundColor:"#B84062", borderRadius:3 },
+        ]
+      },
+      options: {
+        indexAxis: "y",
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position:"bottom", labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } },
+          tooltip: {
+            filter: item => item.parsed.x > 0,
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${brl(ctx.parsed.x)}`,
+              footer: items => {
+                const k = items[0].dataIndex;
+                return `Atual: ${brl(atuais[k])}` + (aplicados[k]===null ? " (sem valor aplicado informado)" : "");
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked:true, ticks:{ callback: v=>brl(v) } },
+          y: { stacked:true, ticks:{ font:{ family:"DM Sans", size:11 } } }
+        }
+      }
+    });
+  }catch(e){ console.error("[LeFinance] gráfico de investimentos", e); }
+}
+
 function renderInvestimentos(){
   const lista = db.investments;
-  const total = lista.reduce((s,i)=>s+Number(i.amount),0);
+  const total = lista.reduce((s,i)=>s+investBruto(i),0);
   const comAplicado = lista.filter(i=>investAplicado(i)!==null);
   const aplicado = comAplicado.reduce((s,i)=>s+investAplicado(i),0);
-  const atualDosComAplicado = comAplicado.reduce((s,i)=>s+Number(i.amount),0);
+  const atualDosComAplicado = comAplicado.reduce((s,i)=>s+investBruto(i),0);
   const resultado = atualDosComAplicado - aplicado;
   document.getElementById("stat-invest-total").textContent = brl(total);
   document.getElementById("stat-invest-aplicado").textContent = comAplicado.length ? brl(aplicado) : "—";
   const elRes = document.getElementById("stat-invest-resultado");
   elRes.textContent = comAplicado.length ? brl(resultado) : "—";
   elRes.style.color = !comAplicado.length ? "" : (resultado>=0 ? "#6F8878" : "var(--pink-dark)");
-  const comLiquido = lista.filter(i=>investAplicado(i)!==null && investLiquido(i)!==null);
+  const comLiquido = lista.filter(i=>investAplicado(i)!==null && investLiquidoAtual(i)!==null);
   const elLiq = document.getElementById("stat-invest-resultado-liq");
   if(comLiquido.length){
-    const resLiq = comLiquido.reduce((s,i)=>s+investLiquido(i)-investAplicado(i),0);
+    const resLiq = comLiquido.reduce((s,i)=>s+investLiquidoAtual(i)-investAplicado(i),0);
     elLiq.textContent = brl(resLiq);
     elLiq.style.color = resLiq>=0 ? "#6F8878" : "var(--pink-dark)";
   } else { elLiq.textContent = "—"; elLiq.style.color = ""; }
@@ -3385,30 +3818,31 @@ function renderInvestimentos(){
   if(document.activeElement!==inputCdi) inputCdi.value = getCdiAnual();
   const cdiItens = lista.filter(i=>investKind(i)==="cdi");
   const rendMes = cdiItens.reduce((s,i)=>s+rendimentoMensalCdi(i),0);
-  const impostoTotal = lista.filter(i=>investLiquido(i)!==null).reduce((s,i)=>s+(Number(i.amount)-investLiquido(i)),0);
+  const impostoTotal = lista.filter(i=>investLiquidoAtual(i)!==null).reduce((s,i)=>s+(investBruto(i)-investLiquidoAtual(i)),0);
   document.getElementById("cdi-resumo").textContent = cdiItens.length
     ? `Estimativa de rendimento das posições em % do CDI: ${brl(rendMes)} por mês (valor aproximado, antes de impostos).` + (comLiquido.length ? ` Diferença entre bruto e líquido (imposto a pagar no resgate): ${brl(impostoTotal)}.` : "")
     : "Informe o CDI atual para estimar o rendimento de caixinhas e renda fixa.";
 
-  // Distribuição por tipo
-  const porTipo = {};
-  lista.forEach(i=> porTipo[i.type] = (porTipo[i.type]||0) + Number(i.amount));
-  const labels = Object.keys(porTipo);
-  const canvas = document.getElementById("chart-investimentos");
-  const okInvest = typeof Chart !== "undefined";
-  document.getElementById("chart-investimentos-empty").hidden = labels.length>0 && okInvest;
-  if(!okInvest) document.getElementById("chart-investimentos-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
-  canvas.hidden = labels.length===0 || !okInvest;
-  if(chartInvestimentos) chartInvestimentos.destroy();
-  if(labels.length && okInvest){
-    try{
-      chartInvestimentos = new Chart(canvas, {
-        type: "doughnut",
-        data: { labels, datasets: [{ data: labels.map(l=>porTipo[l]), backgroundColor: paleta(labels.length), borderWidth: 0 }] },
-        options: { plugins:{ legend:{ position:"right", labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } } }, cutout:"62%" }
-      });
-    }catch(e){ console.error("[LeFinance] gráfico de investimentos", e); }
+  // status da atualização automática
+  const info = cdiAutoInfo();
+  const manual = cdiEhManual();
+  const partes = [];
+  if(manual) partes.push(`CDI informado manualmente (${fmtQtd(getCdiAnual())}% ao ano).`);
+  else if(info) partes.push(`CDI de ${fmtQtd(info.valor)}% ao ano, atualizado automaticamente do Banco Central (referência ${info.data}).`);
+  else partes.push("Ainda não consegui buscar o CDI automaticamente — usando o valor informado ao lado.");
+  const nAuto = cdiItens.filter(rendimentoAutomaticoAtivo).length;
+  if(cdiItens.length) partes.push(nAuto ? `Rendimento automático ativo em ${nAuto} de ${cdiItens.length} posição(ões) em % do CDI.` : "Rendimento automático desligado: nenhuma posição tem a data do saldo.");
+  const nBolsa = lista.filter(i=>(investKind(i)==="acao"||investKind(i)==="fii") && i.ticker).length;
+  if(nBolsa){
+    const okCot = lista.filter(i=>(investKind(i)==="acao"||investKind(i)==="fii") && precoAcaoAuto(i)!==null).length;
+    partes.push(okCot ? `Cotações automáticas: ${okCot} de ${nBolsa} ação(ões)/FII(s).` : `Cotações automáticas indisponíveis — ${tokenBrapi() ? "confira o token da brapi" : "cadastre um token da brapi (gratuito) em \"token de cotações\""}; enquanto isso vale a cotação digitada.`);
   }
+  document.getElementById("invest-auto-status").textContent = partes.join(" ");
+  document.getElementById("btn-cdi-auto").hidden = !manual;
+  document.getElementById("btn-ativar-auto").hidden = !(cdiItens.some(i=>!i.balance_date) && colunaBalanceDateExiste());
+
+  renderGraficoPosicoes(lista);
+  const okInvest = typeof Chart !== "undefined";
 
   // Ações e FIIs: preço médio x cotação atual, agrupado por código
   const porAtivo = {};
@@ -3418,7 +3852,7 @@ function renderInvestimentos(){
     const o = porAtivo[cod] || (porAtivo[cod] = { qtd:0, custo:0, valor:0 });
     o.qtd += q;
     o.custo += q*(Number(i.unit_price)||0);
-    o.valor += Number(i.amount);
+    o.valor += investBruto(i);
   });
   const ativos = Object.keys(porAtivo).filter(c=>porAtivo[c].qtd>0);
   const canvasA = document.getElementById("chart-acoes");
@@ -3463,8 +3897,8 @@ function renderInvestimentos(){
           labels: rf.map(i=>i.name),
           datasets: [
             { label:"Aplicado", data: rf.map(i=>investAplicado(i)), backgroundColor: c3[0], borderRadius:4 },
-            { label:"Líquido",  data: rf.map(i=>investLiquido(i)),   backgroundColor: c3[1], borderRadius:4 },
-            { label:"Bruto",    data: rf.map(i=>Number(i.amount)),   backgroundColor: c3[2], borderRadius:4 }
+            { label:"Líquido",  data: rf.map(i=>investLiquidoAtual(i)), backgroundColor: c3[1], borderRadius:4 },
+            { label:"Bruto",    data: rf.map(i=>investBruto(i)),   backgroundColor: c3[2], borderRadius:4 }
           ]
         },
         options: {
@@ -3483,10 +3917,11 @@ function renderInvestimentos(){
   [...lista].sort((a,b)=>String(b.date).localeCompare(String(a.date))).forEach(i=>{
     const k = investKind(i);
     const ap = investAplicado(i);
-    const liq = investLiquido(i);
+    const atual = investBruto(i);
+    const liq = investLiquidoAtual(i);
     let resHtml = "—";
     if(ap!==null && ap>0){
-      const diff = Number(i.amount) - ap;
+      const diff = atual - ap;
       const cor = diff>=0 ? "#6F8878" : "var(--pink-dark)";
       resHtml = `<span style="color:${cor}">${brl(diff)}<br><small>${fmtPct(diff/ap*100)} bruto</small></span>`;
       if(liq!==null){
@@ -3496,13 +3931,16 @@ function renderInvestimentos(){
       }
     }
     const sub = (k==="acao"||k==="fii") ? (i.ticker||"") : (i.institution||"");
+    const notaAuto = rendimentoAutomaticoAtivo(i)
+      ? `<br><small class="muted">estimado desde ${fmtDate(i.balance_date)}</small>`
+      : "";
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${escapeHtml(i.name)}${sub ? `<br><span class="muted">${escapeHtml(sub)}</span>` : ""}</td>
       <td>${escapeHtml(i.type)}</td>
       <td>${detalhesInvestimento(i)}</td>
       <td class="num">${ap!==null ? brl(ap) : "—"}</td>
-      <td class="num">${brl(i.amount)}${liq!==null ? `<br><small class="muted">líquido ${brl(liq)}</small>` : ""}</td>
+      <td class="num">${brl(atual)}${liq!==null ? `<br><small class="muted">líquido ${brl(liq)}</small>` : ""}${notaAuto}</td>
       <td class="num">${resHtml}</td>
       <td class="row-actions-cell"><div class="row-actions"><button data-edit>editar</button><button data-del>excluir</button></div></td>
     `;
@@ -3556,7 +3994,7 @@ function openInvestimentoModal(inv){
     </div>
     <div class="field-row" data-kinds="cdi outro">
       <div class="field">
-        <label>Saldo bruto (R$)</label>
+        <label>Saldo bruto de hoje (R$)</label>
         <input type="number" step="0.01" min="0" name="amount">
       </div>
       <div class="field">
@@ -3568,6 +4006,7 @@ function openInvestimentoModal(inv){
       <label>Total já aplicado (R$) — o que você depositou do seu bolso</label>
       <input type="number" step="0.01" min="0" name="invested_amount">
     </div>
+    <p class="muted" data-kinds="cdi" style="margin-top:-6px;">Informe o saldo que aparece no app do banco <strong>hoje</strong>. A partir desta data o app estima o rendimento sozinho, com base no CDI.</p>
     <div class="field-row" data-kinds="acao fii">
       <div class="field">
         <label>Quantidade</label>
@@ -3629,10 +4068,15 @@ function openInvestimentoModal(inv){
       payload.invested_amount = num(d.invested_amount);
       payload.institution = (d.institution||"").trim() || null;
     }
-    const q = editando
-      ? sbClient.from("investments").update(payload).eq("id", inv.id).select().single()
-      : sbClient.from("investments").insert(payload).select().single();
-    const { data: saved, error } = await q;
+    const salvar = (p)=> editando
+      ? sbClient.from("investments").update(p).eq("id", inv.id).select().single()
+      : sbClient.from("investments").insert(p).select().single();
+    if(colunaBalanceDateExiste()) payload.balance_date = (kind==="cdi") ? hojeISO() : null;
+    let { data: saved, error } = await salvar(payload);
+    if(error && /balance_date/i.test(error.message||"")){
+      delete payload.balance_date;
+      ({ data: saved, error } = await salvar(payload));
+    }
     if(error){
       const faltaColuna = /column|schema cache/i.test(error.message||"");
       return alert("Não foi possível salvar: " + error.message + (faltaColuna ? " — rode o script add-investments-details.sql no SQL Editor do Supabase (veja o README) e recarregue a página." : ""));
@@ -3666,6 +4110,12 @@ function openInvestimentoModal(inv){
     ["name","ticker","institution","type","cdi_percent","amount","net_amount","invested_amount","quantity","unit_price","current_price","date","notes"].forEach(f=>{
       if(form[f] && inv[f]!==null && inv[f]!==undefined) form[f].value = inv[f];
     });
+    // renda fixa com rendimento automático: o formulário já mostra o saldo estimado de hoje
+    if(investKind(inv)==="cdi" && inv.balance_date){
+      form.amount.value = investBruto(inv);
+      const l = investLiquidoAtual(inv);
+      if(l!==null) form.net_amount.value = l;
+    }
     // posições de ação/FII: o saldo é calculado, então não reaparece como campo
   } else {
     form.date.value = new Date().toISOString().slice(0,10);
@@ -3674,6 +4124,32 @@ function openInvestimentoModal(inv){
 }
 
 document.getElementById("btn-novo-investimento").addEventListener("click", ()=> openInvestimentoModal());
+
+document.getElementById("btn-atualizar-cotacoes").addEventListener("click", async (e)=>{
+  const b = e.currentTarget;
+  b.disabled = true; const txt = b.textContent; b.textContent = "Atualizando…";
+  try{ await atualizarAutomaticos(true); } finally { b.disabled = false; b.textContent = txt; }
+});
+document.getElementById("btn-cdi-auto").addEventListener("click", async ()=>{
+  try{ localStorage.removeItem("lf_cdi_manual"); }catch(e){}
+  await atualizarAutomaticos(true);
+});
+document.getElementById("btn-token-brapi").addEventListener("click", async ()=>{
+  const v = prompt("Cole aqui o seu token gratuito da brapi (brapi.dev). Deixe vazio para remover:", tokenBrapi());
+  if(v===null) return;
+  try{ if(v.trim()) localStorage.setItem("lf_brapi_token", v.trim()); else localStorage.removeItem("lf_brapi_token"); }catch(e){}
+  await atualizarAutomaticos(true);
+});
+document.getElementById("btn-ativar-auto").addEventListener("click", async ()=>{
+  const alvos = db.investments.filter(i=>investKind(i)==="cdi" && !i.balance_date);
+  if(!alvos.length) return;
+  if(!confirm(`Usar o saldo atual cadastrado de ${alvos.length} posição(ões) como ponto de partida (data de hoje)? A partir daí o app soma o rendimento do CDI sozinho. Confira se o saldo cadastrado está igual ao do app do banco hoje.`)) return;
+  const hoje = hojeISO();
+  const { data, error } = await sbClient.from("investments").update({ balance_date: hoje }).in("id", alvos.map(i=>i.id)).select();
+  if(error) return alert("Não foi possível ativar: " + error.message + (/balance_date|column|schema cache/i.test(error.message||"") ? " — rode o script add-investments-balance-date.sql no SQL Editor do Supabase (veja o README) e recarregue a página." : ""));
+  db.investments = db.investments.map(x=> data.find(u=>u.id===x.id) || x);
+  renderAll();
+});
 
 function renderOrcamento(){
   const wrap = document.getElementById("lista-orcamento");
@@ -4148,6 +4624,14 @@ function renderImportar(){
     sel.appendChild(o);
   });
   sel.value = prev;
+  const selConta = document.getElementById("import-conta");
+  const prevConta = selConta.value;
+  selConta.innerHTML = '<option value="">— sem conta definida —</option>';
+  if(!contasIndisponiveis) db.accounts.forEach(a=>{
+    const o = document.createElement("option"); o.value=a.id; o.textContent=a.name;
+    selConta.appendChild(o);
+  });
+  selConta.value = prevConta;
 }
 
 function setImportStep(step){
@@ -4772,6 +5256,14 @@ document.getElementById("btn-confirmar-importacao").addEventListener("click", as
     installment_total: r.parcela ? r.parcela.total : null,
     fixed: false,
   }));
+  const contaImport = document.getElementById("import-conta").value;
+  if(contaImport && !contasIndisponiveis){
+    payload.forEach((p,idx)=>{
+      const r = selecionados[idx];
+      const compraNoCartao = r.payment_method==="Crédito" && r.pagFatura!=="extrato";
+      p.account_id = compraNoCartao ? null : contaImport;
+    });
+  }
   const btn = document.getElementById("btn-confirmar-importacao");
   btn.disabled = true; btn.textContent = "Importando…";
   const { data: created, error } = await sbClient.from("transactions").insert(payload).select();
@@ -4812,7 +5304,7 @@ document.getElementById("btn-apagar-tudo").addEventListener("click", async ()=>{
   if(!recorrenciasIndisponiveis) exclusoes.push(sbClient.from("recurrences").delete().eq("user_id", userId));
   if(!palavrasChavePagamentoIndisponivel) exclusoes.push(sbClient.from("payment_keywords").delete().eq("user_id", userId));
   await Promise.all(exclusoes);
-  db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: db.categories, recurrences: [], paymentKeywords: [] };
+  db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: db.categories, recurrences: [], paymentKeywords: [], accounts: db.accounts };
   goTo("visao-geral");
 });
 
