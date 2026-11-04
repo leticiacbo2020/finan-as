@@ -1205,6 +1205,16 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         </div>
         <p class="empty-hint" id="investimentos-empty" hidden>Nenhum investimento cadastrado.</p>
       </div>
+
+      <div class="panel" style="margin-top:18px;" id="panel-caderninho">
+        <div class="panel-head">
+          <h2>Caderninho</h2>
+          <button class="btn btn-primary" id="btn-novo-caderninho">Nova anotação</button>
+        </div>
+        <p class="muted" id="caderninho-resumo" style="margin:0 0 10px;"></p>
+        <div class="stack" id="lista-caderninho"></div>
+        <p class="empty-hint" id="caderninho-empty" hidden>Nada anotado ainda.</p>
+      </div>
     </section>
 
     <section class="view" id="view-orcamento" hidden>
@@ -1988,7 +1998,7 @@ async function queryWithRetry(label, query){
 }
 
 async function loadAllData(generation){
-  const [tx, cards, invest, budgets, goals, categories, recurrences, paymentKeywords, accounts] = await Promise.all([
+  const [tx, cards, invest, budgets, goals, categories, recurrences, paymentKeywords, accounts, caderninho] = await Promise.all([
     queryWithRetry("transactions", ()=>sbClient.from("transactions").select("*").order("date", { ascending:false })),
     queryWithRetry("cards", ()=>sbClient.from("cards").select("*").order("created_at")),
     queryWithRetry("investments", ()=>sbClient.from("investments").select("*").order("date", { ascending:false })),
@@ -1998,7 +2008,9 @@ async function loadAllData(generation){
     queryWithRetry("recurrences", ()=>sbClient.from("recurrences").select("*").order("created_at")),
     queryWithRetry("payment_keywords", ()=>sbClient.from("payment_keywords").select("*")),
     queryWithRetry("accounts", ()=>sbClient.from("accounts").select("*").order("created_at")),
+    queryWithRetry("caderninho", ()=>sbClient.from("caderninho").select("*").order("created_at")),
   ]);
+  caderninhoIndisponivel = !!(caderninho.error && /relation .* does not exist|schema cache/i.test(caderninho.error?.message||""));
   contasIndisponiveis = !!(accounts.error && /relation .* does not exist|schema cache/i.test(accounts.error?.message||""));
   if(accounts.error && !contasIndisponiveis){
     console.error("[LeFinance] Falha ao carregar contas", { message:accounts.error.message, code:accounts.error.code });
@@ -2019,6 +2031,7 @@ async function loadAllData(generation){
     goals:goals.data||[], categories:categories.data||[], recurrences: recurrences.error ? [] : (recurrences.data||[]),
     paymentKeywords: paymentKeywords.error ? [] : (paymentKeywords.data||[]),
     accounts: accounts.error ? [] : (accounts.data||[]),
+    caderninho: caderninho.error ? [] : (caderninho.data||[]),
   };
 }
 
@@ -4124,6 +4137,102 @@ function openInvestimentoModal(inv){
 }
 
 document.getElementById("btn-novo-investimento").addEventListener("click", ()=> openInvestimentoModal());
+/* ===== Caderninho (valores a receber, com pagamentos parciais) ===== */
+let caderninhoIndisponivel = false;
+function cadNum(v){ const n = Number(String(v||"").replace(/\./g,"").replace(",",".")); return isFinite(n) ? n : NaN; }
+function cadPago(it){ return (it.payments||[]).reduce((s,p)=>s+Number(p.amount||0),0); }
+function renderCaderninho(){
+  const lista = db.caderninho || [];
+  const wrap = document.getElementById("lista-caderninho");
+  if(!wrap) return;
+  const btn = document.getElementById("btn-novo-caderninho");
+  btn.disabled = caderninhoIndisponivel;
+  wrap.innerHTML = "";
+  const empty = document.getElementById("caderninho-empty");
+  empty.hidden = lista.length>0 && !caderninhoIndisponivel;
+  empty.textContent = caderninhoIndisponivel ? "Para usar o Caderninho, rode o add-caderninho.sql no SQL Editor do Supabase e recarregue o site." : "Nada anotado ainda.";
+  const falta = lista.reduce((s,it)=>s+Math.max(0, Number(it.amount)-cadPago(it)),0);
+  document.getElementById("caderninho-resumo").textContent = lista.length ? "Falta receber no total: " + brl(falta) : "";
+  lista.forEach(it=>{
+    const pago = cadPago(it), resta = Math.max(0, Number(it.amount)-pago);
+    const pct = Number(it.amount)>0 ? Math.min(100, pago/Number(it.amount)*100) : 100;
+    const row = document.createElement("div");
+    row.className = "goal-row" + (resta===0 ? " is-done" : "");
+    row.style.cssText = "flex-direction:column;align-items:stretch;gap:6px;";
+    row.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <strong>${escapeHtml(it.name)}</strong>
+        <span>${resta===0 ? "quitado" : "falta " + brl(resta)}</span>
+      </div>
+      <div class="invest-bar" style="margin:0;"><span style="width:${pct}%;background:var(--green, #33543A)"></span></div>
+      <div class="muted" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <span>${brl(Number(it.amount))} · recebido ${brl(pago)}${it.date ? " · " + fmtDate(it.date) : ""}${it.note ? " · " + escapeHtml(it.note) : ""}</span>
+        <span><button type="button" class="link-btn" data-act="pag">+ recebido</button> <button type="button" class="link-btn" data-act="edit">editar</button></span>
+      </div>`;
+    row.querySelector('[data-act="pag"]').addEventListener("click", ()=>openCaderninhoPagamento(it.id));
+    row.querySelector('[data-act="edit"]').addEventListener("click", ()=>openCaderninhoModal(it));
+    wrap.appendChild(row);
+  });
+}
+function openCaderninhoModal(it){
+  const isEdit = !!it;
+  openModal(isEdit ? "Editar anotação" : "Nova anotação", `
+    <div class="field"><label>Nome</label><input name="name" required value="${isEdit?escapeHtml(it.name):""}"></div>
+    <div class="field-row">
+      <div class="field"><label>Valor (R$)</label><input name="amount" inputmode="decimal" required value="${isEdit?String(it.amount).replace(".",","):""}"></div>
+      <div class="field"><label>Data</label><input type="date" name="date" value="${isEdit&&it.date?it.date:new Date().toISOString().slice(0,10)}"></div>
+    </div>
+    <div class="field"><label>Observação</label><input name="note" value="${isEdit&&it.note?escapeHtml(it.note):""}"></div>`,
+  async (form)=>{
+    const amount = cadNum(form.amount.value);
+    if(!form.name.value.trim() || isNaN(amount) || amount<0) return alert("Preencha nome e valor.");
+    const row = { name: form.name.value.trim(), amount, date: form.date.value || null, note: form.note.value.trim() || null };
+    const q = isEdit ? sbClient.from("caderninho").update(row).eq("id", it.id) : sbClient.from("caderninho").insert(row);
+    const { data, error } = await q.select().single();
+    if(error) return alert("Não foi possível salvar: " + error.message);
+    db.caderninho = isEdit ? db.caderninho.map(x=>x.id===it.id ? data : x) : [...(db.caderninho||[]), data];
+    closeModal(); renderCaderninho();
+  }, isEdit ? `<button type="button" class="btn" id="cad-excluir" style="margin-right:auto;color:var(--red);border-color:var(--red);">Excluir</button>` : "");
+  if(isEdit) document.getElementById("cad-excluir").addEventListener("click", async ()=>{
+    if(!confirm("Excluir esta anotação e os pagamentos dela?")) return;
+    const { error } = await sbClient.from("caderninho").delete().eq("id", it.id);
+    if(error) return alert("Não foi possível excluir: " + error.message);
+    db.caderninho = db.caderninho.filter(x=>x.id!==it.id);
+    closeModal(); renderCaderninho();
+  });
+}
+function openCaderninhoPagamento(id){
+  const it = db.caderninho.find(x=>x.id===id); if(!it) return;
+  const hist = (it.payments||[]).map((p,i)=>`<div style="display:flex;justify-content:space-between;gap:8px;"><span>${p.date?fmtDate(p.date):"—"} · ${brl(Number(p.amount))}</span><button type="button" class="link-btn" data-rm="${i}">remover</button></div>`).join("");
+  openModal(it.name + " — recebido", `
+    <p class="muted" style="margin-top:0;">Valor ${brl(Number(it.amount))} · recebido ${brl(cadPago(it))} · falta ${brl(Math.max(0,Number(it.amount)-cadPago(it)))}</p>
+    ${hist ? `<div style="margin-bottom:12px;">${hist}</div>` : ""}
+    <div class="field-row">
+      <div class="field"><label>Valor recebido (R$)</label><input name="pamount" inputmode="decimal" required></div>
+      <div class="field"><label>Data</label><input type="date" name="pdate" value="${new Date().toISOString().slice(0,10)}"></div>
+    </div>`,
+  async (form)=>{
+    const amount = cadNum(form.pamount.value);
+    if(isNaN(amount) || amount<=0) return alert("Informe um valor válido.");
+    await salvarPagamentos(it, [...(it.payments||[]), { date: form.pdate.value || null, amount }]);
+    closeModal();
+  });
+  document.querySelectorAll("#modal-form [data-rm]").forEach(b=>b.addEventListener("click", async ()=>{
+    const novos = (it.payments||[]).filter((_,i)=>i!==Number(b.dataset.rm));
+    await salvarPagamentos(it, novos);
+    openCaderninhoPagamento(id);
+  }));
+}
+async function salvarPagamentos(it, payments){
+  const { data, error } = await sbClient.from("caderninho").update({ payments }).eq("id", it.id).select().single();
+  if(error) return alert("Não foi possível salvar: " + error.message);
+  db.caderninho = db.caderninho.map(x=>x.id===it.id ? data : x);
+  renderCaderninho();
+}
+document.getElementById("btn-novo-caderninho").addEventListener("click", ()=>openCaderninhoModal());
+const _renderInvestimentosBase = renderInvestimentos;
+renderInvestimentos = function(){ _renderInvestimentosBase(); renderCaderninho(); };
+
 
 document.getElementById("btn-atualizar-cotacoes").addEventListener("click", async (e)=>{
   const b = e.currentTarget;
@@ -5301,10 +5410,11 @@ document.getElementById("btn-apagar-tudo").addEventListener("click", async ()=>{
     sbClient.from("budgets").delete().eq("user_id", userId),
     sbClient.from("goals").delete().eq("user_id", userId),
   ];
+  if(!caderninhoIndisponivel) exclusoes.push(sbClient.from("caderninho").delete().eq("user_id", userId));
   if(!recorrenciasIndisponiveis) exclusoes.push(sbClient.from("recurrences").delete().eq("user_id", userId));
   if(!palavrasChavePagamentoIndisponivel) exclusoes.push(sbClient.from("payment_keywords").delete().eq("user_id", userId));
   await Promise.all(exclusoes);
-  db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: db.categories, recurrences: [], paymentKeywords: [], accounts: db.accounts };
+  db = { transactions: [], cards: [], investments: [], budgets: [], goals: [], categories: db.categories, recurrences: [], paymentKeywords: [], accounts: db.accounts, caderninho: [] };
   goTo("visao-geral");
 });
 
