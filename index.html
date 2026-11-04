@@ -799,7 +799,7 @@ select{ cursor:pointer; }
 .conta-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 .conta-row small{ display:block; color:var(--ink-soft); font-size:0.78rem; font-weight:400; }
 .conta-saldo{ font-weight:700; font-size:1.05rem; text-align:right; }
-.invest-bar{ display:flex; height:14px; border-radius:999px; overflow:hidden; background:var(--bg); margin:2px 0 10px; }
+.invest-bar{ display:flex; height:8px; border-radius:999px; overflow:hidden; background:var(--bg); margin:2px 0 10px; }
 .invest-bar span{ display:block; height:100%; }
 .invest-bar-legend{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:0.8rem; margin-bottom:14px; color:var(--ink-soft); }
 .invest-bar-legend i{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
@@ -1159,7 +1159,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
           </div>
           <div class="panel-chart-content">
-          <canvas id="chart-acoes" height="220"></canvas>
+          <div style="position:relative;height:180px;"><canvas id="chart-acoes"></canvas></div>
           <p class="empty-hint" id="chart-acoes-empty" hidden>Cadastre uma ação ou FII para ver o gráfico.</p>
           </div>
         </div>
@@ -1171,7 +1171,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           <button type="button" class="collapse-panel" aria-expanded="true" aria-label="Recolher painel">−</button>
         </div>
         <div class="panel-chart-content">
-          <canvas id="chart-rendafixa" height="200"></canvas>
+          <div style="position:relative;height:180px;"><canvas id="chart-rendafixa"></canvas></div>
           <p class="empty-hint" id="chart-rendafixa-empty" hidden>Cadastre uma caixinha ou renda fixa com o valor aplicado para ver o gráfico.</p>
         </div>
       </div>
@@ -3768,23 +3768,23 @@ function renderGraficoPosicoes(lista){
   const base  = itens.map((i,k)=> aplicados[k]===null ? atuais[k] : Math.min(atuais[k], aplicados[k]));
   const ganho = itens.map((i,k)=> aplicados[k]===null ? 0 : Math.max(atuais[k]-aplicados[k], 0));
   const queda = itens.map((i,k)=> aplicados[k]===null ? 0 : Math.max(aplicados[k]-atuais[k], 0));
-  wrap.style.height = Math.max(190, itens.length*38 + 70) + "px";
+  wrap.style.height = Math.max(130, itens.length*26 + 64) + "px";
   try{
     chartInvestimentos = new Chart(canvas, {
       type: "bar",
       data: {
         labels: nomes,
         datasets: [
-          { label:"Aplicado", data:base,  backgroundColor:"#E7C5D6", borderRadius:3 },
-          { label:"Rendimento", data:ganho, backgroundColor:"#7EA88A", borderRadius:3 },
-          { label:"Queda", data:queda, backgroundColor:"#B84062", borderRadius:3 },
+          { label:"Aplicado", data:base,  backgroundColor:"#E7C5D6", borderRadius:6, borderSkipped:false, maxBarThickness:10 },
+          { label:"Rendimento", data:ganho, backgroundColor:"#7EA88A", borderRadius:6, borderSkipped:false, maxBarThickness:10 },
+          { label:"Queda", data:queda, backgroundColor:"#B84062", borderRadius:6, borderSkipped:false, maxBarThickness:10 },
         ]
       },
       options: {
         indexAxis: "y",
         maintainAspectRatio: false,
         plugins: {
-          legend: { position:"bottom", labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } },
+          legend: { position:"bottom", labels:{ usePointStyle:true, pointStyle:"circle", boxWidth:6, boxHeight:6, font:{ family:"DM Sans", size:10 } } },
           tooltip: {
             filter: item => item.parsed.x > 0,
             callbacks: {
@@ -3797,8 +3797,8 @@ function renderGraficoPosicoes(lista){
           }
         },
         scales: {
-          x: { stacked:true, ticks:{ callback: v=>brl(v) } },
-          y: { stacked:true, ticks:{ font:{ family:"DM Sans", size:11 } } }
+          x: { stacked:true, grid:{ color:"rgba(0,0,0,.05)" }, border:{ display:false }, ticks:{ maxTicksLimit:5, font:{ size:10 }, callback: v=>brl(v) } },
+          y: { stacked:true, grid:{ display:false }, border:{ display:false }, ticks:{ font:{ family:"DM Sans", size:11 } } }
         }
       }
     });
@@ -3871,7 +3871,7 @@ function renderInvestimentos(){
   const canvasA = document.getElementById("chart-acoes");
   document.getElementById("chart-acoes-empty").hidden = ativos.length>0 && okInvest;
   if(!okInvest) document.getElementById("chart-acoes-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
-  canvasA.hidden = ativos.length===0 || !okInvest;
+  canvasA.hidden = ativos.length===0 || !okInvest; canvasA.parentElement.hidden = canvasA.hidden;
   if(chartAcoes) chartAcoes.destroy();
   if(ativos.length && okInvest){
     try{
@@ -3881,14 +3881,15 @@ function renderInvestimentos(){
         data: {
           labels: ativos,
           datasets: [
-            { label:"Preço médio", data: ativos.map(c=>+(porAtivo[c].custo/porAtivo[c].qtd).toFixed(2)), backgroundColor: cores[0], borderRadius:4 },
-            { label:"Cotação atual", data: ativos.map(c=>+(porAtivo[c].valor/porAtivo[c].qtd).toFixed(2)), backgroundColor: cores[1], borderRadius:4 }
+            { label:"Preço médio", data: ativos.map(c=>+(porAtivo[c].custo/porAtivo[c].qtd).toFixed(2)), backgroundColor: cores[0], borderRadius:6, borderSkipped:false, maxBarThickness:16 },
+            { label:"Cotação atual", data: ativos.map(c=>+(porAtivo[c].valor/porAtivo[c].qtd).toFixed(2)), backgroundColor: cores[1], borderRadius:6, borderSkipped:false, maxBarThickness:16 }
           ]
         },
         options: {
-          plugins:{ legend:{ labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } },
+          maintainAspectRatio:false,
+          plugins:{ legend:{ labels:{ usePointStyle:true, pointStyle:"circle", boxWidth:6, boxHeight:6, font:{ family:"DM Sans", size:10 } } },
                     tooltip:{ callbacks:{ label: ctx=> `${ctx.dataset.label}: ${brl(ctx.parsed.y)}` } } },
-          scales:{ y:{ beginAtZero:true, ticks:{ callback: v=>brl(v) } } }
+          scales:{ y:{ beginAtZero:true, grid:{ color:"rgba(0,0,0,.05)" }, border:{ display:false }, ticks:{ maxTicksLimit:5, font:{ size:10 }, callback: v=>brl(v) } }, x:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ size:10 } } } }
         }
       });
     }catch(e){ console.error("[LeFinance] gráfico de ações", e); }
@@ -3899,7 +3900,7 @@ function renderInvestimentos(){
   const canvasRF = document.getElementById("chart-rendafixa");
   document.getElementById("chart-rendafixa-empty").hidden = rf.length>0 && okInvest;
   if(!okInvest) document.getElementById("chart-rendafixa-empty").textContent = "Gráfico indisponível no momento (tente recarregar a página).";
-  canvasRF.hidden = rf.length===0 || !okInvest;
+  canvasRF.hidden = rf.length===0 || !okInvest; canvasRF.parentElement.hidden = canvasRF.hidden;
   if(chartRendaFixa) chartRendaFixa.destroy();
   if(rf.length && okInvest){
     try{
@@ -3909,15 +3910,16 @@ function renderInvestimentos(){
         data: {
           labels: rf.map(i=>i.name),
           datasets: [
-            { label:"Aplicado", data: rf.map(i=>investAplicado(i)), backgroundColor: c3[0], borderRadius:4 },
-            { label:"Líquido",  data: rf.map(i=>investLiquidoAtual(i)), backgroundColor: c3[1], borderRadius:4 },
-            { label:"Bruto",    data: rf.map(i=>investBruto(i)),   backgroundColor: c3[2], borderRadius:4 }
+            { label:"Aplicado", data: rf.map(i=>investAplicado(i)), backgroundColor: c3[0], borderRadius:6, borderSkipped:false, maxBarThickness:16 },
+            { label:"Líquido",  data: rf.map(i=>investLiquidoAtual(i)), backgroundColor: c3[1], borderRadius:6, borderSkipped:false, maxBarThickness:16 },
+            { label:"Bruto",    data: rf.map(i=>investBruto(i)),   backgroundColor: c3[2], borderRadius:6, borderSkipped:false, maxBarThickness:16 }
           ]
         },
         options: {
-          plugins:{ legend:{ labels:{ boxWidth:10, font:{ family:"DM Sans", size:11 } } },
+          maintainAspectRatio:false,
+          plugins:{ legend:{ labels:{ usePointStyle:true, pointStyle:"circle", boxWidth:6, boxHeight:6, font:{ family:"DM Sans", size:10 } } },
                     tooltip:{ callbacks:{ label: ctx=> `${ctx.dataset.label}: ${brl(ctx.parsed.y)}` } } },
-          scales:{ y:{ beginAtZero:true, ticks:{ callback: v=>brl(v) } } }
+          scales:{ y:{ beginAtZero:true, grid:{ color:"rgba(0,0,0,.05)" }, border:{ display:false }, ticks:{ maxTicksLimit:5, font:{ size:10 }, callback: v=>brl(v) } }, x:{ grid:{ display:false }, border:{ display:false }, ticks:{ font:{ size:10 } } } }
         }
       });
     }catch(e){ console.error("[LeFinance] gráfico de renda fixa", e); }
