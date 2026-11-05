@@ -1082,6 +1082,33 @@ select, input[type=text], input[type=number], input[type=date], input[type=email
   .tut-start{ grid-template-columns:1fr; } .tut-grid{ grid-template-columns:1fr; }
   .tut-h{ font-size:1.6rem; } .tut-steps2 li{ gap:12px; } .tut-nav .btn-primary{ order:-1; width:100%; }
 }
+/* ============ DESIGN SYSTEM FINAL (paleta, botões, menu agrupado, Novo, estados vazios, acessibilidade) ============ */
+:root{
+  --bg:#FBF7F8; --surface:#FFFFFF; --ink:#34232C; --ink-soft:#6F5C64;
+  --pink:#C95279; --pink-dark:#5A1835; --pink-bg:#F4DCE5;
+}
+.sidebar{ background:#5A1835; }
+.tut-card--feat{ background:#5A1835; border-color:#5A1835; }
+.btn{ background:var(--surface); border:1px solid var(--line-strong); color:var(--pink-dark); min-height:38px; }
+.btn:not(.btn-primary):not(.btn-danger):hover{ background:var(--pink-bg); }
+.btn-primary{ background:var(--pink); border-color:var(--pink); color:#fff; box-shadow:none; }
+.btn-primary:hover{ background:#B5446A; border-color:#B5446A; color:#fff; }
+.nav-group{ font-size:.62rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,247,250,.5); padding:12px 14px 4px; }
+.nav-group:first-child{ padding-top:2px; }
+.sidebar.is-collapsed .nav-group{ height:1px; padding:0; margin:8px 14px; font-size:0; background:rgba(255,247,250,.14); }
+.novo-wrap{ position:relative; }
+.novo-menu{ position:absolute; right:0; top:calc(100% + 8px); z-index:60; min-width:220px; background:var(--surface); border:1px solid var(--line-strong); border-radius:14px; box-shadow:0 18px 40px -20px rgba(90,24,53,.35); padding:6px; animation:lfPop .16s ease; }
+.novo-menu[hidden]{ display:none; }
+.novo-menu button{ display:block; width:100%; text-align:left; background:none; border:none; padding:10px 12px; border-radius:9px; font-family:var(--sans); font-size:.88rem; font-weight:500; color:var(--ink); cursor:pointer; transition:background .15s ease; }
+.novo-menu button:hover, .novo-menu button:focus-visible{ background:var(--pink-bg); color:var(--pink-dark); }
+.empty-hint{ background:var(--bg); border:1px dashed var(--line-strong); border-radius:14px; padding:22px 20px; text-align:center; color:var(--ink-soft); font-size:.9rem; }
+.empty-hint strong{ display:block; font-family:var(--serif); font-size:1.05rem; font-weight:500; color:var(--pink-dark); margin-bottom:4px; }
+.empty-hint span{ display:block; margin-bottom:12px; }
+.empty-hint .btn{ margin-top:2px; }
+.chart-note{ margin:12px 0 0; font-size:.74rem; color:var(--ink-soft); }
+:focus-visible{ outline:2px solid var(--pink); outline-offset:2px; }
+@media (pointer:coarse){ .nav-item, .btn, .icon-btn, .novo-menu button{ min-height:44px; } }
+@media (max-width:700px){ .novo-wrap{ order:3; } .novo-menu{ right:auto; left:0; } }
 </style>
 </head>
 <body>
@@ -1134,33 +1161,39 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
     </div>
 
     <nav class="nav" id="nav">
+      <div class="nav-group" aria-hidden="true">Principal</div>
       <button class="nav-item is-active" data-view="visao-geral" title="Visão geral">
         <span class="nav-num">01</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span class="nav-label">Visão geral</span>
       </button>
+      <div class="nav-group" aria-hidden="true">Movimentação</div>
       <button class="nav-item" data-view="transacoes" title="Transações">
         <span class="nav-num">02</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4-4-4 4 4 4"/></svg><span class="nav-label">Transações</span>
       </button>
       <button class="nav-item" data-view="cartoes" title="Cartões">
         <span class="nav-num">03</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18M7 15h3"/></svg><span class="nav-label">Cartões</span>
       </button>
-      <button class="nav-item" data-view="investimentos" title="Investimentos">
-        <span class="nav-num">04</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><span class="nav-label">Investimentos</span>
-      </button>
+      <div class="nav-group" aria-hidden="true">Planejamento</div>
       <button class="nav-item" data-view="orcamento" title="Orçamento">
-        <span class="nav-num">05</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg><span class="nav-label">Orçamento</span>
+        <span class="nav-num">04</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg><span class="nav-label">Orçamento</span>
       </button>
       <button class="nav-item" data-view="recorrencias" title="Recorrências">
-        <span class="nav-num">06</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4m2 3v-4h-4"/></svg><span class="nav-label">Recorrências</span>
+        <span class="nav-num">05</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4m2 3v-4h-4"/></svg><span class="nav-label">Recorrências</span>
       </button>
       <button class="nav-item" data-view="metas" title="Metas">
-        <span class="nav-num">07</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span class="nav-label">Metas</span>
+        <span class="nav-num">06</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span class="nav-label">Metas</span>
       </button>
+      <div class="nav-group" aria-hidden="true">Patrimônio</div>
+      <button class="nav-item" data-view="investimentos" title="Investimentos">
+        <span class="nav-num">07</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><span class="nav-label">Investimentos</span>
+      </button>
+      <div class="nav-group" aria-hidden="true">Organização</div>
       <button class="nav-item" data-view="categorias" title="Categorias">
         <span class="nav-num">08</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="nav-label">Categorias</span>
       </button>
       <button class="nav-item" data-view="importar" title="Importar">
         <span class="nav-num">09</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg><span class="nav-label">Importar</span>
       </button>
+      <div class="nav-group" aria-hidden="true">Ajuda</div>
       <button class="nav-item" data-view="tutoriais" title="Tutoriais">
         <span class="nav-num">10</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3zM4 17a3 3 0 0 1 3-3h12"/></svg><span class="nav-label">Tutoriais</span>
       </button>
@@ -1193,6 +1226,16 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
       <div class="search-wrap">
         <input type="text" id="global-search" class="search-input" placeholder="Buscar lançamentos, cartões, categorias…" autocomplete="off" aria-label="Buscar lançamentos, cartões, categorias">
         <div class="search-results" id="search-results" hidden></div>
+      </div>
+      <div class="novo-wrap">
+        <button type="button" class="btn btn-primary" id="btn-global-novo" aria-haspopup="true" aria-expanded="false">＋ Novo</button>
+        <div class="novo-menu" id="novo-menu" role="menu" hidden>
+          <button type="button" role="menuitem" data-novo-view="transacoes" data-novo-btn="btn-nova-transacao">Novo lançamento</button>
+          <button type="button" role="menuitem" data-novo-view="cartoes" data-novo-btn="btn-novo-cartao">Novo cartão</button>
+          <button type="button" role="menuitem" data-novo-view="investimentos" data-novo-btn="btn-novo-investimento">Novo investimento</button>
+          <button type="button" role="menuitem" data-novo-view="orcamento" data-novo-btn="btn-nova-meta-orcamento">Nova meta de orçamento</button>
+          <button type="button" role="menuitem" data-novo-view="recorrencias" data-novo-btn="btn-nova-recorrencia">Nova recorrência</button>
+        </div>
       </div>
       <div class="topbar-month">
         <button id="month-prev" class="icon-btn" aria-label="Mês anterior">‹</button>
@@ -1275,6 +1318,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           </div>
           <canvas id="chart-categorias" height="220" hidden></canvas>
           <div class="cat-bars" id="cat-bars"></div>
+          <p class="chart-note">* Transferências entre contas não são consideradas despesas.</p>
           <p class="empty-hint" id="chart-categorias-empty" hidden>Sem despesas neste mês ainda.</p>
           </div>
         </div>
@@ -1327,7 +1371,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           </thead>
           <tbody></tbody>
         </table>
-        <p class="empty-hint" id="recentes-empty" hidden>Nenhum lançamento ainda. Adicione o primeiro em "Transações".</p>
+        <p class="empty-hint" id="recentes-empty" hidden><strong>Nenhum lançamento ainda</strong><span>Seu mês ainda está limpo.</span><button type="button" class="btn btn-primary" data-novo-view="transacoes" data-novo-btn="btn-nova-transacao">＋ Adicionar lançamento</button></p>
       </div>
     </section>
 
@@ -1375,7 +1419,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <button class="btn btn-primary" id="btn-novo-cartao">Novo cartão</button>
       </div>
       <div class="card-grid" id="lista-cartoes"></div>
-      <p class="empty-hint" id="cartoes-empty" hidden>Nenhum cartão cadastrado ainda.</p>
+      <p class="empty-hint" id="cartoes-empty" hidden><strong>Nenhum cartão ainda</strong><span>Cadastre o primeiro para acompanhar faturas e limite.</span><button type="button" class="btn btn-primary" data-novo-view="cartoes" data-novo-btn="btn-novo-cartao">＋ Novo cartão</button></p>
 
       <div class="panel" id="painel-faturas-futuras" style="margin-top:24px;">
         <h2>Resumo de faturas futuras</h2>
@@ -1398,7 +1442,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
           só valem as palavras-chave dos cartões (compra na fatura é sempre crédito).
         </p>
         <p class="muted" id="pagamento-keywords-indisponivel" hidden>
-          Essa função ainda não está disponível na sua conta — rode o script <code>add-payment-keywords.sql</code> no SQL Editor do Supabase (veja o README) e recarregue a página.
+          Em breve: esta função ainda não está disponível na sua conta.
         </p>
         <div class="stack" id="lista-pagamento-keywords"></div>
       </details>
@@ -1490,7 +1534,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
             <tbody></tbody>
           </table>
         </div>
-        <p class="empty-hint" id="investimentos-empty" hidden>Nenhum investimento cadastrado.</p>
+        <p class="empty-hint" id="investimentos-empty" hidden><strong>Nenhum investimento ainda</strong><span>Cadastre o primeiro para acompanhar seu patrimônio.</span><button type="button" class="btn btn-primary" data-novo-view="investimentos" data-novo-btn="btn-novo-investimento">＋ Novo investimento</button></p>
       </div>
 
       <div class="panel" style="margin-top:18px;" id="panel-caderninho">
@@ -1519,7 +1563,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
         <button class="btn btn-primary" id="btn-nova-recorrencia">Nova recorrência</button>
       </div>
       <p class="muted" id="recorrencias-indisponivel" hidden>
-        Essa função ainda não está disponível na sua conta — rode o script <code>add-recurrences.sql</code> no SQL Editor do Supabase (veja o README) e recarregue a página.
+        Em breve: esta função ainda não está disponível na sua conta.
       </p>
       <div class="detail-grid" id="recorrencias-totais"></div>
       <div class="stack" id="lista-recorrencias"></div>
@@ -2570,7 +2614,7 @@ function renderContasVisaoGeral(){
   lista.innerHTML = "";
   if(contasIndisponiveis){
     aviso.hidden = false;
-    aviso.innerHTML = 'Para separar o saldo por conta de banco, rode o script <strong>add-accounts.sql</strong> no SQL Editor do Supabase (veja o README) e recarregue a página.';
+    aviso.innerHTML = 'Em breve: saldo separado por conta de banco.';
     vazio.hidden = true; btn.hidden = true;
     return;
   }
@@ -3199,7 +3243,7 @@ function openTransacaoModal(t){
       start_date: form.date.value || new Date().toISOString().slice(0,10),
     };
     closeModal();
-    if(recorrenciasIndisponiveis) return alert("Essa função ainda não está disponível — rode o script add-recurrences.sql no Supabase (veja o README) e recarregue a página.");
+    if(recorrenciasIndisponiveis) return alert("Em breve: esta função ainda não está disponível na sua conta.");
     openRecorrenciaModal(null, prefill);
   });
 }
@@ -3463,7 +3507,7 @@ function renderPagamentoKeywords(){
           db.paymentKeywords = db.paymentKeywords.map(x=> x.id===registro.id ? updated : x);
         } else {
           const { data: created, error } = await sbClient.from("payment_keywords").insert({ method: metodo, keywords: novasKeywords }).select().single();
-          if(error) return alert("Não foi possível salvar: " + error.message + " — talvez falte rodar o script add-payment-keywords.sql no SQL Editor do Supabase.");
+          if(error) return alert("Não foi possível salvar: " + error.message + " — esta função pode ainda não estar disponível na sua conta.");
           db.paymentKeywords.push(created);
         }
         renderPagamentoKeywords();
@@ -3597,7 +3641,7 @@ function openCartaoDetalhesModal(c, cicloVisualizado){
     let cartaoAtualizado = c;
     if(novas.length > atuais.length){
       const { data: updated, error } = await sbClient.from("cards").update({ keywords: novas }).eq("id", c.id).select().single();
-      if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-payment-keywords.sql no SQL Editor do Supabase.");
+      if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — esta função pode ainda não estar disponível na sua conta.");
       db.cards = db.cards.map(x=> x.id===c.id ? updated : x);
       cartaoAtualizado = updated;
     }
@@ -3689,11 +3733,11 @@ function openCartaoModal(c){
     };
     if(isEdit){
       const { data: updated, error } = await sbClient.from("cards").update(payload).eq("id", c.id).select().single();
-      if(error) return alert("Não foi possível salvar: " + error.message + " — se a mensagem falar de coluna \"closing_day\", rode o script add-closing-day.sql no SQL Editor do Supabase.");
+      if(error) return alert("Não foi possível salvar: " + error.message + " — esta função pode ainda não estar disponível na sua conta.");
       db.cards = db.cards.map(x=> x.id===c.id ? updated : x);
     } else {
       const { data: created, error } = await sbClient.from("cards").insert(payload).select().single();
-      if(error) return alert("Não foi possível salvar: " + error.message + " — se a mensagem falar de coluna \"closing_day\", rode o script add-closing-day.sql no SQL Editor do Supabase.");
+      if(error) return alert("Não foi possível salvar: " + error.message + " — esta função pode ainda não estar disponível na sua conta.");
       db.cards.push(created);
     }
     closeModal(); renderAll();
@@ -4229,7 +4273,7 @@ function openInvestimentoModal(inv){
     }
     if(error){
       const faltaColuna = /column|schema cache/i.test(error.message||"");
-      return alert("Não foi possível salvar: " + error.message + (faltaColuna ? " — rode o script add-investments-details.sql no SQL Editor do Supabase (veja o README) e recarregue a página." : ""));
+      return alert("Não foi possível salvar: " + error.message + (faltaColuna ? " — esta função pode ainda não estar disponível na sua conta." : ""));
     }
     if(editando) db.investments = db.investments.map(x=> x.id===inv.id ? saved : x);
     else db.investments.push(saved);
@@ -4287,7 +4331,7 @@ function renderCaderninho(){
   wrap.innerHTML = "";
   const empty = document.getElementById("caderninho-empty");
   empty.hidden = lista.length>0 && !caderninhoIndisponivel;
-  empty.textContent = caderninhoIndisponivel ? "Para usar o Caderninho, rode o add-caderninho.sql no SQL Editor do Supabase e recarregue o site." : "Nada anotado ainda.";
+  empty.textContent = caderninhoIndisponivel ? "Em breve: o Caderninho ainda não está disponível na sua conta." : "Nada anotado ainda.";
   const falta = lista.reduce((s,it)=>s+Math.max(0, Number(it.amount)-cadPago(it)),0);
   document.getElementById("caderninho-resumo").textContent = lista.length ? "Falta receber no total: " + brl(falta) : "";
   lista.forEach(it=>{
@@ -4392,7 +4436,7 @@ document.getElementById("btn-ativar-auto").addEventListener("click", async ()=>{
   if(!confirm(`Usar o saldo atual cadastrado de ${alvos.length} posição(ões) como ponto de partida (data de hoje)? A partir daí o app soma o rendimento do CDI sozinho. Confira se o saldo cadastrado está igual ao do app do banco hoje.`)) return;
   const hoje = hojeISO();
   const { data, error } = await sbClient.from("investments").update({ balance_date: hoje }).in("id", alvos.map(i=>i.id)).select();
-  if(error) return alert("Não foi possível ativar: " + error.message + (/balance_date|column|schema cache/i.test(error.message||"") ? " — rode o script add-investments-balance-date.sql no SQL Editor do Supabase (veja o README) e recarregue a página." : ""));
+  if(error) return alert("Não foi possível ativar: " + error.message + (/balance_date|column|schema cache/i.test(error.message||"") ? " — esta função pode ainda não estar disponível na sua conta." : ""));
   db.investments = db.investments.map(x=> data.find(u=>u.id===x.id) || x);
   renderAll();
 });
@@ -4691,7 +4735,7 @@ function openRecorrenciaModal(r, prefill){
 }
 
 document.getElementById("btn-nova-recorrencia").addEventListener("click", ()=>{
-  if(recorrenciasIndisponiveis) return alert("Essa função ainda não está disponível — rode o script add-recurrences.sql no Supabase (veja o README) e recarregue a página.");
+  if(recorrenciasIndisponiveis) return alert("Em breve: esta função ainda não está disponível na sua conta.");
   openRecorrenciaModal();
 });
 
@@ -4769,7 +4813,7 @@ function categoriaRow(c){
     });
     if(novas.length > atuais.length){
       const { data: updated, error } = await sbClient.from("categories").update({ keywords: novas }).eq("id", c.id).select().single();
-      if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — talvez falte rodar o script add-keywords.sql no SQL Editor do Supabase.");
+      if(error) return alert("Não foi possível salvar a palavra-chave: " + error.message + " — esta função pode ainda não estar disponível na sua conta.");
       db.categories = db.categories.map(x=> x.id===c.id ? updated : x);
       renderCategorias();
     } else {
@@ -5766,6 +5810,26 @@ document.addEventListener("keydown", (e)=>{
   const navTut = document.querySelector('.nav-item[data-view="tutoriais"]');
   if(navTut) navTut.addEventListener("click", ()=>{ if(root.dataset.atual) voltar(); else renderIndex(); });
   renderIndex();
+})();
+
+/* ===== Ação global "Novo" e atalhos de estados vazios ===== */
+(function(){
+  const btn = document.getElementById("btn-global-novo");
+  const menu = document.getElementById("novo-menu");
+  if(!btn || !menu) return;
+  const fechar = ()=>{ menu.hidden = true; btn.setAttribute("aria-expanded","false"); };
+  btn.addEventListener("click", e=>{ e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute("aria-expanded", String(!menu.hidden)); });
+  document.addEventListener("click", e=>{
+    const it = e.target.closest("[data-novo-btn]");
+    if(it){
+      fechar();
+      goTo(it.dataset.novoView);
+      setTimeout(()=>{ const alvo = document.getElementById(it.dataset.novoBtn); if(alvo) alvo.click(); }, 80);
+      return;
+    }
+    if(!menu.hidden && !e.target.closest("#novo-menu")) fechar();
+  });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !menu.hidden){ fechar(); btn.focus(); } });
 })();
 </script>
 </body>
