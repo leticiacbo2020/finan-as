@@ -946,6 +946,57 @@ select, input[type=text], input[type=number], input[type=date], input[type=email
 .ledger-table td{ color:var(--ink); }
 .ledger-table .num{ font-weight:600; }
 .muted{ color:var(--ink-soft); }
+/* ============ SIDEBAR FLUTUANTE ============ */
+.sidebar{ background:#54172F; border:1px solid rgba(255,247,250,.07); }
+.brand{ margin-bottom:26px; gap:12px; }
+.brand-mono{ width:54px; }
+.brand-text{ min-width:0; }
+.brand-name{ font-size:1.08rem; letter-spacing:.16em; }
+.brand-sub{ font-size:.56rem; letter-spacing:.12em; line-height:1.35; margin-top:5px; }
+.nav-item{ white-space:nowrap; overflow:hidden; }
+.nav-ico{ display:none; width:20px; height:20px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.sb-chev{ width:16px; height:16px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:transform .18s ease; }
+.sidebar-footer{ border-top:1px solid rgba(255,247,250,.1); padding-top:10px; }
+.nav-item--ghost{ font-size:.8rem; color:rgba(255,247,250,.78); padding:9px 14px; }
+.nav-item--ghost:hover{ color:#fff; }
+.sidebar-user{ padding:8px 14px 0; }
+.sidebar-email{ font-size:.7rem; font-weight:500; color:rgba(255,247,250,.62); }
+.sidebar-user .link-btn{ color:rgba(255,247,250,.85); font-size:.74rem; }
+.sidebar.is-collapsed .nav-ico{ display:block; }
+.sidebar.is-collapsed .nav-num, .sidebar.is-collapsed .nav-label, .sidebar.is-collapsed .brand-text, .sidebar.is-collapsed .sidebar-email{ display:none; }
+.sidebar.is-collapsed .nav-item{ justify-content:center; padding:11px 0; gap:0; }
+.sidebar.is-collapsed .brand{ justify-content:center; margin-bottom:22px; }
+.sidebar.is-collapsed .brand-mono{ width:42px; }
+.sidebar.is-collapsed .sb-chev{ transform:rotate(180deg); }
+.sidebar.is-collapsed .sidebar-user{ justify-content:center; padding:8px 0 0; }
+@media (min-width:881px){
+  :root{ --sidebar-w:220px; }
+  .sidebar{
+    position:sticky; top:18px; align-self:flex-start;
+    height:calc(100vh - 36px); margin:18px 0 18px 18px;
+    width:var(--sidebar-w); border-radius:20px;
+    box-shadow:0 18px 40px -26px rgba(60,12,34,.5);
+    padding:22px 14px 14px; overflow-y:auto; overflow-x:hidden; scrollbar-width:none;
+    transition:width .18s ease;
+  }
+  .sidebar::-webkit-scrollbar{ display:none; }
+  .sidebar.is-collapsed{ width:76px; padding-left:10px; padding-right:10px; }
+  .main{ padding-left:clamp(24px,2.4vw,44px); }
+}
+@media (min-width:881px) and (max-width:1100px){
+  :root{ --sidebar-w:196px; }
+  .nav-item{ padding:10px 12px; gap:10px; }
+  .brand-name{ font-size:1rem; }
+}
+@media (max-width:880px){
+  .sidebar{
+    top:calc(12px + env(safe-area-inset-top)); left:12px; bottom:calc(12px + env(safe-area-inset-bottom));
+    height:auto; width:min(270px,82vw); border-radius:20px; padding:22px 14px 14px; box-shadow:none;
+  }
+  .sidebar.is-hidden{ transform:translateX(calc(-100% - 24px)); }
+  .sidebar:not(.is-hidden){ box-shadow:0 18px 50px -20px rgba(30,6,18,.6); }
+  .sb-toggle{ display:none; }
+}
 </style>
 </head>
 <body>
@@ -991,49 +1042,51 @@ const SUPABASE_ANON_KEY = "sb_publishable_04IAy34p5oI30gQyVJPqFg_QRhYzJ0g";
   <aside class="sidebar">
     <div class="brand">
       <img class="brand-mono" src="data:image/png;base64,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" alt="" aria-hidden="true">
-      <div>
+      <div class="brand-text">
         <div class="brand-name">LeFinance</div>
         <div class="brand-sub">painel de controle financeiro</div>
       </div>
-      <button type="button" id="btn-toggle-sidebar" class="icon-btn icon-btn--light" aria-label="Esconder menu" title="Esconder menu" style="margin-left:auto;">☰</button>
     </div>
 
     <nav class="nav" id="nav">
-      <button class="nav-item is-active" data-view="visao-geral">
-        <span class="nav-num">01</span> Visão geral
+      <button class="nav-item is-active" data-view="visao-geral" title="Visão geral">
+        <span class="nav-num">01</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span class="nav-label">Visão geral</span>
       </button>
-      <button class="nav-item" data-view="transacoes">
-        <span class="nav-num">02</span> Transações
+      <button class="nav-item" data-view="transacoes" title="Transações">
+        <span class="nav-num">02</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4-4-4 4 4 4"/></svg><span class="nav-label">Transações</span>
       </button>
-      <button class="nav-item" data-view="cartoes">
-        <span class="nav-num">03</span> Cartões
+      <button class="nav-item" data-view="cartoes" title="Cartões">
+        <span class="nav-num">03</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18M7 15h3"/></svg><span class="nav-label">Cartões</span>
       </button>
-      <button class="nav-item" data-view="investimentos">
-        <span class="nav-num">04</span> Investimentos
+      <button class="nav-item" data-view="investimentos" title="Investimentos">
+        <span class="nav-num">04</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><span class="nav-label">Investimentos</span>
       </button>
-      <button class="nav-item" data-view="orcamento">
-        <span class="nav-num">05</span> Orçamento
+      <button class="nav-item" data-view="orcamento" title="Orçamento">
+        <span class="nav-num">05</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9"/></svg><span class="nav-label">Orçamento</span>
       </button>
-      <button class="nav-item" data-view="recorrencias">
-        <span class="nav-num">06</span> Recorrências
+      <button class="nav-item" data-view="recorrencias" title="Recorrências">
+        <span class="nav-num">06</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4m2 3v-4h-4"/></svg><span class="nav-label">Recorrências</span>
       </button>
-      <button class="nav-item" data-view="metas">
-        <span class="nav-num">07</span> Metas
+      <button class="nav-item" data-view="metas" title="Metas">
+        <span class="nav-num">07</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><span class="nav-label">Metas</span>
       </button>
-      <button class="nav-item" data-view="categorias">
-        <span class="nav-num">08</span> Categorias
+      <button class="nav-item" data-view="categorias" title="Categorias">
+        <span class="nav-num">08</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="nav-label">Categorias</span>
       </button>
-      <button class="nav-item" data-view="importar">
-        <span class="nav-num">09</span> Importar
+      <button class="nav-item" data-view="importar" title="Importar">
+        <span class="nav-num">09</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg><span class="nav-label">Importar</span>
       </button>
-      <button class="nav-item" data-view="tutoriais">
-        <span class="nav-num">10</span> Tutoriais
+      <button class="nav-item" data-view="tutoriais" title="Tutoriais">
+        <span class="nav-num">10</span><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3zM4 17a3 3 0 0 1 3-3h12"/></svg><span class="nav-label">Tutoriais</span>
       </button>
     </nav>
 
     <div class="sidebar-footer">
-      <button class="nav-item nav-item--ghost" data-view="backup">
-        Backup dos dados
+      <button class="nav-item nav-item--ghost" data-view="backup" title="Backup dos dados">
+        <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg><span class="nav-label">Backup dos dados</span>
+      </button>
+      <button type="button" id="btn-toggle-sidebar" class="nav-item nav-item--ghost sb-toggle" aria-label="Recolher menu" title="Recolher menu">
+        <svg class="sb-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span class="nav-label">Recolher menu</span>
       </button>
       <div class="sidebar-user">
         <span id="user-email" class="sidebar-email"></span>
@@ -2214,40 +2267,45 @@ document.getElementById("btn-refresh").addEventListener("click", refreshData);
 
 (function(){
   const sidebarEl = document.querySelector(".sidebar");
-  const btnHide = document.getElementById("btn-toggle-sidebar");
+  const btnToggle = document.getElementById("btn-toggle-sidebar");
   const btnShow = document.getElementById("btn-show-sidebar");
   const backdrop = document.getElementById("sidebar-backdrop");
+  const rotulo = btnToggle.querySelector(".nav-label");
   const ehMobile = ()=> window.matchMedia("(max-width: 880px)").matches;
 
-  let hidden = ehMobile();
-  try{
-    const salvo = localStorage.getItem("lefinance_sidebar_hidden");
-    if(salvo !== null) hidden = salvo === "1";
-  }catch(e){}
+  let hidden = true;      // celular: menu deslizante, começa fechado
+  let collapsed = false;  // desktop: modo compacto (só ícones)
+  try{ collapsed = localStorage.getItem("lefinance_sidebar_collapsed") === "1"; }catch(e){}
 
   function aplicar(){
-    sidebarEl.classList.toggle("is-hidden", hidden);
-    btnShow.hidden = !hidden;
-    if(ehMobile()){
+    const mobile = ehMobile();
+    sidebarEl.classList.toggle("is-hidden", mobile && hidden);
+    sidebarEl.classList.toggle("is-collapsed", !mobile && collapsed);
+    btnShow.hidden = !(mobile && hidden);
+    const txt = collapsed ? "Expandir menu" : "Recolher menu";
+    btnToggle.title = txt; btnToggle.setAttribute("aria-label", txt);
+    if(rotulo) rotulo.textContent = txt;
+    if(mobile){
       backdrop.hidden = hidden;
       requestAnimationFrame(()=> backdrop.classList.toggle("is-visible", !hidden));
     } else {
       backdrop.hidden = true;
       backdrop.classList.remove("is-visible");
     }
-  }
-  function definir(valor){
-    hidden = valor;
-    aplicar();
-    try{ localStorage.setItem("lefinance_sidebar_hidden", hidden ? "1" : "0"); }catch(e){}
+    setTimeout(()=>[chartCategorias, chartPlanejado, chartPagamento, chartInvestimentos, chartAcoes, chartRendaFixa].forEach(c=>{ try{ c?.resize(); }catch(e){} }), 220);
   }
   aplicar();
-  btnHide.addEventListener("click", ()=> definir(true));
-  btnShow.addEventListener("click", ()=> definir(false));
-  backdrop.addEventListener("click", ()=> definir(true));
-  document.querySelectorAll(".nav-item[data-view]").forEach(item=>{
-    item.addEventListener("click", ()=>{ if(ehMobile()) definir(true); });
+  btnToggle.addEventListener("click", ()=>{
+    collapsed = !collapsed;
+    try{ localStorage.setItem("lefinance_sidebar_collapsed", collapsed ? "1" : "0"); }catch(e){}
+    aplicar();
   });
+  btnShow.addEventListener("click", ()=>{ hidden = false; aplicar(); });
+  backdrop.addEventListener("click", ()=>{ hidden = true; aplicar(); });
+  document.querySelectorAll(".nav-item[data-view]").forEach(item=>{
+    item.addEventListener("click", ()=>{ if(ehMobile()){ hidden = true; aplicar(); } });
+  });
+  window.addEventListener("resize", aplicar);
 })();
 
 document.querySelectorAll("[data-chart-panel]").forEach(panel=>{
@@ -2310,6 +2368,12 @@ const CAT_PAGAMENTO_FATURA = "Pagamento de fatura";
 const CAT_SALDO_INICIAL = "Saldo inicial";
 function ehPagamentoDeFatura(t){ return t.type==="despesa" && t.category===CAT_PAGAMENTO_FATURA; }
 function ehSaldoInicial(t){ return t.category===CAT_SALDO_INICIAL; }
+// Transferência entre contas próprias e aplicação/resgate de investimento são só movimentação
+// de patrimônio: continuam alterando o saldo das contas, mas não contam como gasto nem como renda.
+function ehTransferencia(t){
+  const c = normalizeTexto(t.category || "");
+  return /^transfer/.test(c) || /^(aplicac|resgate)/.test(c);
+}
 function ehNoCartao(t){ return t.payment_method==="Crédito" && !ehPagamentoDeFatura(t); }
 function efeitoNaConta(t){
   if(ehNoCartao(t)) return 0;
@@ -2319,7 +2383,7 @@ function efeitoNaConta(t){
 function resumoDoPeriodo(txs){
   let receitas = 0, gastos = 0;
   txs.forEach(t=>{
-    if(ehSaldoInicial(t) || ehPagamentoDeFatura(t)) return;
+    if(ehSaldoInicial(t) || ehPagamentoDeFatura(t) || ehTransferencia(t)) return;
     const v = Number(t.amount) || 0;
     if(t.type==="despesa") gastos += v;
     else if(ehNoCartao(t)) gastos -= v;   // estorno/crédito no cartão abate o gasto
@@ -2567,7 +2631,7 @@ function preencherEntradas(lista, chave, mostrarCategoria){
   });
 }
 function renderEntradasDoMes(txs){
-  const recebidas = txs.filter(t=> t.type==="receita" && !ehSaldoInicial(t) && !ehPagamentoDeFatura(t) && !ehNoCartao(t));
+  const recebidas = txs.filter(t=> t.type==="receita" && !ehSaldoInicial(t) && !ehPagamentoDeFatura(t) && !ehTransferencia(t) && !ehNoCartao(t));
   const ehSalario = t=> normalizeTexto(t.category) === "salario";
   preencherEntradas(recebidas.filter(ehSalario), "salario", false);
   preencherEntradas(recebidas.filter(t=>!ehSalario(t)), "outras", true);
@@ -2722,7 +2786,7 @@ function renderVisaoGeral(){
   renderContasVisaoGeral();
 
   const porCategoria = {};
-  txs.filter(t=>t.type==="despesa" && !ehPagamentoDeFatura(t) && !ehSaldoInicial(t)).forEach(t=>{
+  txs.filter(t=>t.type==="despesa" && !ehPagamentoDeFatura(t) && !ehSaldoInicial(t) && !ehTransferencia(t)).forEach(t=>{
     porCategoria[t.category] = (porCategoria[t.category]||0) + Number(t.amount);
   });
   const labels = Object.keys(porCategoria);
@@ -2805,7 +2869,7 @@ function renderVisaoGeral(){
   }
 
   const porPagamento = {};
-  txs.filter(t=>t.type==="despesa" && !ehPagamentoDeFatura(t) && !ehSaldoInicial(t)).forEach(t=>{
+  txs.filter(t=>t.type==="despesa" && !ehPagamentoDeFatura(t) && !ehSaldoInicial(t) && !ehTransferencia(t)).forEach(t=>{
     const key = t.payment_method || "Não informado";
     porPagamento[key] = (porPagamento[key]||0) + Number(t.amount);
   });
