@@ -3788,9 +3788,9 @@ function colunaBalanceDateExiste(){
   return db.investments.length===0 || db.investments.some(i=>"balance_date" in i);
 }
 // dias úteis (seg–sex) completos desde a data do saldo até ontem — feriados não são descontados
-function diasUteisDesde(iso){
+function diasUteisDesde(iso, ate){
   const [y,m,d] = iso.split("-").map(Number);
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const hoje = ate ? new Date(ate) : new Date(); hoje.setHours(0,0,0,0);
   let n = 0;
   for(let dt = new Date(y, m-1, d); dt < hoje; dt = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()+1)){
     const w = dt.getDay();
@@ -3802,6 +3802,15 @@ function precoAcaoAuto(i){
   const v = cotacoesAuto[(i.ticker||"").toUpperCase()];
   return (v===undefined || v===null) ? null : v;
 }
+// Caixinha Turbo: taxa especial até um limite e validade de 12 meses a partir do início
+function turboInfo(i){
+  if(!i.turbo_start || !i.turbo_limit) return null;
+  const [y,m,d] = i.turbo_start.split("-").map(Number);
+  const venc = new Date(y, m-1+12, d);
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const iso = `${venc.getFullYear()}-${String(venc.getMonth()+1).padStart(2,"0")}-${String(venc.getDate()).padStart(2,"0")}`;
+  return { limite: Number(i.turbo_limit), venc, vencIso: iso, vencido: hoje>=venc, faltam: Math.max(0, Math.round((venc-hoje)/86400000)) };
+}
 function rendimentoAutomaticoAtivo(i){
   return investKind(i)==="cdi" && !!i.balance_date;
 }
@@ -3812,8 +3821,14 @@ function investBruto(i){
   const base = Number(i.amount) || 0;
   if(rendimentoAutomaticoAtivo(i)){
     const pct = (Number(i.cdi_percent)||0)/100;
-    const diario = (Math.pow(1 + getCdiAnual()/100, 1/252) - 1) * pct;
-    return Math.round(base * Math.pow(1+diario, diasUteisDesde(i.balance_date)) * 100) / 100;
+    const fator = Math.pow(1 + getCdiAnual()/100, 1/252) - 1;
+    const turbo = turboInfo(i);
+    if(turbo){
+      const n = diasUteisDesde(i.balance_date, turbo.vencido ? turbo.venc : null);
+      const a = Math.min(base, turbo.limite), b = base - a;
+      return Math.round((a * Math.pow(1+fator*pct, n) + b * Math.pow(1+fator, n)) * 100) / 100;
+    }
+    return Math.round(base * Math.pow(1+fator*pct, diasUteisDesde(i.balance_date)) * 100) / 100;
   }
   if(k==="acao" || k==="fii"){
     const p = precoAcaoAuto(i);
@@ -3898,8 +3913,15 @@ function investLiquido(i){
   return (i.net_amount===null || i.net_amount===undefined || i.net_amount==="") ? null : Number(i.net_amount);
 }
 function rendimentoMensalCdi(i){
-  const taxaAnual = (getCdiAnual()/100) * ((Number(i.cdi_percent)||0)/100);
-  return investBruto(i) * (Math.pow(1+taxaAnual, 1/12) - 1);
+  const cdi = getCdiAnual()/100, pct = (Number(i.cdi_percent)||0)/100;
+  const rend = (v, p)=> v * (Math.pow(1 + cdi*p, 1/12) - 1);
+  const bruto = investBruto(i), turbo = turboInfo(i);
+  if(turbo){
+    if(turbo.vencido) return 0;
+    const a = Math.min(bruto, turbo.limite);
+    return rend(a, pct) + rend(bruto - a, 1);
+  }
+  return rend(bruto, pct);
 }
 function fmtQtd(n){ return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 6 }); }
 function fmtPct(n){ return (n>0?"+":"") + n.toLocaleString("pt-BR", { maximumFractionDigits: 2, minimumFractionDigits: 2 }) + "%"; }
@@ -3908,6 +3930,13 @@ function detalhesInvestimento(i){
   const k = investKind(i);
   if(k==="cdi"){
     const pct = Number(i.cdi_percent)||0;
+    const t = turboInfo(i);
+    if(t){
+      const fim = fmtDate(t.vencIso);
+      return `${fmtQtd(pct)}% do CDI até ${brl(t.limite)} · 100% acima<br><span class="muted">` + (t.vencido
+        ? `Turbo vencida em ${fim}. Lance o resgate em Transações e exclua esta posição.`
+        : `≈ ${brl(rendimentoMensalCdi(i))}/mês · vence em ${fim} (faltam ${t.faltam} dias)`) + `</span>`;
+    }
     return `${fmtQtd(pct)}% do CDI<br><span class="muted">≈ ${brl(rendimentoMensalCdi(i))}/mês</span>`;
   }
   if(k==="acao" || k==="fii"){
@@ -4186,6 +4215,20 @@ function openInvestimentoModal(inv){
       <label>Rende quantos % do CDI?</label>
       <input type="number" step="0.01" min="0" name="cdi_percent" placeholder="Ex.: 115">
     </div>
+    <div class="field" data-kinds="cdi">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500;"><input type="checkbox" name="turbo" value="1" style="width:auto;"> É uma Caixinha Turbo (taxa especial por 12 meses)</label>
+    </div>
+    <div class="field-row" data-kinds="cdi" data-turbo="1">
+      <div class="field">
+        <label>Taxa turbo vale até (R$)</label>
+        <input type="number" step="0.01" min="0" name="turbo_limit" value="10000">
+      </div>
+      <div class="field">
+        <label>Início da caixinha</label>
+        <input type="date" name="turbo_start">
+      </div>
+    </div>
+    <p class="muted" data-kinds="cdi" data-turbo="1" style="margin-top:-6px;">O que passar do limite rende 100% do CDI. Depois de 12 meses a caixinha vence e o valor volta para a conta.</p>
     <div class="field-row" data-kinds="cdi outro">
       <div class="field">
         <label>Saldo bruto de hoje (R$)</label>
@@ -4254,6 +4297,13 @@ function openInvestimentoModal(inv){
         const pct = num(d.cdi_percent);
         if(pct===null || pct<=0) return alert("Informe quantos % do CDI o investimento rende.");
         payload.cdi_percent = pct;
+        if(d.turbo){
+          const lim = num(d.turbo_limit);
+          if(lim===null || lim<=0 || !d.turbo_start) return alert("Informe o limite da taxa turbo e a data de início.");
+          payload.turbo_limit = lim; payload.turbo_start = d.turbo_start;
+        } else if(editando && ("turbo_start" in inv)){
+          payload.turbo_limit = null; payload.turbo_start = null;
+        }
       }
       const liqv = num(d.net_amount);
       if(liqv!==null && liqv>saldo) return alert("O saldo líquido não pode ser maior que o bruto.");
@@ -4272,6 +4322,7 @@ function openInvestimentoModal(inv){
       ({ data: saved, error } = await salvar(payload));
     }
     if(error){
+      if(/turbo_/i.test(error.message||"")) return alert("A Caixinha Turbo ainda não está disponível na sua conta.");
       const faltaColuna = /column|schema cache/i.test(error.message||"");
       return alert("Não foi possível salvar: " + error.message + (faltaColuna ? " — esta função pode ainda não estar disponível na sua conta." : ""));
     }
@@ -4287,6 +4338,13 @@ function openInvestimentoModal(inv){
     fii:   { name:"Nome do fundo (ex.: Maxi Renda)", date:"Data da compra" },
     outro: { name:"Nome (ex.: Tesouro Selic 2029)", date:"Data" }
   };
+  function aplicarTurbo(){
+    const on = !!(form.turbo && form.turbo.checked) && form.kind.value==="cdi";
+    form.querySelectorAll("[data-turbo]").forEach(el=>{
+      el.hidden = !on;
+      el.querySelectorAll("input").forEach(x=> x.disabled = !on);
+    });
+  }
   const aplicarTipo = ()=>{
     const k = form.kind.value;
     form.querySelectorAll("[data-kinds]").forEach(el=>{
@@ -4296,14 +4354,17 @@ function openInvestimentoModal(inv){
     });
     form.querySelector('[data-inv-label="name"]').textContent = rotulos[k].name;
     form.querySelector('[data-inv-label="date"]').textContent = rotulos[k].date;
+    aplicarTurbo();
   };
   form.kind.addEventListener("change", aplicarTipo);
+  form.turbo.addEventListener("change", aplicarTurbo);
 
   form.kind.value = kind0;
   if(editando){
-    ["name","ticker","institution","type","cdi_percent","amount","net_amount","invested_amount","quantity","unit_price","current_price","date","notes"].forEach(f=>{
+    ["name","ticker","institution","type","cdi_percent","amount","net_amount","invested_amount","quantity","unit_price","current_price","turbo_limit","turbo_start","date","notes"].forEach(f=>{
       if(form[f] && inv[f]!==null && inv[f]!==undefined) form[f].value = inv[f];
     });
+    form.turbo.checked = !!inv.turbo_start;
     // renda fixa com rendimento automático: o formulário já mostra o saldo estimado de hoje
     if(investKind(inv)==="cdi" && inv.balance_date){
       form.amount.value = investBruto(inv);
@@ -4314,6 +4375,7 @@ function openInvestimentoModal(inv){
   } else {
     form.date.value = new Date().toISOString().slice(0,10);
   }
+  if(!form.turbo_start.value) form.turbo_start.value = hojeISO();
   aplicarTipo();
 }
 
@@ -5672,6 +5734,7 @@ document.addEventListener("keydown", (e)=>{
       { t:"Palavras-chave", d:"Sugerem a forma de pagamento ao importar." } ] },
     { id:"investimentos", ico:"📈", titulo:"Investimentos", desc:"Cadastre posições e acompanhe o total acumulado.", min:4, shot:"investimentos", novo:true, passos:[ { t:"Novo investimento", d:"Escolha o tipo: Renda fixa, Ação, FII ou Outro." },
       { t:"Renda fixa", d:"Informe saldo bruto e líquido, quanto aplicou e o % do CDI." },
+      { t:"Caixinha Turbo", d:"Marque “Caixinha Turbo”, informe o limite da taxa e a data de início. O site mostra a validade de 12 meses." },
       { t:"Ações e FIIs", d:"Informe código, quantidade, preço médio e cotação. Para atualizar sozinho, use o “token de cotações”." },
       { t:"Edite valores", d:"Clique em “editar” na linha do investimento." },
       { t:"Caderninho", d:"Em “Nova anotação”, registre valores a receber e cada pagamento parcial." } ] },
